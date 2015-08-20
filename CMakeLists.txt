@@ -17,13 +17,18 @@
 CONFIGURE_OSPRAY()
 
 # mini-scene graph viewer for _geometry_ (intentionally simple)
-OPTION(OSPRAY_MODULE_NEURON "Build Scene Graph 'SWC' importer." ON)
+OPTION(OSPRAY_MODULE_AMR_VOLUME "AMR Volume Module (testing)" ON)
   
+SET(OSPRAY_SG_SOURCE_DIR ${PROJECT_SOURCE_DIR}/apps/qtViewer)
+
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/ospray/include)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/)
 INCLUDE_DIRECTORIES(${OSPRAY_SG_SOURCE_DIR}/)
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
+# -------------------------------------------------------
+# data format loaders etc
+# -------------------------------------------------------
 ADD_LIBRARY(ospray_amr
 	Array3D.cpp
 	AMR.cpp
@@ -31,6 +36,31 @@ ADD_LIBRARY(ospray_amr
 TARGET_LINK_LIBRARIES(ospray_amr
 	ospray
 	)
+
+# -------------------------------------------------------
+# ospray plugin
+# -------------------------------------------------------
+OSPRAY_ADD_LIBRARY(ospray_module_amr${OSPRAY_LIB_SUFFIX} SHARED
+  ospray/AMRVolume.ispc
+  ospray/AMRVolume.cpp
+  )
+TARGET_LINK_LIBRARIES(ospray_module_amr${OSPRAY_LIB_SUFFIX}
+  ospray${OSPRAY_LIB_SUFFIX}
+  )
+
+# -------------------------------------------------------
+# scene graph plugin
+# -------------------------------------------------------
+ADD_LIBRARY(ospray_sg_amr${OSPRAY_LIB_SUFFIX} SHARED
+  sg/AMRVolume.cpp
+  )
+  TARGET_LINK_LIBRARIES(ospray_sg_amr${OSPRAY_LIB_SUFFIX}
+    ospray_sg${OSPRAY_LIB_SUFFIX}
+		ospbrain
+    )
+  # ------------------------------------------------------------
+
+
 
 ADD_EXECUTABLE(ospRawToAmr
 	raw2amr
