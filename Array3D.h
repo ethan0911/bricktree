@@ -33,7 +33,9 @@ namespace ospray {
       value_t *value;
     };
 
+    /*! load a RAW file with given dims (and templated voxel type) into a 3D Array */
     template<typename T>
     void loadRAW(Array3D<T> &volume, const std::string &fileName, const vec3i &dims);
+
   }
 }

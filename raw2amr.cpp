@@ -135,6 +135,8 @@ namespace ospray {
       amr->rootGrid = buildRec(amr,input,vec3i(0),dims,brickSize,threshold);
       amr->gridVec.push_back(amr->rootGrid);
       PRINT(amr->gridVec.size());
+      PRINT(amr->rootGrid->cellDims);
+      PRINT(amr->rootGrid->voxelDims);
 
       amr->writeTo(outFileName);
     }

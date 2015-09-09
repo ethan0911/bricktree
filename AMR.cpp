@@ -47,10 +47,13 @@ namespace ospray {
         fwrite(grid->voxel,sizeof(*grid->voxel),grid->numVoxels,bin);
       }
 
+      
+      size_t dataSize = ftell(bin);
+
       fprintf(osp,"<?xml?>\n");
       fprintf(osp,"<ospray>\n");
       fprintf(osp,"  <AMRVolume format=\"%s\"\n",formatNameString<T>());
-      fprintf(osp,"             ofs=\"0\"\n");
+      fprintf(osp,"             size=\"%li\" ofs=\"0\"\n",dataSize);
       fprintf(osp,"             />\n");
       fprintf(osp,"</ospray>\n");
 
