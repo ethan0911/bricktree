@@ -20,50 +20,53 @@ CONFIGURE_OSPRAY()
 OPTION(OSPRAY_MODULE_AMR_VOLUME "AMR Volume Module (testing)" ON)
 
 IF (OSPRAY_MODULE_AMR_VOLUME)
-	SET(OSPRAY_SG_SOURCE_DIR ${PROJECT_SOURCE_DIR}/apps/qtViewer)
+  SET(OSPRAY_SG_SOURCE_DIR ${PROJECT_SOURCE_DIR}/apps/qtViewer)
 
-	INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/ospray/include)
-	INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/)
-	INCLUDE_DIRECTORIES(${OSPRAY_SG_SOURCE_DIR}/)
-	INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+  INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/ospray/include)
+  INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/)
+  INCLUDE_DIRECTORIES(${OSPRAY_SG_SOURCE_DIR}/)
+  INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
-	# -------------------------------------------------------
-	# data format loaders etc
-	# -------------------------------------------------------
-	ADD_LIBRARY(ospray_amr
-		Array3D.cpp
-		AMR.cpp
-		)
-	TARGET_LINK_LIBRARIES(ospray_amr
-		ospray
-		)
+  # -------------------------------------------------------
+  # data format loaders etc
+  # -------------------------------------------------------
+  ADD_LIBRARY(ospray_amr${OSPRAY_LIB_SUFFIX}
+    Array3D.cpp
+    AMR.cpp
+  )
+  TARGET_LINK_LIBRARIES(ospray_amr${OSPRAY_LIB_SUFFIX}
+    ospray
+  )
 
-	# -------------------------------------------------------
-	# ospray plugin
-	# -------------------------------------------------------
-	OSPRAY_ADD_LIBRARY(ospray_module_amr${OSPRAY_LIB_SUFFIX} SHARED
-		ospray/AMRVolume.ispc
-		ospray/AMRVolume.cpp
-		)
-	TARGET_LINK_LIBRARIES(ospray_module_amr${OSPRAY_LIB_SUFFIX}
-		ospray${OSPRAY_LIB_SUFFIX}
-		)
+  # -------------------------------------------------------
+  # ospray plugin
+  # -------------------------------------------------------
+  OSPRAY_ADD_LIBRARY(ospray_module_amr${OSPRAY_LIB_SUFFIX} SHARED
+    ospray/AMRVolume.ispc
+    ospray/AMRVolume.cpp
+  )
+  TARGET_LINK_LIBRARIES(ospray_module_amr${OSPRAY_LIB_SUFFIX}
+    ospray${OSPRAY_LIB_SUFFIX}
+  )
 
-	# -------------------------------------------------------
-	# scene graph plugin
-	# -------------------------------------------------------
-	ADD_LIBRARY(ospray_sg_amr${OSPRAY_LIB_SUFFIX} SHARED
-		sg/AMRVolume.cpp
-		)
-  TARGET_LINK_LIBRARIES(ospray_sg_amr${OSPRAY_LIB_SUFFIX}
-    ospray_sg${OSPRAY_LIB_SUFFIX}
+
+  IF(NOT THIS_IS_MIC)
+    # -----------------------------------------------------
+    # scene graph plugin
+    # -----------------------------------------------------
+    ADD_LIBRARY(ospray_sg_amr${OSPRAY_LIB_SUFFIX} SHARED
+      sg/AMRVolume.cpp
     )
-  # ------------------------------------------------------------
+    TARGET_LINK_LIBRARIES(ospray_sg_amr${OSPRAY_LIB_SUFFIX}
+      ospray_sg${OSPRAY_LIB_SUFFIX}
+    )
+    # -----------------------------------------------------
 
-	ADD_EXECUTABLE(ospRaw2OctAMR
-		raw2oamr
-		)
-	TARGET_LINK_LIBRARIES(ospRaw2OctAMR
-		ospray_amr
-		)
+    ADD_EXECUTABLE(ospRaw2OctAMR
+      raw2oamr
+    )
+    TARGET_LINK_LIBRARIES(ospRaw2OctAMR
+      ospray_amr
+    )
+  ENDIF()
 ENDIF()
