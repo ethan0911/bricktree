@@ -35,28 +35,21 @@ namespace ospray {
       FILE *bin = fopen(binFileName.c_str(),"wb");
       FILE *osp = fopen(outFileName.c_str(),"w");
 
-      size_t numGrids = gridVec.size();
-      fwrite(&numGrids,sizeof(size_t),1,bin);
-      for (int i=0;i<numGrids;i++) {
-        Grid *grid = gridVec[i];
-        fwrite(&grid->cellDims,sizeof(grid->cellDims),1,bin);
-        fwrite(&grid->numCells,sizeof(grid->numCells),1,bin);
-        fwrite(grid->cell,sizeof(*grid->cell),grid->numCells,bin);
-        fwrite(&grid->voxelDims,sizeof(grid->voxelDims),1,bin);
-        fwrite(&grid->numVoxels,sizeof(grid->numVoxels),1,bin);
-        fwrite(grid->voxel,sizeof(*grid->voxel),grid->numVoxels,bin);
+      fwrite(&rootGrid.dimensions,sizeof(rootGrid.dimensions),1,bin);
+      size_t numCells = rootGrid.numCells();
+      for (int i=0;i<numCells;i++) {
+        rootGrid.cell[i].writeTo(bin);
       }
 
-      
       size_t dataSize = ftell(bin);
 
       fprintf(osp,"<?xml?>\n");
       fprintf(osp,"<ospray>\n");
-      fprintf(osp,"  <AMRVolume format=\"%s\"\n",formatNameString<T>());
+      fprintf(osp,"  <AMRMultiGrid format=\"%s\"\n",formatNameString<T>());
       fprintf(osp,"             size=\"%li\" ofs=\"0\"\n",dataSize);
       fprintf(osp,"             />\n");
       fprintf(osp,"</ospray>\n");
-
+      
       fclose(bin);
       fclose(osp);
     }

@@ -17,40 +17,26 @@
 #pragma once
 
 // ospray
-#include "ospray/volume/Volume.h"
-#include "Range.h"
+#include "Array3D.h"
 
 namespace ospray {
   namespace amr {
 
-    template<typename value_t>
-    struct Array3D {
-      Array3D(const vec3i &dims);
-      void set(const vec3i &where, value_t value);
-      value_t get(const vec3i &where) const;
-      value_t getSafe(const vec3i &where) const;
-
-      Range<value_t> getValueRange(const vec3i &begin, const vec3i &end) const;
-
-      const vec3i dims;
-      value_t *value;
+    /* octree of cell-centered nodes */
+    template<typename voxel_t>
+    struct Octree {
+      struct Cell {
+        float ccValue; //!< cell center value
+        int32 childID; // -1 means 'no child', else this points into octCell[] array
+      };
+      struct OctCell {
+        Cell child[2][2][2];
+      };
+      std::vector<Cell> rootCell;
+      std::vector<OctCell> octCell;
+      
+      void writeTo(FILE *bin);
     };
 
-    /*! load a RAW file with given dims (and templated voxel type) into a 3D Array */
-    template<typename T>
-    void loadRAW(Array3D<T> &volume, const std::string &fileName, const vec3i &dims);
-
-    template<typename T>
-    inline Range<T> Array3D<T>::getValueRange(const vec3i &begin, const vec3i &end) const
-    {
-      Range<T> v = getSafe(begin);
-      for (int iz=begin.z;iz<end.z;iz++)
-        for (int iy=begin.y;iy<end.y;iy++)
-          for (int ix=begin.x;ix<end.x;ix++)
-            v.extend(getSafe(vec3i(ix,iy,iz)));
-      return v;
-    }
-
-
-  }
-}
+  } // ::ospray::amr
+} // ::ospray

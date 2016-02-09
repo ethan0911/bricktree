@@ -14,43 +14,22 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-// ospray
-#include "ospray/volume/Volume.h"
-#include "Range.h"
+// stl
+#include <algorithm>
 
 namespace ospray {
-  namespace amr {
+  using std::min;
+  using std::max;
+  
+  template<typename T>
+  struct Range {
+    Range(const T &t) : lo(t), hi(t) {};
 
-    template<typename value_t>
-    struct Array3D {
-      Array3D(const vec3i &dims);
-      void set(const vec3i &where, value_t value);
-      value_t get(const vec3i &where) const;
-      value_t getSafe(const vec3i &where) const;
+    T lo, hi;
 
-      Range<value_t> getValueRange(const vec3i &begin, const vec3i &end) const;
+    T size() const { return hi - lo; }
+    T center() const { return .5f*(lo+hi); }
+    void extend(const T &t) { lo = min(lo,t); hi = max(hi,t); }
+  };
 
-      const vec3i dims;
-      value_t *value;
-    };
-
-    /*! load a RAW file with given dims (and templated voxel type) into a 3D Array */
-    template<typename T>
-    void loadRAW(Array3D<T> &volume, const std::string &fileName, const vec3i &dims);
-
-    template<typename T>
-    inline Range<T> Array3D<T>::getValueRange(const vec3i &begin, const vec3i &end) const
-    {
-      Range<T> v = getSafe(begin);
-      for (int iz=begin.z;iz<end.z;iz++)
-        for (int iy=begin.y;iy<end.y;iy++)
-          for (int ix=begin.x;ix<end.x;ix++)
-            v.extend(getSafe(vec3i(ix,iy,iz)));
-      return v;
-    }
-
-
-  }
-}
+};

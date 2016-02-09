@@ -17,31 +17,27 @@
 #pragma once
 
 // ospray
-#include "Array3D.h"
+#include "Octree.h"
 
 namespace ospray {
   namespace amr {
 
+    /*! out multi-octree data structure - one root grid with one octree per cell */
     template<typename voxel_t>
     struct AMR {
       
+      template<typename cell_t>
       struct Grid {
-        struct Cell {
-          //! ID of child grid, if >= 0; or "this is a leaf" flag if < 0
-          int32 childID; 
-          voxel_t lo, hi;
-        };
+        Grid() : dimensions(0), cell(0) {}
 
-        vec3i    cellDims;
-        vec3i    voxelDims;
-        size_t   numVoxels;
-        size_t   numCells;
-        Cell    *cell;
-        voxel_t *voxel;
+        void allocate(const vec3i &newDims) { dimensions = newDims; cell = new cell_t[numCells()]; }
+        size_t numCells() const { return dimensions.x*dimensions.y*dimensions.z; }
+
+        vec3i    dimensions;
+        cell_t  *cell;
       };
       
-      Grid *rootGrid;
-      std::vector<Grid *> gridVec;
+      Grid<Octree<voxel_t> > rootGrid;
 
       void writeTo(const std::string &outFileName);
     };
