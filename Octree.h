@@ -32,10 +32,6 @@ namespace ospray {
       struct OctCell {
         Cell child[2][2][2];
       };
-      std::vector<Cell> rootCell;
-      std::vector<OctCell> octCell;
-      
-      void writeTo(FILE *bin);
     };
 
   } // ::ospray::amr

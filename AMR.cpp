@@ -35,11 +35,10 @@ namespace ospray {
       FILE *bin = fopen(binFileName.c_str(),"wb");
       FILE *osp = fopen(outFileName.c_str(),"w");
 
-      fwrite(&rootGrid.dimensions,sizeof(rootGrid.dimensions),1,bin);
-      size_t numCells = rootGrid.numCells();
-      for (int i=0;i<numCells;i++) {
-        rootGrid.cell[i].writeTo(bin);
-      }
+      fwrite(&dimensions,sizeof(dimensions),1,bin);
+      size_t numCells = this->numCells();
+
+      FATAL("not implemented yet");
 
       size_t dataSize = ftell(bin);
 

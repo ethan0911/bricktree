@@ -26,19 +26,21 @@ namespace ospray {
     template<typename voxel_t>
     struct AMR {
       
-      template<typename cell_t>
-      struct Grid {
-        Grid() : dimensions(0), cell(0) {}
-
-        void allocate(const vec3i &newDims) { dimensions = newDims; cell = new cell_t[numCells()]; }
-        size_t numCells() const { return dimensions.x*dimensions.y*dimensions.z; }
-
-        vec3i    dimensions;
-        cell_t  *cell;
-      };
+      typedef typename Octree<voxel_t>::Cell Cell;
+      typedef typename Octree<voxel_t>::OctCell OctCell;
       
-      Grid<Octree<voxel_t> > rootGrid;
-
+      AMR() : dimensions(0) {}
+      
+      void allocate(const vec3i &newDims) { dimensions = newDims; rootCell.resize(numCells()); }
+      size_t numCells() const { return dimensions.x*dimensions.y*dimensions.z; }
+      
+      // 3D array of root nodes
+      std::vector<Cell> rootCell;
+      // array of (all) child cells, across all octrees
+      std::vector<OctCell> octCell;
+      // dimensions of root grid
+      vec3i dimensions;
+      
       void writeTo(const std::string &outFileName);
     };
     

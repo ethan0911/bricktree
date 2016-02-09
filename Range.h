@@ -32,4 +32,9 @@ namespace ospray {
     void extend(const T &t) { lo = min(lo,t); hi = max(hi,t); }
   };
 
-};
+  template<typename T>
+  inline std::ostream &operator<<(std::ostream &o, const Range<T> &r)
+  { o << "[" << r.lo << "," << r.hi << "]"; return o; }
+
+} // ::ospray
+
