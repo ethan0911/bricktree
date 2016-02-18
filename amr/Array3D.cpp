@@ -36,9 +36,12 @@ namespace ospray {
     }
     
     template<typename T>
-    T ActualArray3D<T>::get(const vec3i &where) const
+    T ActualArray3D<T>::get(const vec3i &_where) const
     {
-      return get(max(vec3i(0),min(where,dims - vec3i(1))));
+      assert(value != NULL);
+      const vec3i where = max(vec3i(0),min(_where,dims - vec3i(1)));
+      size_t index = where.x + size_t(dims.x) * (where.y + size_t(dims.y) * (where.z));
+      return value[index];
     }
 
     /*! get the range/interval of all cell values in the given
@@ -49,8 +52,9 @@ namespace ospray {
       Range<T> v = get(begin);
       for (int iz=begin.z;iz<end.z;iz++)
         for (int iy=begin.y;iy<end.y;iy++)
-          for (int ix=begin.x;ix<end.x;ix++)
+          for (int ix=begin.x;ix<end.x;ix++) {
             v.extend(get(vec3i(ix,iy,iz)));
+          }
       return v;
     }
 

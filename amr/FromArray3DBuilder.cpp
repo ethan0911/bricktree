@@ -73,8 +73,6 @@ namespace ospray {
     template<typename T>
     void FromArray3DBuilder<T>::makeBlock(const vec3i &blockID)
     {
-      // cout << "-------------------------------------------------------" << endl;
-      // cout << "making block " << blockID << endl;
       size_t blockSize = (1<<maxLevels);
       vec3i begin = blockID*vec3i(blockSize);
 
@@ -91,8 +89,9 @@ namespace ospray {
       this->threshold = threshold;
 
       size_t blockSize = (1<<maxLevels);
-      std::cout << "Building AMR with " << maxLevels << " levels. this corresponds to blocks of " << blockSize << " input cells" << std::endl;
-      // size_t trueRootBlockSize = rootBlockSize * (1<<maxLevels);
+      std::cout << "Building AMR with " << maxLevels << " levels."
+                << " this corresponds to blocks of " << blockSize
+                << " input cells" << std::endl;
       vec3i dims = input->size();
       vec3i numBlocks = divRoundUp(dims,vec3i(blockSize));
       std::cout << "root grid size at this block size is " << numBlocks << std::endl;

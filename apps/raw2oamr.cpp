@@ -45,15 +45,16 @@ namespace ospray {
     }
 
     template<typename T>
-    void oamrFromVolume(const Array3D<T> *input,
-                        int maxLevels,
-                        float threshold)
+    AMR<T> *oamrFromVolume(const Array3D<T> *input,
+                           int maxLevels,
+                           float threshold)
     {
       FromArray3DBuilder<T> builder;
 
       cout << "read input, now building AMR Octree" << endl;
-      builder.makeAMR(input,maxLevels,threshold);
+      AMR<T> *oct = builder.makeAMR(input,maxLevels,threshold);
       cout << "done building" << endl;
+      return oct;
     }
 
     extern "C" int main(int ac, char **av)
@@ -62,7 +63,7 @@ namespace ospray {
       std::string outFileName = "";
       std::string format      = "float";
       int         maxLevels   = 4;
-      float       threshold   = .1f;
+      float       threshold   = .01f;
       vec3i       dims        = vec3f(0);
 
       for (int i=1;i<ac;i++) {
@@ -106,7 +107,9 @@ namespace ospray {
         throw std::runtime_error("unsupported format '"+format+"'");
       cout << "loading complete." << endl;
 
-      oamrFromVolume<float>(input,maxLevels,threshold);
+      AMR<float> *amr = oamrFromVolume<float>(input,maxLevels,threshold);
+      assert(amr);
+      amr->writeTo(outFileName);
       
       return 0;
     }

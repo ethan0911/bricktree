@@ -36,15 +36,20 @@ namespace ospray {
       FILE *osp = fopen(outFileName.c_str(),"w");
 
       fwrite(&dimensions,sizeof(dimensions),1,bin);
-      size_t numCells = this->numCells();
 
-      FATAL("not implemented yet");
+      size_t numRootCells = this->rootCell.size();
+      fwrite(&numRootCells,sizeof(numRootCells),1,bin);
+      fwrite(&rootCell[0],rootCell.size()*sizeof(rootCell[0]),1,bin);
+
+      size_t numOctCells = this->octCell.size();
+      fwrite(&numOctCells,sizeof(numOctCells),1,bin);
+      fwrite(&octCell[0],octCell.size()*sizeof(octCell[0]),1,bin);
 
       size_t dataSize = ftell(bin);
 
       fprintf(osp,"<?xml?>\n");
       fprintf(osp,"<ospray>\n");
-      fprintf(osp,"  <AMRMultiGrid format=\"%s\"\n",formatNameString<T>());
+      fprintf(osp,"  <MultiOctreeAMR format=\"%s\"\n",formatNameString<T>());
       fprintf(osp,"             size=\"%li\" ofs=\"0\"\n",dataSize);
       fprintf(osp,"             />\n");
       fprintf(osp,"</ospray>\n");
