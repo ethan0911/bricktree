@@ -40,6 +40,7 @@ namespace ospray {
       Range<value_t> getValueRange(const vec3i &begin, const vec3i &end) const;
     };
 
+    /*! implementation for an actual array3d that stores a 3D array of values */
     template<typename value_t>
     struct ActualArray3D : public Array3D<value_t> {
 
@@ -48,9 +49,6 @@ namespace ospray {
       /*! return size (ie, "dimensions") of volume */
       virtual vec3i size() const { return dims; }
 
-      // /*! set cell location to given value */
-      // virtual void set(const vec3i &where, value_t value);
-      
       /*! get cell value at location
 
         \warning 'where' MUST be a valid cell location */
@@ -60,9 +58,25 @@ namespace ospray {
       value_t *value;
     };
 
+    /*! implemnetaiton of a wrapper class that makes an actual array3d
+        of one type look like that of another type */
     template<typename in_t, typename out_t>
-    struct Array3DAccessor {
-      Array3D<in_t> *actual;
+    struct Array3DAccessor : public Array3D<out_t> {
+
+      Array3DAccessor(const Array3D<in_t> *actual) : actual(actual) {};
+
+      /*! return size (ie, "dimensions") of volume */
+      virtual vec3i size() const { return actual->size(); }
+
+      /*! get cell value at location
+
+        \warning 'where' MUST be a valid cell location */
+      virtual out_t get(const vec3i &where) const
+      { return (out_t)actual->get(where); }
+
+    private:
+      //! the actual 3D array we're wrapping around
+      const Array3D<in_t> *actual;
     };
 
     template<typename T>

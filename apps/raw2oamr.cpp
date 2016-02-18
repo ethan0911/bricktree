@@ -92,10 +92,16 @@ namespace ospray {
       if (inFileName == "")
         error("no input file specified");
       
-      if (format == "float") 
+      if (format == "float") {
         oamrFromVolume<float>(loadRAW<float>(inFileName,dims),
                               maxLevels,threshold);
-      else if (format == "uint8") 
+      } else if (format == "uint8") {
+        const Array3D<uint8> *input = loadRAW<uint8>(inFileName,dims);
+        oamrFromVolume<float>(new Array3DAccessor<uint8,float>(input),
+                              maxLevels,threshold);
+      } else if (format == "true-uint8") 
+        /* we're _probably_ not actually going to use this - i just
+           want to make sure it compiles */
         oamrFromVolume<uint8>(loadRAW<uint8>(inFileName,dims),
                               maxLevels,threshold);
       else
