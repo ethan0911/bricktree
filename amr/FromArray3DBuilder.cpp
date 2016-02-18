@@ -101,18 +101,29 @@ namespace ospray {
       
       oct->allocate(numBlocks);//(numBlocks.x*numBlocks.y*numBlocks.z);
 
+      cout << "computing value range for entire volume..." << endl;
       Range<T> mm = input->getValueRange(vec3i(0),dims);
       std::cout << "value range for entire input is " << mm << std::endl;
       threshold = threshold * mm.size();
       std::cout << "at specified rel threshold of " << threshold << " this triggers splitting nodes whose difference exceeds " << threshold << std::endl;
       
+      size_t numInputCellsDone = 0;
       size_t oldSize = 0;
       for (int iz=0;iz<numBlocks.z;iz++)
         for (int iy=0;iy<numBlocks.y;iy++)
           for (int ix=0;ix<numBlocks.x;ix++) {
+            numInputCellsDone += blockSize*blockSize*blockSize;
             makeBlock(vec3i(ix,iy,iz));
             size_t num = oct->octCell.size() - oldSize;
-            cout << "oct[" << vec3f(ix,iy,iz) << "]: " << (8*num) << " entries (" << oct->octCell.size() << " total)" << endl;
+            size_t totalCellsCreatedSoFar 
+              = oct->rootCell.size()
+              + 8 * oct->octCell.size();
+            float pct = totalCellsCreatedSoFar * 100.f / numInputCellsDone;
+            cout << "oct[" << vec3f(ix,iy,iz) << "]: " << (8*num) << " entries"
+                 << "\t(" << oct->octCell.size() << " total, "
+                 << "out of " << numInputCellsDone
+                 << "; that is " << pct << "% of cells"
+                 << ")" << endl;
             oldSize = oct->octCell.size();
           }
       return oct;
