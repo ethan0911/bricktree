@@ -41,7 +41,8 @@ namespace ospray {
       virtual void render(RenderContext &ctx);
 
       //! \brief Initialize this node's value from given XML node 
-      virtual void setFromXML(const xml::Node *const node, const unsigned char *binBasePtr);
+      virtual void setFromXML(const xml::Node *const node, 
+                              const unsigned char *binBasePtr);
 
       //! return bounding box of all primitives
       virtual box3f getBounds();

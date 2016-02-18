@@ -17,32 +17,39 @@
 #pragma once
 
 // ospray
-#include "Octree.h"
+#include "AMR.h"
 
 namespace ospray {
   namespace amr {
 
-    /*! out multi-octree data structure - one root grid with one octree per cell */
-    template<typename voxel_t>
-    struct AMR {
+    template<typename T>
+    struct FromArray3DBuilder {
+      // constructor
+      FromArray3DBuilder();
+
+      // build one root block (the one with given ID, obviously)
+      void makeBlock(const vec3i &blockID);
+
+      typename Octree<T>::Cell recursiveBuild(const vec3i &begin, int blockSize);
+
+      size_t inputCellID(const vec3i &cellID) const;
+      size_t rootCellID(const vec3i &cellID) const;
+
+      // build the entire thing
+      AMR<T> *makeAMR(const Array3D<T> *input, int maxLevels, float threshold);
       
-      typedef typename Octree<voxel_t>::Cell Cell;
-      typedef typename Octree<voxel_t>::OctCell OctCell;
+      // pre-loaded input volume
+      const Array3D<T> *input;
       
-      AMR() : dimensions(0) {}
+      // max number of levels we are allowed to create
+      int maxLevels;
       
-      void allocate(const vec3i &newDims) { dimensions = newDims; rootCell.resize(numCells()); }
-      size_t numCells() const { return dimensions.x*dimensions.y*dimensions.z; }
-      
-      // 3D array of root nodes
-      std::vector<Cell> rootCell;
-      // array of (all) child cells, across all octrees
-      std::vector<OctCell> octCell;
-      // dimensions of root grid
-      vec3i dimensions;
-      
-      void writeTo(const std::string &outFileName);
+      // threshold for refining
+      float threshold;
+
+      AMR<T> *oct;
     };
     
   } // ::ospray::amr
 } // ::ospray
+

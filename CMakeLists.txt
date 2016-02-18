@@ -32,6 +32,7 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
   # -------------------------------------------------------
   ADD_LIBRARY(ospray_amr${OSPRAY_LIB_SUFFIX}
     amr/Array3D.cpp
+    amr/FromArray3DBuilder.cpp
     amr/AMR.cpp
   )
   TARGET_LINK_LIBRARIES(ospray_amr${OSPRAY_LIB_SUFFIX}

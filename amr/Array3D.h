@@ -52,5 +52,13 @@ namespace ospray {
     template<typename T>
     void loadRAW(Array3D<T> &volume, const std::string &fileName, const vec3i &dims);
 
-  }
-}
+    template<typename T>
+    inline Array3D<T> *loadRAW(const std::string &fileName, const vec3i &dims)
+    { 
+      Array3D<T> *a = new Array3D<T>(dims);
+      loadRAW(*a,fileName,dims);
+      return a;
+    }
+
+  } // ::ospray::amr
+} // ::ospray

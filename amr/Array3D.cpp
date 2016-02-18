@@ -22,8 +22,18 @@ namespace ospray {
 
     template<typename T>
     Array3D<T>::Array3D(const vec3i &dims)
-      : dims(dims), value(new T[size_t(dims.x)*size_t(dims.y)*size_t(dims.z)])
-    {}
+      : dims(dims)
+    {
+      const size_t numVoxels = size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
+      try {
+      value = new T[numVoxels];
+      } catch (std::bad_alloc e) {
+        std::stringstream ss;
+        ss << "could not allocate memory for Array3D of dimensions "
+           << dims << " (in Array3D::Array3D())";
+        throw std::runtime_error(ss.str());
+      }
+    }
     
     template<typename T>
     void Array3D<T>::set(const vec3i &where, T value)
