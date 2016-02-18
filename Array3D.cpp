@@ -43,6 +43,19 @@ namespace ospray {
       return get(max(vec3i(0),min(_where,dims-vec3i(1))));
     }
 
+    /*! get the range/interval of all cell values in the given
+        begin/end region of the volume */
+    template<typename T>
+    inline Range<T> Array3D<T>::getValueRange(const vec3i &begin, const vec3i &end) const
+    {
+      Range<T> v = getSafe(begin);
+      for (int iz=begin.z;iz<end.z;iz++)
+        for (int iy=begin.y;iy<end.y;iy++)
+          for (int ix=begin.x;ix<end.x;ix++)
+            v.extend(getSafe(vec3i(ix,iy,iz)));
+      return v;
+    }
+
     template<typename T>
     void loadRAW(Array3D<T> &volume, const std::string &fileName, const vec3i &dims)
     {
@@ -59,6 +72,10 @@ namespace ospray {
       fclose(file);
     }
     
+    // -------------------------------------------------------
+    // explicit instantiations section
+    // -------------------------------------------------------
+
     template void loadRAW(Array3D<uint8> &volume, const std::string &fileName, const vec3i &dims);
     template void loadRAW(Array3D<float> &volume, const std::string &fileName, const vec3i &dims);
 

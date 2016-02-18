@@ -26,10 +26,22 @@ namespace ospray {
     template<typename value_t>
     struct Array3D {
       Array3D(const vec3i &dims);
+
+      /*! set cell location to given value */
       void set(const vec3i &where, value_t value);
+      
+      /*! get cell value at location
+
+        \warning 'where' MUST be a valid cell location */
       value_t get(const vec3i &where) const;
+
+      /*! get cell value at given location, but ensure that location
+          is actually a valid cell ID inside the volume (clamps to
+          nearest cell in volume if 'where' is outside) */
       value_t getSafe(const vec3i &where) const;
 
+      /*! get the range/interval of all cell values in the given
+        begin/end region of the volume */
       Range<value_t> getValueRange(const vec3i &begin, const vec3i &end) const;
 
       const vec3i dims;
@@ -39,18 +51,6 @@ namespace ospray {
     /*! load a RAW file with given dims (and templated voxel type) into a 3D Array */
     template<typename T>
     void loadRAW(Array3D<T> &volume, const std::string &fileName, const vec3i &dims);
-
-    template<typename T>
-    inline Range<T> Array3D<T>::getValueRange(const vec3i &begin, const vec3i &end) const
-    {
-      Range<T> v = getSafe(begin);
-      for (int iz=begin.z;iz<end.z;iz++)
-        for (int iy=begin.y;iy<end.y;iy++)
-          for (int ix=begin.x;ix<end.x;ix++)
-            v.extend(getSafe(vec3i(ix,iy,iz)));
-      return v;
-    }
-
 
   }
 }
