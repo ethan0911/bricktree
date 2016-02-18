@@ -29,6 +29,29 @@ namespace ospray {
     const char *formatNameString<float>() { return "float"; }
 
     template<typename T>
+    void readMem(const unsigned char *&ptr, T &t)
+    {
+      memcpy(&t,ptr,sizeof(t));
+      ptr += sizeof(t);
+    }
+    template<typename T>
+    void readMem(const unsigned char *&ptr, std::vector<T> &t, size_t num)
+    {
+      t.resize(num);
+      memcpy(&t[0],ptr,num*sizeof(T));
+      ptr += num*sizeof(T);
+    }
+
+    template<typename T>
+    void AMR<T>::mmapFrom(const unsigned char *mmappedPtr)
+    {
+      const unsigned char *mem = mmappedPtr;
+      readMem(mem,this->dimensions);
+      PRINT(dimensions);
+      FATAL("not implemented");
+    }
+
+    template<typename T>
     void AMR<T>::writeTo(const std::string &outFileName)
     {
       const std::string binFileName = outFileName+"bin";
@@ -49,7 +72,7 @@ namespace ospray {
 
       fprintf(osp,"<?xml?>\n");
       fprintf(osp,"<ospray>\n");
-      fprintf(osp,"  <MultiOctreeAMR format=\"%s\"\n",formatNameString<T>());
+      fprintf(osp,"  <MultiOctreeAMR voxelType=\"%s\"\n",formatNameString<T>());
       fprintf(osp,"             size=\"%li\" ofs=\"0\"\n",dataSize);
       fprintf(osp,"             />\n");
       fprintf(osp,"</ospray>\n");

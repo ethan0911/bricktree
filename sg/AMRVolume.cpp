@@ -41,61 +41,6 @@ namespace ospray {
       return box3f(vec3f(0.f), vec3f(dimensions));
     }
 
-    template<typename T>
-    void readMem(unsigned char *&ptr, T &t)
-    {
-      memcpy(&t,ptr,sizeof(t));
-      ptr += sizeof(t);
-    }
-
-    template<typename T>
-    void AMRVolume::readAMR(OSPVolume volume, const char *voxelType,
-                            unsigned char *dataMem)
-    {
-      ospSetString(volume,"voxelType",voxelType);
-
-
-      // iw: this code no longer works since swithcing to multi-octree data structure
-
-      // size_t numGrids;
-      // readMem(dataMem,numGrids);
-      // PRINT(numGrids);
-      // ospSet1i(volume,"numGrids",numGrids);
-
-      // std::vector<OSPData> voxelDataVector;
-      // std::vector<OSPData> cellDataVector;
-
-      // typename AMR<T>::Grid *grid = new typename AMR<T>::Grid[numGrids];
-      // for (int i=0;i<numGrids;i++) {
-      //   readMem(dataMem,grid[i].cellDims);
-      //   readMem(dataMem,grid[i].numCells);
-      //   grid[i].cell = NULL; //(typename AMR<T>::Grid::Cell *)dataPtr;
-      //   OSPData cellData = ospNewData(grid[i].numCells*sizeof(typename AMR<T>::Grid::Cell),
-      //                                 OSP_CHAR,dataMem,OSP_DATA_SHARED_BUFFER);
-      //   cellDataVector.push_back(cellData);
-      //   dataMem += grid[i].numCells * sizeof(typename AMR<T>::Grid::Cell);
-      //   readMem(dataMem,grid[i].voxelDims);
-      //   readMem(dataMem,grid[i].numVoxels);
-
-      //   grid[i].voxel = NULL; //(typename AMR<T>::Grid::Voxel *)dataPtr;
-      //   OSPData voxelData = ospNewData(grid[i].numVoxels*sizeof(typename AMR<T>::Grid::Voxel),
-      //                                 OSP_CHAR,dataMem,OSP_DATA_SHARED_BUFFER);
-      //   voxelDataVector.push_back(voxelData);
-      //   dataMem += grid[i].numVoxels * sizeof(typename AMR<T>::Grid::Voxel);
-      // }
-
-      // // create data buffer for grid info, and assign to volume
-      // OSPData gridData = ospNewData(sizeof(typename AMR<T>::Grid)*numGrids,OSP_CHAR,grid,OSP_DATA_SHARED_BUFFER);
-      // ospSetData(volume,"gridData",gridData);
-
-      // // create data buffer for the individual voxel arrays, and assign
-      // OSPData voxelData = ospNewData(voxelDataVector.size(),OSP_DATA,&voxelDataVector[0]);
-      // ospSetData(volume,"voxelDataArraysData",voxelData);
-      // // create data buffer for the individual cell arrays, and assign
-      // OSPData cellData = ospNewData(cellDataVector.size(),OSP_DATA,&cellDataVector[0]);
-      // ospSetData(volume,"cellDataArraysData",cellData);
-    }
-
     void AMRVolume::render(RenderContext &ctx)
     {
       if (ospVolume) 
@@ -103,8 +48,9 @@ namespace ospray {
 
       ospLoadModule("amr");
       ospVolume = ospNewVolume("AMRVolume");
+
+      FATAL("not implemented");
       
-      readAMR<float>(ospVolume,"float",(unsigned char *)dataPtr);
       // unsigned char *basePtr = (unsigned char *)dataPtr;
 
       
@@ -125,15 +71,25 @@ namespace ospray {
     }    
 
     //! \brief Initialize this node's value from given XML node 
-    void AMRVolume::setFromXML(const xml::Node *const node, const unsigned char *binBasePtr)
+    void AMRVolume::setFromXML(const xml::Node *const node, 
+                               const unsigned char *binBasePtr)
     {
       size_t ofs = node->getPropl("ofs");
       dataSize = node->getPropl("size");
       dataPtr = (void *)(binBasePtr+ofs);
       const std::string voxelType = node->getProp("voxelType");
+      if (voxelType != "float")
+        throw std::runtime_error("can only do float AMR right now");
       this->voxelType = typeForString(voxelType.c_str());
+
+      AMR<float> *amr = new AMR<float>;
+      amr->mmapFrom(binBasePtr);
+
+      FATAL("not implemented");
     }
 
+    typedef AMRVolume MultiOctreeAMR;
+    OSP_REGISTER_SG_NODE(MultiOctreeAMR);
     OSP_REGISTER_SG_NODE(AMRVolume);
 
     OSPRAY_SG_DECLARE_MODULE(amr)

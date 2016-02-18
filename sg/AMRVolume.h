@@ -62,9 +62,6 @@ namespace ospray {
       //! pointer to the data, as specifid in data file
       void *dataPtr;
 
-      template<typename T>
-      void readAMR(OSPVolume volume, const char *voxelType,
-                   unsigned char *dataMem);
       // /*! data array that contains all grid descriptions */
       // OSPData     ospGridData;
       // /*! data array that contains pointers to voxel data arrays */
