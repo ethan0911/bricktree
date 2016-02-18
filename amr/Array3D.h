@@ -23,42 +23,50 @@
 namespace ospray {
   namespace amr {
 
+    /*! ABSTRACTION for a 3D array of data */
     template<typename value_t>
     struct Array3D {
-      Array3D(const vec3i &dims);
 
-      /*! set cell location to given value */
-      void set(const vec3i &where, value_t value);
-      
-      /*! get cell value at location
-
-        \warning 'where' MUST be a valid cell location */
-      value_t get(const vec3i &where) const;
+      /*! return size (ie, "dimensions") of volume */
+      virtual vec3i size() const = 0;
 
       /*! get cell value at given location, but ensure that location
-          is actually a valid cell ID inside the volume (clamps to
-          nearest cell in volume if 'where' is outside) */
-      value_t getSafe(const vec3i &where) const;
+        is actually a valid cell ID inside the volume (clamps to
+        nearest cell in volume if 'where' is outside) */
+      virtual value_t get(const vec3i &where) const = 0;
 
       /*! get the range/interval of all cell values in the given
         begin/end region of the volume */
       Range<value_t> getValueRange(const vec3i &begin, const vec3i &end) const;
+    };
+
+    template<typename value_t>
+    struct ActualArray3D : public Array3D<value_t> {
+
+      ActualArray3D(const vec3i &dims);
+
+      /*! return size (ie, "dimensions") of volume */
+      virtual vec3i size() const { return dims; }
+
+      // /*! set cell location to given value */
+      // virtual void set(const vec3i &where, value_t value);
+      
+      /*! get cell value at location
+
+        \warning 'where' MUST be a valid cell location */
+      virtual value_t get(const vec3i &where) const;
 
       const vec3i dims;
       value_t *value;
     };
 
-    /*! load a RAW file with given dims (and templated voxel type) into a 3D Array */
-    template<typename T>
-    void loadRAW(Array3D<T> &volume, const std::string &fileName, const vec3i &dims);
+    template<typename in_t, typename out_t>
+    struct Array3DAccessor {
+      Array3D<in_t> *actual;
+    };
 
     template<typename T>
-    inline Array3D<T> *loadRAW(const std::string &fileName, const vec3i &dims)
-    { 
-      Array3D<T> *a = new Array3D<T>(dims);
-      loadRAW(*a,fileName,dims);
-      return a;
-    }
+    Array3D<T> *loadRAW(const std::string &fileName, const vec3i &dims);
 
   } // ::ospray::amr
 } // ::ospray

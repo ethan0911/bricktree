@@ -34,7 +34,8 @@ namespace ospray {
     template<typename T>
     size_t FromArray3DBuilder<T>::inputCellID(const vec3i &cellID) const
     {
-      return (size_t)cellID.x + input->dims.x*((size_t)cellID.y + input->dims.y * (size_t)cellID.z);
+      vec3i dims = input->size();
+      return (size_t)cellID.x + dims.x*((size_t)cellID.y + dims.y * (size_t)cellID.z);
     }
     
     template<typename T>
@@ -92,15 +93,16 @@ namespace ospray {
       size_t blockSize = (1<<maxLevels);
       std::cout << "Building AMR with " << maxLevels << " levels. this corresponds to blocks of " << blockSize << " input cells" << std::endl;
       // size_t trueRootBlockSize = rootBlockSize * (1<<maxLevels);
-      vec3i numBlocks = divRoundUp(input->dims,vec3i(blockSize));
+      vec3i dims = input->size();
+      vec3i numBlocks = divRoundUp(dims,vec3i(blockSize));
       std::cout << "root grid size at this block size is " << numBlocks << std::endl;
       
-      if (numBlocks * vec3i(blockSize) != input->dims)
+      if (numBlocks * vec3i(blockSize) != dims)
         cout << "warning: input volume not a multiple of true root block size (ie, root block size after " << maxLevels << " binary refinements), some padding will happen" << endl;
       
       oct->allocate(numBlocks);//(numBlocks.x*numBlocks.y*numBlocks.z);
 
-      Range<T> mm = input->getValueRange(vec3i(0),input->dims);
+      Range<T> mm = input->getValueRange(vec3i(0),dims);
       std::cout << "value range for entire input is " << mm << std::endl;
       threshold = threshold * mm.size();
       std::cout << "at specified rel threshold of " << threshold << " this triggers splitting nodes whose difference exceeds " << threshold << std::endl;
