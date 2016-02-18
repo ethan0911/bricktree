@@ -31,8 +31,8 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
   # data format loaders etc
   # -------------------------------------------------------
   ADD_LIBRARY(ospray_amr${OSPRAY_LIB_SUFFIX}
-    Array3D.cpp
-    AMR.cpp
+    amr/Array3D.cpp
+    amr/AMR.cpp
   )
   TARGET_LINK_LIBRARIES(ospray_amr${OSPRAY_LIB_SUFFIX}
     ospray
@@ -63,7 +63,7 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
     # -----------------------------------------------------
 
     ADD_EXECUTABLE(ospRaw2OctAMR
-      raw2oamr
+      apps/raw2oamr
     )
     TARGET_LINK_LIBRARIES(ospRaw2OctAMR
       ospray_amr

@@ -17,7 +17,7 @@
 #undef NDEBUG
 
 // ospray
-#include "AMR.h"
+#include "amr/AMR.h"
 
 namespace ospray {
   namespace amr {

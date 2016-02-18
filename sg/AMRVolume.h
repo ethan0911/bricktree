@@ -18,7 +18,7 @@
 // ospray/sg
 #include "sg/volume/Volume.h"
 // amr base
-#include "../AMR.h"
+#include "../amr/AMR.h"
 	 
 namespace ospray {
   namespace sg {
