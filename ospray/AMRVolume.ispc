@@ -34,4 +34,12 @@ export void *uniform AMRVolume_create(void *uniform cppEquivalent)
   return self;
 };
 
+export void AMRVolume_set(void *uniform _SELF,
+                          const uniform vec3i &dimensions,
+                          void *uniform a,
+                          void *uniform b)
+{
+}
+
+
 

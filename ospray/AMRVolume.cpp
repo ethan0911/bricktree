@@ -35,32 +35,17 @@ namespace ospray {
     using embree::area;
 
     AMRVolume::AMRVolume()
-      : Volume()
+      : Volume(), dimensions(-1), voxelType(OSP_FLOAT)
     {
       ispcEquivalent = ispc::AMRVolume_create(this);
-    }
-
-    // void AMRVolume::finalize(Model *model)
-    // {
-    //   amrData = getParamData("amrData",NULL);
-    //   if (!amrData) {
-    //     cout << "#osp:amr: AMRVolume without AMR data" << endl;
-    //     return;
-    //   }
-    //   // ispc::AMRVolume_set(getIE(),model->getIE(),
-    //   //                         (const ispc::box3f&)bounds,
-    //   //                         (ispc::TubesNode*)nodeArray,numNodes);
-    // }
-
-    //! Create the equivalent ISPC volume container.
-    void AMRVolume::createEquivalentISPC()
-    {
-      PING;
     }
 
     //! Allocate storage and populate the volume.
     void AMRVolume::commit()
     {
+      // right now we only support floats ...
+      this->voxelType = OSP_FLOAT;
+
       cout << "#osp:amr: AMRVolume::commit()" << endl;
       Ref<Data> rootCellData = getParamData("rootCellData");
       assert(rootCellData);
@@ -69,19 +54,10 @@ namespace ospray {
       dimensions = getParam3i("dimensions",vec3i(-1));
       PRINT(dimensions);
 
-      // Ref<Data> gridData = getParamData("gridData",NULL);
-      // AMR<float>::Grid *grid = (AMR<float>::Grid*)gridData->data;
-      // size_t numGrids = getParam1i("numGrids",-1);
-      
-      // Data *voxelDataArraysData = getParamData("voxelDataArraysData",NULL);
-      // Data *cellDataArraysData = getParamData("cellDataArraysData",NULL);
-
-      // for (int i=0;i<numGrids;i++) {
-      //   grid[i].voxel = (float *)(((Data **)voxelDataArraysData->data)[i]->data);
-      //   grid[i].cell = (AMR<float>::Grid::Cell *)(((Data **)cellDataArraysData->data)[i]->data);
-      //   PRINT(grid[i].cell[i].lo);
-      //   PRINT(grid[i].cell[i].hi);
-      // }
+      ispc::AMRVolume_set(getIE(),
+                          (ispc::vec3i &)dimensions,
+                          rootCellData->data,
+                          octCellData->data);
     }
     
     OSP_REGISTER_VOLUME(AMRVolume,MultiOctreeAMRVolume);
