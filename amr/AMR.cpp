@@ -48,7 +48,16 @@ namespace ospray {
       const unsigned char *mem = mmappedPtr;
       readMem(mem,this->dimensions);
       PRINT(dimensions);
-      FATAL("not implemented");
+
+      size_t numRootCells;
+      readMem(mem,numRootCells);
+      PRINT(numRootCells);
+      readMem(mem,this->rootCell,numRootCells);
+
+      size_t numOctCells;
+      readMem(mem,numOctCells);
+      PRINT(numOctCells);
+      readMem(mem,this->octCell,numOctCells);
     }
 
     template<typename T>
