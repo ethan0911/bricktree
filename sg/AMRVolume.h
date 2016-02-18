@@ -23,11 +23,8 @@
 namespace ospray {
   namespace sg {
     
+    /*! multi-octree amr node - for now only working for float format */
     struct AMRVolume : public sg::Volume {
-      union {
-        amr::AMR<uint8> *uint8AMR;
-        amr::AMR<float> *floatAMR;
-      };
       
       AMRVolume();
       
@@ -53,21 +50,14 @@ namespace ospray {
       //! type of voxel (uint8,float) that we have to deal with 
       OSPDataType voxelType;
 
-      //! dimensions of ORIGINAL volume (e.g., if everything was on finest level)
-      vec3i dimensions;
+      /*! data array for octree cells */
+      OSPData octCellData;
 
-      //! size of the data, in bytes, as reported by the bin file - needed to declare proper data object
-      size_t dataSize;
+      /*! data array for root cells */
+      OSPData rootCellData;
 
-      //! pointer to the data, as specifid in data file
-      void *dataPtr;
-
-      // /*! data array that contains all grid descriptions */
-      // OSPData     ospGridData;
-      // /*! data array that contains pointers to voxel data arrays */
-      // OSPData     ospVoxelDataData;
-      // /*! data array that contains pointers to cell data arrays */
-      // OSPData     ospCellDataData;
+      /*! the actual MOA we're handling */
+      amr::AMR<float> *moa;
     };
 
   } // ::ospray::sg

@@ -61,8 +61,14 @@ namespace ospray {
     //! Allocate storage and populate the volume.
     void AMRVolume::commit()
     {
-      PING;
-      
+      cout << "#osp:amr: AMRVolume::commit()" << endl;
+      Ref<Data> rootCellData = getParamData("rootCellData");
+      assert(rootCellData);
+      Ref<Data> octCellData = getParamData("octCellData");
+      assert(octCellData);
+      dimensions = getParam3i("dimensions",vec3i(-1));
+      PRINT(dimensions);
+
       // Ref<Data> gridData = getParamData("gridData",NULL);
       // AMR<float>::Grid *grid = (AMR<float>::Grid*)gridData->data;
       // size_t numGrids = getParam1i("numGrids",-1);
@@ -78,7 +84,7 @@ namespace ospray {
       // }
     }
     
-    OSP_REGISTER_VOLUME(AMRVolume,AMRVolume);
+    OSP_REGISTER_VOLUME(AMRVolume,MultiOctreeAMRVolume);
 
     extern "C" void ospray_init_module_amr()
     {

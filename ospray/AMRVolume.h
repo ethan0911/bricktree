@@ -47,6 +47,7 @@ namespace ospray {
       virtual void createEquivalentISPC();
 
       Ref<Data>   amrData;
+      vec3i       dimensions;
       OSPDataType voxelType;
     };
     
