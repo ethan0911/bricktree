@@ -35,12 +35,6 @@ namespace ospray {
       }
     }
     
-    // template<typename T>
-    // void Array3D<T>::set(const vec3i &where, T value)
-    // {
-    //   this->value[where.x + size_t(dims.x)*(where.y + size_t(dims.y)*where.z)] = value;
-    // }
-
     template<typename T>
     T ActualArray3D<T>::get(const vec3i &where) const
     {

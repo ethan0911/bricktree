@@ -92,20 +92,21 @@ namespace ospray {
       if (inFileName == "")
         error("no input file specified");
       
+      const Array3D<float> *input = NULL;
+      cout << "going to load RAW file:" << endl;
+      cout << "  input file is   " << inFileName << endl;
+      cout << "  expected format " << format << endl;
+      cout << "  expected dims   " << dims << endl;
       if (format == "float") {
-        oamrFromVolume<float>(loadRAW<float>(inFileName,dims),
-                              maxLevels,threshold);
+        input = loadRAW<float>(inFileName,dims);
       } else if (format == "uint8") {
-        const Array3D<uint8> *input = loadRAW<uint8>(inFileName,dims);
-        oamrFromVolume<float>(new Array3DAccessor<uint8,float>(input),
-                              maxLevels,threshold);
-      } else if (format == "true-uint8") 
-        /* we're _probably_ not actually going to use this - i just
-           want to make sure it compiles */
-        oamrFromVolume<uint8>(loadRAW<uint8>(inFileName,dims),
-                              maxLevels,threshold);
-      else
+        const Array3D<uint8> *input_uint8 = loadRAW<uint8>(inFileName,dims);
+        input = new Array3DAccessor<uint8,float>(input_uint8);
+      } else
         throw std::runtime_error("unsupported format '"+format+"'");
+      cout << "loading complete." << endl;
+
+      oamrFromVolume<float>(input,maxLevels,threshold);
       
       return 0;
     }
