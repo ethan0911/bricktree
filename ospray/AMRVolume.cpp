@@ -65,6 +65,13 @@ namespace ospray {
                           rootCellData->data,
                           octCellData->data);
     }
+
+    extern "C" float AMR_sample_scalar(void *self, vec3f *where)
+    {
+      // ManagedObject *obj = (ManagedObject *)self;
+      // PRINT(obj->toString());
+      return 0.5f;
+    }
     
     OSP_REGISTER_VOLUME(AMRVolume,MultiOctreeAMRVolume);
 
