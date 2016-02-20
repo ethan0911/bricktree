@@ -18,6 +18,7 @@
 // ospray
 #include "ospray/common/Model.h"
 #include "ospray/common/Data.h"
+#include "ospray/transferFunction/TransferFunction.h"
 // #include "ospray/common/Core.h"
 // ispc exports
 #include "AMRVolume_ispc.h"
@@ -54,7 +55,12 @@ namespace ospray {
       dimensions = getParam3i("dimensions",vec3i(-1));
       PRINT(dimensions);
 
+      PING;
+      Ref<TransferFunction> xf = (TransferFunction*)getParamObject("transferFunction");
+      PING;
+
       ispc::AMRVolume_set(getIE(),
+                          xf->getIE(),
                           (ispc::vec3i &)dimensions,
                           rootCellData->data,
                           octCellData->data);

@@ -68,12 +68,18 @@ namespace ospray {
 
       ospSet3iv(ospVolume, "dimensions", &moa->dimensions.x);
 
+      std::cout << "#sg:amr: adding transfer function" << std::endl;
+      if (transferFunction) {
+        transferFunction->render(ctx);
+        ospSetObject(ospVolume,"transferFunction",transferFunction->getOSPHandle());
+      }
+      
       std::cout << "#sg:amr: committing Multi-Octree AMR volume" << std::endl;
       ospCommit(ospVolume);
       
       // and finally, add this volume to the model
       ospAddVolume(ctx.world->ospModel,ospVolume);
-      
+
     }    
 
     //! \brief Initialize this node's value from given XML node 
@@ -89,6 +95,8 @@ namespace ospray {
 
       this->moa = new AMR<float>;
       this->moa->mmapFrom(binBasePtr);
+
+      this->transferFunction = new TransferFunction;
     }
 
     typedef AMRVolume MultiOctreeAMR;
