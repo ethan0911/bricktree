@@ -29,6 +29,38 @@ namespace ospray {
     const char *formatNameString<float>() { return "float"; }
 
     template<typename T>
+    void readMem(const unsigned char *&ptr, T &t)
+    {
+      memcpy(&t,ptr,sizeof(t));
+      ptr += sizeof(t);
+    }
+    template<typename T>
+    void readMem(const unsigned char *&ptr, std::vector<T> &t, size_t num)
+    {
+      t.resize(num);
+      memcpy(&t[0],ptr,num*sizeof(T));
+      ptr += num*sizeof(T);
+    }
+
+    template<typename T>
+    void AMR<T>::mmapFrom(const unsigned char *mmappedPtr)
+    {
+      const unsigned char *mem = mmappedPtr;
+      readMem(mem,this->dimensions);
+      PRINT(dimensions);
+
+      size_t numRootCells;
+      readMem(mem,numRootCells);
+      PRINT(numRootCells);
+      readMem(mem,this->rootCell,numRootCells);
+
+      size_t numOctCells;
+      readMem(mem,numOctCells);
+      PRINT(numOctCells);
+      readMem(mem,this->octCell,numOctCells);
+    }
+
+    template<typename T>
     void AMR<T>::writeTo(const std::string &outFileName)
     {
       const std::string binFileName = outFileName+"bin";
@@ -36,15 +68,20 @@ namespace ospray {
       FILE *osp = fopen(outFileName.c_str(),"w");
 
       fwrite(&dimensions,sizeof(dimensions),1,bin);
-      size_t numCells = this->numCells();
 
-      FATAL("not implemented yet");
+      size_t numRootCells = this->rootCell.size();
+      fwrite(&numRootCells,sizeof(numRootCells),1,bin);
+      fwrite(&rootCell[0],rootCell.size()*sizeof(rootCell[0]),1,bin);
+
+      size_t numOctCells = this->octCell.size();
+      fwrite(&numOctCells,sizeof(numOctCells),1,bin);
+      fwrite(&octCell[0],octCell.size()*sizeof(octCell[0]),1,bin);
 
       size_t dataSize = ftell(bin);
 
       fprintf(osp,"<?xml?>\n");
       fprintf(osp,"<ospray>\n");
-      fprintf(osp,"  <AMRMultiGrid format=\"%s\"\n",formatNameString<T>());
+      fprintf(osp,"  <MultiOctreeAMR voxelType=\"%s\"\n",formatNameString<T>());
       fprintf(osp,"             size=\"%li\" ofs=\"0\"\n",dataSize);
       fprintf(osp,"             />\n");
       fprintf(osp,"</ospray>\n");

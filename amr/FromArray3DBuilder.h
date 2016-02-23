@@ -17,40 +17,39 @@
 #pragma once
 
 // ospray
-#include "ospray/volume/Volume.h"
-#include "Range.h"
+#include "AMR.h"
 
 namespace ospray {
   namespace amr {
 
-    template<typename value_t>
-    struct Array3D {
-      Array3D(const vec3i &dims);
-      void set(const vec3i &where, value_t value);
-      value_t get(const vec3i &where) const;
-      value_t getSafe(const vec3i &where) const;
+    template<typename T>
+    struct FromArray3DBuilder {
+      // constructor
+      FromArray3DBuilder();
 
-      Range<value_t> getValueRange(const vec3i &begin, const vec3i &end) const;
+      // build one root block (the one with given ID, obviously)
+      void makeBlock(const vec3i &blockID);
 
-      const vec3i dims;
-      value_t *value;
+      typename Octree<T>::Cell recursiveBuild(const vec3i &begin, int blockSize);
+
+      size_t inputCellID(const vec3i &cellID) const;
+      size_t rootCellID(const vec3i &cellID) const;
+
+      // build the entire thing
+      AMR<T> *makeAMR(const Array3D<T> *input, int maxLevels, float threshold);
+      
+      // pre-loaded input volume
+      const Array3D<T> *input;
+      
+      // max number of levels we are allowed to create
+      int maxLevels;
+      
+      // threshold for refining
+      float threshold;
+
+      AMR<T> *oct;
     };
+    
+  } // ::ospray::amr
+} // ::ospray
 
-    /*! load a RAW file with given dims (and templated voxel type) into a 3D Array */
-    template<typename T>
-    void loadRAW(Array3D<T> &volume, const std::string &fileName, const vec3i &dims);
-
-    template<typename T>
-    inline Range<T> Array3D<T>::getValueRange(const vec3i &begin, const vec3i &end) const
-    {
-      Range<T> v = getSafe(begin);
-      for (int iz=begin.z;iz<end.z;iz++)
-        for (int iy=begin.y;iy<end.y;iy++)
-          for (int ix=begin.x;ix<end.x;ix++)
-            v.extend(getSafe(vec3i(ix,iy,iz)));
-      return v;
-    }
-
-
-  }
-}

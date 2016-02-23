@@ -31,10 +31,10 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
   # data format loaders etc
   # -------------------------------------------------------
   OSPRAY_ADD_LIBRARY(ospray_amr
-    Array3D.cpp
-    AMR.cpp
+    amr/Array3D.cpp
+    amr/FromArray3DBuilder.cpp
+    amr/AMR.cpp
   )
-
   OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_amr
     ospray
   )
@@ -48,6 +48,7 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
   )
 
   OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_module_amr
+    ospray_amr
     ospray
   )
 
@@ -59,12 +60,13 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
       sg/AMRVolume.cpp
     )
     TARGET_LINK_LIBRARIES(ospray_sg_amr
+      ospray_amr
       ospray_sg
     )
     # -----------------------------------------------------
 
     ADD_EXECUTABLE(ospRaw2OctAMR
-      raw2oamr
+      apps/raw2oamr
     )
     TARGET_LINK_LIBRARIES(ospRaw2OctAMR
       ospray_amr

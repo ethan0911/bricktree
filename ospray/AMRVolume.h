@@ -19,7 +19,7 @@
 // ospray
 #include "ospray/volume/Volume.h"
 // amr base
-#include "../AMR.h"
+#include "../amr/AMR.h"
 
 namespace ospray {
   namespace amr {
@@ -43,10 +43,12 @@ namespace ospray {
         FATAL("'setRegion()' doesn't make sense for AMR volumes; they can only be set from existing data");
       }
 
-      //! Create the equivalent ISPC volume container.
-      virtual void createEquivalentISPC();
+      // //! Create the equivalent ISPC volume container.
+      // virtual void createEquivalentISPC();
 
-      Ref<Data>   amrData;
+      Ref<Data>   rootCellData;
+      Ref<Data>   octCellData;
+      vec3i       dimensions;
       OSPDataType voxelType;
     };
     

@@ -42,7 +42,8 @@ namespace ospray {
       vec3i dimensions;
       
       void writeTo(const std::string &outFileName);
+      void mmapFrom(const unsigned char *binBasePtr);
     };
     
-  }
-}
+  } // ::ospray::amr
+} // ::ospray

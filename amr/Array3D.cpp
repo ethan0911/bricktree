@@ -21,46 +21,65 @@ namespace ospray {
   namespace amr {
 
     template<typename T>
-    Array3D<T>::Array3D(const vec3i &dims)
-      : dims(dims), value(new T[size_t(dims.x)*size_t(dims.y)*size_t(dims.z)])
-    {}
+    ActualArray3D<T>::ActualArray3D(const vec3i &dims)
+      : dims(dims)
+    {
+      const size_t numVoxels = size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
+      try {
+      value = new T[numVoxels];
+      } catch (std::bad_alloc e) {
+        std::stringstream ss;
+        ss << "could not allocate memory for Array3D of dimensions "
+           << dims << " (in Array3D::Array3D())";
+        throw std::runtime_error(ss.str());
+      }
+    }
     
     template<typename T>
-    void Array3D<T>::set(const vec3i &where, T value)
+    T ActualArray3D<T>::get(const vec3i &_where) const
     {
-      this->value[where.x + size_t(dims.x)*(where.y + size_t(dims.y)*where.z)] = value;
+      assert(value != NULL);
+      const vec3i where = max(vec3i(0),min(_where,dims - vec3i(1)));
+      size_t index = where.x + size_t(dims.x) * (where.y + size_t(dims.y) * (where.z));
+      return value[index];
+    }
+
+    /*! get the range/interval of all cell values in the given
+        begin/end region of the volume */
+    template<typename T>
+    inline Range<T> Array3D<T>::getValueRange(const vec3i &begin, const vec3i &end) const
+    {
+      Range<T> v = get(begin);
+      for (int iz=begin.z;iz<end.z;iz++)
+        for (int iy=begin.y;iy<end.y;iy++)
+          for (int ix=begin.x;ix<end.x;ix++) {
+            v.extend(get(vec3i(ix,iy,iz)));
+          }
+      return v;
     }
 
     template<typename T>
-    T Array3D<T>::get(const vec3i &where) const
+    Array3D<T> *loadRAW(const std::string &fileName, const vec3i &dims)
     {
-      return value[where.x + size_t(dims.x)*(where.y + size_t(dims.y)*where.z)];
-    }
-
-    template<typename T>
-    T Array3D<T>::getSafe(const vec3i &_where) const
-    {
-      return get(max(vec3i(0),min(_where,dims-vec3i(1))));
-    }
-
-    template<typename T>
-    void loadRAW(Array3D<T> &volume, const std::string &fileName, const vec3i &dims)
-    {
-      if (dims != volume.dims)
-        throw std::runtime_error("ospray::amr::loadRaw(): dims of volume and input aren't matching'");
-
+      ActualArray3D<T> *volume = new ActualArray3D<T>(dims);
       FILE *file = fopen(fileName.c_str(),"rb");
       if (!file)
         throw std::runtime_error("ospray::amr::loadRaw(): could not open '"+fileName+"'");
       const size_t num = size_t(dims.x) * size_t(dims.y) * size_t(dims.z);
-      size_t numRead = fread(volume.value,sizeof(T),num,file);
+      size_t numRead = fread(volume->value,sizeof(T),num,file);
       if (num != numRead)
         throw std::runtime_error("ospray::amr::loadRaw(): read incomplete data ...");
       fclose(file);
+
+      return volume;
     }
     
-    template void loadRAW(Array3D<uint8> &volume, const std::string &fileName, const vec3i &dims);
-    template void loadRAW(Array3D<float> &volume, const std::string &fileName, const vec3i &dims);
+    // -------------------------------------------------------
+    // explicit instantiations section
+    // -------------------------------------------------------
+
+    template Array3D<uint8> *loadRAW(const std::string &fileName, const vec3i &dims);
+    template Array3D<float> *loadRAW(const std::string &fileName, const vec3i &dims);
 
     template struct Array3D<float>;
     template struct Array3D<uint8>;
