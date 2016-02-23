@@ -30,35 +30,36 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
   # -------------------------------------------------------
   # data format loaders etc
   # -------------------------------------------------------
-  ADD_LIBRARY(ospray_amr${OSPRAY_LIB_SUFFIX}
+  OSPRAY_ADD_LIBRARY(ospray_amr
     Array3D.cpp
     AMR.cpp
   )
-  TARGET_LINK_LIBRARIES(ospray_amr${OSPRAY_LIB_SUFFIX}
+
+  OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_amr
     ospray
   )
 
   # -------------------------------------------------------
   # ospray plugin
   # -------------------------------------------------------
-  OSPRAY_ADD_LIBRARY(ospray_module_amr${OSPRAY_LIB_SUFFIX} SHARED
+  OSPRAY_ADD_LIBRARY(ospray_module_amr SHARED
     ospray/AMRVolume.ispc
     ospray/AMRVolume.cpp
   )
-  TARGET_LINK_LIBRARIES(ospray_module_amr${OSPRAY_LIB_SUFFIX}
-    ospray${OSPRAY_LIB_SUFFIX}
-  )
 
+  OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_module_amr
+    ospray
+  )
 
   IF(NOT THIS_IS_MIC)
     # -----------------------------------------------------
     # scene graph plugin
     # -----------------------------------------------------
-    ADD_LIBRARY(ospray_sg_amr${OSPRAY_LIB_SUFFIX} SHARED
+    ADD_LIBRARY(ospray_sg_amr SHARED
       sg/AMRVolume.cpp
     )
-    TARGET_LINK_LIBRARIES(ospray_sg_amr${OSPRAY_LIB_SUFFIX}
-      ospray_sg${OSPRAY_LIB_SUFFIX}
+    TARGET_LINK_LIBRARIES(ospray_sg_amr
+      ospray_sg
     )
     # -----------------------------------------------------
 
