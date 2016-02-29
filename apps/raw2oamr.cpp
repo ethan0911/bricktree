@@ -69,7 +69,7 @@ namespace ospray {
       if (outFileName == "")
         error("no output file specified");
       
-      AMR<float> *amr = AMR<flaot>::loadFrom(inFileName);
+      AMR<float> *amr = AMR<float>::loadFrom(inFileName.c_str());
       assert(amr);
 
 
@@ -82,10 +82,12 @@ namespace ospray {
       return 0;
     }
     
+#if 0
     FILE *out = fopen(outFileName.c_str(),"wb");
     assert(out);
     fwrite(resampled->value,resampled->numElements(),sizeof(float),out);
     fclose(out);
+#endif
     
   } // ::ospray::amr
 } // ::ospary

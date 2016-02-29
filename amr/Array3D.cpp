@@ -20,45 +20,6 @@
 namespace ospray {
   namespace amr {
 
-#if 1
-    template<typename T>
-    ActualArray3D<T>::ActualArray3D(const vec3i &dims)
-      : dims(dims)
-    {
-      const size_t numVoxels = size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
-      try {
-        value = new T[numVoxels];
-      } catch (std::bad_alloc e) {
-        std::stringstream ss;
-        ss << "could not allocate memory for Array3D of dimensions "
-           << dims << " (in Array3D::Array3D())";
-        throw std::runtime_error(ss.str());
-      }
-    }
-#endif
-    
-    template<typename T>
-    T ActualArray3D<T>::get(const vec3i &_where) const
-    {
-      assert(value != NULL);
-      const vec3i where = max(vec3i(0),min(_where,dims - vec3i(1)));
-      size_t index = where.x + size_t(dims.x) * (where.y + size_t(dims.y) * (where.z));
-      return value[index];
-    }
-
-    /*! get the range/interval of all cell values in the given
-        begin/end region of the volume */
-    template<typename T>
-    inline Range<T> Array3D<T>::getValueRange(const vec3i &begin, const vec3i &end) const
-    {
-      Range<T> v = get(begin);
-      for (int iz=begin.z;iz<end.z;iz++)
-        for (int iy=begin.y;iy<end.y;iy++)
-          for (int ix=begin.x;ix<end.x;ix++) {
-            v.extend(get(vec3i(ix,iy,iz)));
-          }
-      return v;
-    }
 
     template<typename T>
     Array3D<T> *loadRAW(const std::string &fileName, const vec3i &dims)
