@@ -69,7 +69,7 @@ namespace ospray {
       if (outFileName == "")
         error("no output file specified");
       
-      AMR<float> *amr = AMR<flaot>::loadFrom(inFileName);
+      AMR<float> *amr = AMR<float>::loadFrom(inFileName);
       assert(amr);
 
 
