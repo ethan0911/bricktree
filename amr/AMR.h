@@ -40,9 +40,13 @@ namespace ospray {
       std::vector<OctCell> octCell;
       // dimensions of root grid
       vec3i dimensions;
-      
+
+      /*! return interpolated value at given unit position (ie pos must be in [(0),(1)] */
+      float sample(const vec3f &unitPos) const;
+
       void writeTo(const std::string &outFileName);
       void mmapFrom(const unsigned char *binBasePtr);
+      static AMR<voxel_t> *loadFrom(const char *fileName);
     };
     
   } // ::ospray::amr

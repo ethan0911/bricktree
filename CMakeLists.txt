@@ -30,14 +30,15 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
   # -------------------------------------------------------
   # data format loaders etc
   # -------------------------------------------------------
-  OSPRAY_ADD_LIBRARY(ospray_amr
+  OSPRAY_ADD_LIBRARY(ospray_amr SHARED
     amr/Array3D.cpp
     amr/FromArray3DBuilder.cpp
     amr/AMR.cpp
-  )
+		)
+	#  TARGET_LINK_LIBRARIES(ospray_amr
   OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_amr
     ospray
-  )
+		)
 
   # -------------------------------------------------------
   # ospray plugin
@@ -45,12 +46,13 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
   OSPRAY_ADD_LIBRARY(ospray_module_amr SHARED
     ospray/AMRVolume.ispc
     ospray/AMRVolume.cpp
-  )
+		)
 
+	#  TARGET_LINK_LIBRARIES(ospray_module_amr
   OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_module_amr
     ospray_amr
     ospray
-  )
+		)
 
   IF(NOT THIS_IS_MIC)
     # -----------------------------------------------------
@@ -58,18 +60,31 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
     # -----------------------------------------------------
     ADD_LIBRARY(ospray_sg_amr SHARED
       sg/AMRVolume.cpp
-    )
+			)
     TARGET_LINK_LIBRARIES(ospray_sg_amr
       ospray_amr
       ospray_sg
-    )
-    # -----------------------------------------------------
+			)
 
+    # -----------------------------------------------------
+		# raw-to-octree-amr converter: converts a structured
+    # volume (in RAW format)
+    # -----------------------------------------------------
     ADD_EXECUTABLE(ospRaw2OctAMR
       apps/raw2oamr
-    )
+			)
     TARGET_LINK_LIBRARIES(ospRaw2OctAMR
       ospray_amr
-    )
+			)
+
+    # -----------------------------------------------------
+		# octree-amr resampling tool
+    # -----------------------------------------------------
+    ADD_EXECUTABLE(ospOAmrResample
+      apps/oamrResample.cpp
+			)
+		OSPRAY_EXE_LINK_LIBRARIES(ospOAmrResample
+			ospray_amr
+			)
   ENDIF()
 ENDIF()

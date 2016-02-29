@@ -20,13 +20,14 @@
 namespace ospray {
   namespace amr {
 
+#if 1
     template<typename T>
     ActualArray3D<T>::ActualArray3D(const vec3i &dims)
       : dims(dims)
     {
       const size_t numVoxels = size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
       try {
-      value = new T[numVoxels];
+        value = new T[numVoxels];
       } catch (std::bad_alloc e) {
         std::stringstream ss;
         ss << "could not allocate memory for Array3D of dimensions "
@@ -34,6 +35,7 @@ namespace ospray {
         throw std::runtime_error(ss.str());
       }
     }
+#endif
     
     template<typename T>
     T ActualArray3D<T>::get(const vec3i &_where) const
@@ -81,7 +83,8 @@ namespace ospray {
     template Array3D<uint8> *loadRAW(const std::string &fileName, const vec3i &dims);
     template Array3D<float> *loadRAW(const std::string &fileName, const vec3i &dims);
 
-    template struct Array3D<float>;
     template struct Array3D<uint8>;
-  }
-}
+    template struct Array3D<float>;
+
+  } // ::ospray::amr
+} // ::ospray

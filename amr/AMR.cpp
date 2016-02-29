@@ -42,6 +42,22 @@ namespace ospray {
       ptr += num*sizeof(T);
     }
 
+    template<typename voxel_t>
+    AMR<voxel_t> *AMR<voxel_t>::loadFrom(const char *fileName)
+    {
+      FILE *file = fopen(fileName,"rb");
+      fseek(file,0,SEEK_END);
+      size_t sz = ftell(file);
+      fseek(file,0,SEEK_SET);
+      void *mem = malloc(sz);
+      size_t rc = fread(mem,1,sz,file);
+      assert(rc == sz);
+      fclose(file);
+      AMR<voxel_t> *amr = new AMR<voxel_t>;
+      amr->mmapFrom((unsigned char *)mem);
+      return amr;
+    }
+
     template<typename T>
     void AMR<T>::mmapFrom(const unsigned char *mmappedPtr)
     {
@@ -90,8 +106,12 @@ namespace ospray {
       fclose(osp);
     }
 
+    template<typename T>
+    float AMR<T>::sample(const vec3f &pos) const 
+    { assert(0); return .5f; }
+
     template struct AMR<float>;
     template struct AMR<uint8>;
 
-  }
-}
+  } // ::ospray::amr
+} // ::ospray

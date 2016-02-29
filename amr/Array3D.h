@@ -38,6 +38,9 @@ namespace ospray {
       /*! get the range/interval of all cell values in the given
         begin/end region of the volume */
       Range<value_t> getValueRange(const vec3i &begin, const vec3i &end) const;
+
+      /*! returns number of elements (as 64-bit int) across all dimensions */
+      virtual size_t numElements() const = 0;
     };
 
     /*! implementation for an actual array3d that stores a 3D array of values */
@@ -53,6 +56,12 @@ namespace ospray {
 
         \warning 'where' MUST be a valid cell location */
       virtual value_t get(const vec3i &where) const;
+
+      virtual size_t numElements() const 
+      { return size_t(dims.x)*size_t(dims.y)*size_t(dims.z); }
+
+      inline size_t indexOf(const vec3i &pos) const 
+      { return pos.x+size_t(dims.x)*(pos.y+size_t(dims.y)*pos.z); }
 
       const vec3i dims;
       value_t *value;

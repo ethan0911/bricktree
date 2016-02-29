@@ -1,3 +1,4 @@
+
 // ======================================================================== //
 // Copyright 2009-2015 Intel Corporation                                    //
 //                                                                          //
@@ -69,7 +70,7 @@ namespace ospray {
       if (outFileName == "")
         error("no output file specified");
       
-      AMR<float> *amr = AMR<flaot>::loadFrom(inFileName);
+      AMR<float> *amr = AMR<float>::loadFrom(inFileName.c_str());
       assert(amr);
 
 
@@ -78,14 +79,16 @@ namespace ospray {
         for (int iy=0;iy<dims.y;iy++)
           for (int ix=0;ix<dims.x;ix++) {
             vec3f pos((vec3f(ix,iy,iz)+vec3f(.5f))/vec3f(dims));
+            resampled->value[resampled->indexOf(vec3i(ix,iy,iz))] = amr->sample(pos);
           }
+    
+      FILE *out = fopen(outFileName.c_str(),"wb");
+      assert(out);
+      fwrite(resampled->value,resampled->numElements(),sizeof(float),out);
+      fclose(out);
+      
       return 0;
     }
-    
-    FILE *out = fopen(outFileName.c_str(),"wb");
-    assert(out);
-    fwrite(resampled->value,resampled->numElements(),sizeof(float),out);
-    fclose(out);
     
   } // ::ospray::amr
 } // ::ospary
