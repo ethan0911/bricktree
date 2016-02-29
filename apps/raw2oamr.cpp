@@ -34,23 +34,49 @@ namespace ospray {
         cout << "*********************************" << endl << endl;
       }
       cout << "Usage" << endl;
-      cout << "  ./ospOAmrResample <inFile.ospbin> <args>" << endl;
+      cout << "  ./ospRaw2Octree <inFile.raw> <args>" << endl;
       cout << "with args:" << endl;
-      cout << " -dims <nx> <ny> <nz>   : *out*put dimensions" << endl;
-      cout << " -o <outfilename.raw>   : output file name" << endl;
+      cout << " -dims <nx> <ny> <nz>   : input dimensions" << endl;
+      cout << " --format <uint8|float> : input voxel format" << endl;
+      cout << " --depth <maxlevels>    : use maxlevels octree refinement levels" << endl;
+      cout << " -o <outfilename.xml>   : output file name" << endl;
+      cout << " -t <threshold>         : threshold of which nodes to split or not (float val rel to min/max)" << endl;
       exit(msg != "");
     }
-    
+
+    template<typename T>
+    AMR<T> *oamrFromVolume(const Array3D<T> *input,
+                           int maxLevels,
+                           float threshold)
+    {
+      FromArray3DBuilder<T> builder;
+
+      cout << "read input, now building AMR Octree" << endl;
+      AMR<T> *oct = builder.makeAMR(input,maxLevels,threshold);
+      cout << "done building" << endl;
+      return oct;
+    }
+
     extern "C" int main(int ac, char **av)
     {
       std::string inFileName  = "";
       std::string outFileName = "";
+      std::string format      = "float";
+      int         maxLevels   = 4;
+      float       threshold   = .01f;
       vec3i       dims        = vec3f(0);
-
+ 
       for (int i=1;i<ac;i++) {
         const std::string arg = av[i];
         if (arg == "-o")
           outFileName = av[++i];
+        else if (arg == "--depth" || arg == "-depth" || 
+                 arg == "--max-levels" || arg == "-ml")
+          maxLevels = atoi(av[++i]);
+        else if (arg == "--threshold" || arg == "-t")
+          threshold = atof(av[++i]);
+        else if (arg == "--format")
+          format = av[++i];
         else if (arg == "-dims" || arg == "--dimensions") {
           dims.x = atoi(av[++i]);
           dims.y = atoi(av[++i]);
@@ -66,28 +92,27 @@ namespace ospray {
         error("no input dimensions (-dims) specified");
       if (inFileName == "")
         error("no input file specified");
-      if (outFileName == "")
-        error("no output file specified");
-      
-      AMR<float> *amr = AMR<float>::loadFrom(inFileName.c_str());
+       
+      const Array3D<float> *input = NULL;
+      cout << "going to load RAW file:" << endl;
+      cout << "  input file is   " << inFileName << endl;
+      cout << "  expected format " << format << endl;
+      cout << "  expected dims   " << dims << endl;
+      if (format == "float") {
+        input = loadRAW<float>(inFileName,dims);
+      } else if (format == "uint8") {
+        const Array3D<uint8> *input_uint8 = loadRAW<uint8>(inFileName,dims);
+        input = new Array3DAccessor<uint8,float>(input_uint8);
+      } else
+        throw std::runtime_error("unsupported format '"+format+"'");
+      cout << "loading complete." << endl;
+
+      AMR<float> *amr = oamrFromVolume<float>(input,maxLevels,threshold);
       assert(amr);
-
-
-      ActualArray3D<float> *resampled = new ActualArray3D<float>(dims);
-      for (int iz=0;iz<dims.z;iz++)
-        for (int iy=0;iy<dims.y;iy++)
-          for (int ix=0;ix<dims.x;ix++) {
-            vec3f pos((vec3f(ix,iy,iz)+vec3f(.5f))/vec3f(dims));
-          }
+      amr->writeTo(outFileName);
+      
       return 0;
     }
-    
-#if 0
-    FILE *out = fopen(outFileName.c_str(),"wb");
-    assert(out);
-    fwrite(resampled->value,resampled->numElements(),sizeof(float),out);
-    fclose(out);
-#endif
-    
+
   } // ::ospray::amr
 } // ::ospary

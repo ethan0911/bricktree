@@ -80,6 +80,11 @@ namespace ospray {
         \warning 'where' MUST be a valid cell location */
       virtual out_t get(const vec3i &where) const override;
 
+      /*! returns number of elements (as 64-bit int) across all dimensions */
+      virtual size_t numElements() const override
+      { assert(actual); return actual->numElements(); }
+
+
     private:
       //! the actual 3D array we're wrapping around
       const Array3D<in_t> *actual;
