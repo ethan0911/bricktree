@@ -22,6 +22,8 @@
 namespace ospray {
   namespace amr {
 
+    template<typename T> T inline divRoundUp(const T&a, const T &b) { return (a+b-T(1))/b; }
+
     template<typename T>
     struct FromArray3DBuilder {
       // constructor

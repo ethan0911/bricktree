@@ -37,15 +37,52 @@ namespace ospray {
       return volume;
     }
     
+    // Inlined template definitions ///////////////////////////////////////////
+
+    // Array3D //
+
+    /*! get the range/interval of all cell values in the given
+      begin/end region of the volume */
+    template<typename T>
+    Range<T> Array3D<T>::getValueRange(const vec3i &begin,
+                                       const vec3i &end) const
+    {
+      Range<T> v = get(begin);
+      for (int iz=begin.z;iz<end.z;iz++)
+        for (int iy=begin.y;iy<end.y;iy++)
+          for (int ix=begin.x;ix<end.x;ix++) {
+            v.extend(get(vec3i(ix,iy,iz)));
+          }
+      return v;
+    }
+
+
+    template<typename T>
+    ActualArray3D<T>::ActualArray3D(const vec3i &dims)
+      : dims(dims)
+    {
+      const size_t numVoxels = size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
+      try {
+        value = new T[numVoxels];
+      } catch (std::bad_alloc e) {
+        std::stringstream ss;
+        ss << "could not allocate memory for Array3D of dimensions "
+           << dims << " (in Array3D::Array3D())";
+        throw std::runtime_error(ss.str());
+      }
+    }
+    
     // -------------------------------------------------------
     // explicit instantiations section
     // -------------------------------------------------------
 
-    template Array3D<uint8> *loadRAW(const std::string &fileName, const vec3i &dims);
-    template Array3D<float> *loadRAW(const std::string &fileName, const vec3i &dims);
-
     template struct Array3D<uint8>;
     template struct Array3D<float>;
+    template struct ActualArray3D<uint8>;
+    template struct ActualArray3D<float>;
+
+    template Array3D<uint8> *loadRAW(const std::string &fileName, const vec3i &dims);
+    template Array3D<float> *loadRAW(const std::string &fileName, const vec3i &dims);
 
   } // ::ospray::amr
 } // ::ospray

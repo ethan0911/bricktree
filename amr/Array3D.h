@@ -50,14 +50,14 @@ namespace ospray {
       ActualArray3D(const vec3i &dims);
 
       /*! return size (ie, "dimensions") of volume */
-      virtual vec3i size() const override;
+      virtual vec3i size() const ;
 
       /*! get cell value at location
 
         \warning 'where' MUST be a valid cell location */
-      virtual value_t get(const vec3i &where) const override;
+      virtual value_t get(const vec3i &where) const ;
 
-      virtual size_t numElements() const override;
+      virtual size_t numElements() const ;
 
       size_t indexOf(const vec3i &pos) const;
 
@@ -73,15 +73,15 @@ namespace ospray {
       Array3DAccessor(const Array3D<in_t> *actual);
 
       /*! return size (ie, "dimensions") of volume */
-      virtual vec3i size() const override;
+      virtual vec3i size() const ;
 
       /*! get cell value at location
 
         \warning 'where' MUST be a valid cell location */
-      virtual out_t get(const vec3i &where) const override;
+      virtual out_t get(const vec3i &where) const ;
 
       /*! returns number of elements (as 64-bit int) across all dimensions */
-      virtual size_t numElements() const override
+      virtual size_t numElements() const 
       { assert(actual); return actual->numElements(); }
 
 
@@ -99,35 +99,35 @@ namespace ospray {
 
     /*! get the range/interval of all cell values in the given
         begin/end region of the volume */
-    template<typename T>
-    inline Range<T> Array3D<T>::getValueRange(const vec3i &begin,
-                                              const vec3i &end) const
-    {
-      Range<T> v = get(begin);
-      for (int iz=begin.z;iz<end.z;iz++)
-        for (int iy=begin.y;iy<end.y;iy++)
-          for (int ix=begin.x;ix<end.x;ix++) {
-            v.extend(get(vec3i(ix,iy,iz)));
-          }
-      return v;
-    }
+    // template<typename T>
+    // inline Range<T> Array3D<T>::getValueRange(const vec3i &begin,
+    //                                           const vec3i &end) const
+    // {
+    //   Range<T> v = get(begin);
+    //   for (int iz=begin.z;iz<end.z;iz++)
+    //     for (int iy=begin.y;iy<end.y;iy++)
+    //       for (int ix=begin.x;ix<end.x;ix++) {
+    //         v.extend(get(vec3i(ix,iy,iz)));
+    //       }
+    //   return v;
+    // }
 
     // ActualArray3D //
 
-    template<typename T>
-    inline ActualArray3D<T>::ActualArray3D(const vec3i &dims)
-      : dims(dims)
-    {
-      const size_t numVoxels = size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
-      try {
-        value = new T[numVoxels];
-      } catch (std::bad_alloc e) {
-        std::stringstream ss;
-        ss << "could not allocate memory for Array3D of dimensions "
-           << dims << " (in Array3D::Array3D())";
-        throw std::runtime_error(ss.str());
-      }
-    }
+    // template<typename T>
+    // inline ActualArray3D<T>::ActualArray3D(const vec3i &dims)
+    //   : dims(dims)
+    // {
+    //   const size_t numVoxels = size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
+    //   try {
+    //     value = new T[numVoxels];
+    //   } catch (std::bad_alloc e) {
+    //     std::stringstream ss;
+    //     ss << "could not allocate memory for Array3D of dimensions "
+    //        << dims << " (in Array3D::Array3D())";
+    //     throw std::runtime_error(ss.str());
+    //   }
+    // }
 
     template<typename T>
     inline vec3i ActualArray3D<T>::size() const

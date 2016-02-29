@@ -35,8 +35,8 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
     amr/FromArray3DBuilder.cpp
     amr/AMR.cpp
 		)
-	#  TARGET_LINK_LIBRARIES(ospray_amr
-  OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_amr
+  TARGET_LINK_LIBRARIES(ospray_amr
+#  OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_amr
     ospray
 		)
 
@@ -48,8 +48,8 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
     ospray/AMRVolume.cpp
 		)
 
-	#  TARGET_LINK_LIBRARIES(ospray_module_amr
-  OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_module_amr
+	TARGET_LINK_LIBRARIES(ospray_module_amr
+  #OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_module_amr
     ospray_amr
     ospray
 		)
@@ -83,7 +83,8 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
     ADD_EXECUTABLE(ospOAmrResample
       apps/oamrResample.cpp
 			)
-		OSPRAY_EXE_LINK_LIBRARIES(ospOAmrResample
+		TARGET_LINK_LIBRARIES(ospOAmrResample
+#		OSPRAY_EXE_LINK_LIBRARIES(ospOAmrResample
 			ospray_amr
 			)
   ENDIF()
