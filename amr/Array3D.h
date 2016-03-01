@@ -50,16 +50,18 @@ namespace ospray {
       ActualArray3D(const vec3i &dims);
 
       /*! return size (ie, "dimensions") of volume */
-      virtual vec3i size() const ;
+      virtual vec3i size() const override;
 
       /*! get cell value at location
 
         \warning 'where' MUST be a valid cell location */
-      virtual value_t get(const vec3i &where) const ;
+      virtual value_t get(const vec3i &where) const override;
 
-      virtual size_t numElements() const ;
+      /*! returns number of elements (as 64-bit int) across all dimensions */
+      virtual size_t numElements() const override;
 
-      size_t indexOf(const vec3i &pos) const;
+      /* compute the (1D) linear array index for a (3D) grid coordinate */
+      size_t indexOf(const vec3i &coord) const;
 
       const vec3i dims;
       value_t *value;
@@ -73,108 +75,26 @@ namespace ospray {
       Array3DAccessor(const Array3D<in_t> *actual);
 
       /*! return size (ie, "dimensions") of volume */
-      virtual vec3i size() const ;
+      virtual vec3i size() const override;
 
       /*! get cell value at location
 
         \warning 'where' MUST be a valid cell location */
-      virtual out_t get(const vec3i &where) const ;
+      virtual out_t get(const vec3i &where) const override;
 
       /*! returns number of elements (as 64-bit int) across all dimensions */
-      virtual size_t numElements() const 
-      { assert(actual); return actual->numElements(); }
-
+      virtual size_t numElements() const override;
 
     private:
       //! the actual 3D array we're wrapping around
       const Array3D<in_t> *actual;
     };
 
+    /*! load raw file with given dimensions. the 'type' of the raw
+        file (uint8,float,...) is given through the function's
+        template parameter */
     template<typename T>
     Array3D<T> *loadRAW(const std::string &fileName, const vec3i &dims);
-
-    // Inlined template definitions ///////////////////////////////////////////
-
-    // Array3D //
-
-    /*! get the range/interval of all cell values in the given
-        begin/end region of the volume */
-    // template<typename T>
-    // inline Range<T> Array3D<T>::getValueRange(const vec3i &begin,
-    //                                           const vec3i &end) const
-    // {
-    //   Range<T> v = get(begin);
-    //   for (int iz=begin.z;iz<end.z;iz++)
-    //     for (int iy=begin.y;iy<end.y;iy++)
-    //       for (int ix=begin.x;ix<end.x;ix++) {
-    //         v.extend(get(vec3i(ix,iy,iz)));
-    //       }
-    //   return v;
-    // }
-
-    // ActualArray3D //
-
-    // template<typename T>
-    // inline ActualArray3D<T>::ActualArray3D(const vec3i &dims)
-    //   : dims(dims)
-    // {
-    //   const size_t numVoxels = size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
-    //   try {
-    //     value = new T[numVoxels];
-    //   } catch (std::bad_alloc e) {
-    //     std::stringstream ss;
-    //     ss << "could not allocate memory for Array3D of dimensions "
-    //        << dims << " (in Array3D::Array3D())";
-    //     throw std::runtime_error(ss.str());
-    //   }
-    // }
-
-    template<typename T>
-    inline vec3i ActualArray3D<T>::size() const
-    {
-      return dims;
-    }
-
-    template<typename T>
-    inline size_t ActualArray3D<T>::numElements() const
-    {
-      return size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
-    }
-
-    template<typename T>
-    inline size_t ActualArray3D<T>::indexOf(const vec3i &pos) const
-    {
-      return pos.x+size_t(dims.x)*(pos.y+size_t(dims.y)*pos.z);
-    }
-
-    template<typename T>
-    inline T ActualArray3D<T>::get(const vec3i &_where) const
-    {
-      assert(value != NULL);
-      const vec3i where = max(vec3i(0),min(_where,dims - vec3i(1)));
-      size_t index = where.x+size_t(dims.x)*(where.y+size_t(dims.y)*(where.z));
-      return value[index];
-    }
-
-    // Array3DAccessor //
-
-    template<typename in_t, typename out_t>
-    inline Array3DAccessor<in_t, out_t>
-    ::Array3DAccessor(const Array3D<in_t> *actual) :
-      actual(actual)
-    {}
-
-    template<typename in_t, typename out_t>
-    inline vec3i Array3DAccessor<in_t, out_t>::size() const
-    {
-      return actual->size();
-    }
-
-    template<typename in_t, typename out_t>
-    inline out_t Array3DAccessor<in_t, out_t>::get(const vec3i &where) const
-    {
-      return (out_t)actual->get(where);
-    }
 
   } // ::ospray::amr
 } // ::ospray
