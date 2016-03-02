@@ -174,7 +174,7 @@ namespace ospray {
     /*! this version will sample down to whatever octree leaf gets
         hit, but without interpolation, just nearest neighbor */
     // assuming that pos is in 0,0,0-1,1,1
-    float AMR<T>::sample(const vec3f &unitPos) const 
+    float AMR<T>::sampleFinestLeafNearestNeighbor(const vec3f &unitPos) const 
     { 
       // cout << "-------------------------------------------------------" << endl;
       // PRINT(unitPos);
@@ -200,6 +200,48 @@ namespace ospray {
       }
       return cell->ccValue;
     }
+
+
+    template<typename T>
+    const typename AMR<T>::Cell *AMR<T>::findLeafCell(const vec3f &unitPos, AMR<T>::CellIdx &cellIdx) const 
+    { 
+      const vec3f gridPos = unitPos * vec3f(dimensions);
+      const vec3f floorGridPos = floor(clamp(gridPos,vec3f(0.f),vec3f(dimensions)-vec3f(1.f)));
+      const vec3i gridIdx = vec3i(floorGridPos);
+      vec3f frac = gridPos - floorGridPos;
+      cellIdx = CellIdx(gridIdx,0);
+
+      const int cellID = gridIdx.x + dimensions.x*(gridIdx.y + dimensions.y*(gridIdx.z));
+      const typename AMR<T>::Cell *cell = &rootCell[cellID];
+      while (cell->childID >= 0) {
+        const typename AMR<T>::OctCell &oc = this->octCell[cell->childID];
+        int ix=0, iy=0, iz=0;
+        if (frac.x >= .5f) { ix = 1; frac.x -= .5f; }
+        if (frac.y >= .5f) { iy = 1; frac.y -= .5f; }
+        if (frac.z >= .5f) { iz = 1; frac.z -= .5f; }
+        frac *= 2.f;
+
+        cellIdx.x = 2*cellIdx.x + ix;
+        cellIdx.y = 2*cellIdx.y + iy;
+        cellIdx.z = 2*cellIdx.z + iz;
+        cellIdx.m ++;
+
+        cell = &oc.child[iz][iy][ix];
+      }
+      return cell; 
+    }
+
+    template<typename T>
+    /*! this version will sample down to whatever octree leaf gets
+        hit, but without interpolation, just nearest neighbor */
+    // assuming that pos is in 0,0,0-1,1,1
+    float AMR<T>::sample(const vec3f &unitPos) const 
+    { 
+      CellIdx cellIdx;
+      const AMR<T>::Cell *cell = findLeafCell(unitPos,cellIdx);
+      return cell->ccValue;
+    }
+
 
     template struct AMR<float>;
     template struct AMR<uint8>;

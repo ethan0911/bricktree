@@ -26,6 +26,13 @@ namespace ospray {
     template<typename voxel_t>
     struct AMR {
       
+      struct CellIdx : public vec3i {
+        CellIdx() {};
+        CellIdx(const vec3i &idx, int m) : vec3i(idx), m(m) {}
+
+        int m; /*!< level ID */
+      };
+
       typedef typename Octree<voxel_t>::Cell Cell;
       typedef typename Octree<voxel_t>::OctCell OctCell;
       
@@ -45,9 +52,21 @@ namespace ospray {
       Range<voxel_t> getValueRange(const vec3i &rootCellID) const;
       Range<voxel_t> getValueRange() const;
 
+      
+      /*! find a given leaf cell, returning a pointer to the leaf cell
+          itself (as return value) and the logical cell index (2nd
+          reference parameters) that this cell would have had in
+          infinite nested grid space */
+      const Cell *findLeafCell(const vec3f &unitPos, CellIdx &idx) const;
+
+
+
       /*! return interpolated value at given unit position (ie pos must be in [(0),(1)] */
       float sample(const vec3f &unitPos) const;
       float sampleRootCellOnly(const vec3f &unitPos) const;
+      /*! this version will sample down to whatever octree leaf gets
+        hit, but without interpolation, just nearest neighbor */
+      float sampleFinestLeafNearestNeighbor(const vec3f &unitPos) const; 
 
       void writeTo(const std::string &outFileName);
       void mmapFrom(const unsigned char *binBasePtr);
