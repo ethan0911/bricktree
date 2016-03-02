@@ -212,6 +212,9 @@ namespace ospray {
       const typename AMR<T>::Cell *cell = &rootCell[cellID];
 
       while (actualIdx.m < requestedIdx.m && cell->childID >= 0) {
+
+        trailBit >>= 1;
+
         const typename AMR<T>::OctCell &oc = this->octCell[cell->childID];
 
         const int ix = (requestedIdx.x & trailBit) ? 1 : 0;
@@ -224,7 +227,6 @@ namespace ospray {
         actualIdx.z = 2*actualIdx.z + iz;
         actualIdx.m ++;
 
-        trailBit >>= 1;
       }
 
       return cell;
@@ -260,6 +262,179 @@ namespace ospray {
     }
 
     template<typename T>
+    struct Octant {
+      typedef typename AMR<T>::Cell Cell;
+      typedef typename AMR<T>::CellIdx CellIdx;
+
+      const AMR<T> *amr;
+
+      // corner cells - 0,0,0 is the current cell, the others are the
+      // neihgbors in +/- x/y/z; 'ptr' is the pointer to the cell,
+      // 'idx' its logical index
+      const Cell *cCellPtr[2][2][2];
+      CellIdx     cCellIdx[2][2][2];
+      
+      // octant value for interpolation
+      float       octValue[2][2][2];
+      
+      Octant(const AMR<T> *amr)
+        : amr(amr)
+      {}
+
+      void faceNeighbor(const vec3i &d /*!< the delta in which we go */)
+      {
+        const Cell *cPtr = cCellPtr[0][0][0];
+        CellIdx     cIdx = cCellIdx[0][0][0];
+        
+        const Cell *nPtr = cCellPtr[d.z][d.y][d.x];
+        CellIdx     nIdx = cCellIdx[d.z][d.y][d.x];
+
+        if (nIdx.m == cIdx.m) {
+          // neighbor does exist on this level
+          octValue[d.z][d.y][d.x] = 0.5f*(cPtr->ccValue+nPtr->ccValue);
+        } else {
+          // THIS IS STILL WRONG
+          octValue[d.z][d.y][d.x] = 0.5f*(cPtr->ccValue+nPtr->ccValue);
+        }
+      }
+
+      /* TODO: make du and dv template args; all this is hardcoded and
+         can be inlined */
+      void edgeNeighbor(const vec3i &du, const vec3i &dv  /*!< the delta in which we go */)
+      {
+        const vec3i duv = du + dv; // actually, a logical 'or' is what
+                                   // we're looking for - can do that
+                                   // through templates later on
+
+        // cell itself
+        const Cell *cell = cCellPtr[0][0][0];
+        CellIdx     idx = cCellIdx[0][0][0];
+
+        // cell in du direction
+        const Cell *cell_du = cCellPtr[du.z][du.y][du.x];
+        CellIdx     idx_du = cCellIdx[du.z][du.y][du.x];
+
+        // cell in dv direction
+        const Cell *cell_dv = cCellPtr[dv.z][dv.y][dv.x];
+        CellIdx     idx_dv = cCellIdx[dv.z][dv.y][dv.x];
+
+        // cell in du+dv direction
+        const Cell *cell_duv = cCellPtr[duv.z][duv.y][duv.x];
+        CellIdx     idx_duv = cCellIdx[duv.z][duv.y][duv.x];
+
+        int minLevel = min(min(idx_du.m,idx_dv.m),idx_duv.m);
+        if (minLevel == idx.m) {
+          // matching
+          octValue[duv.z][duv.y][duv.x] = 0.25f*(cell->ccValue+
+                                                 cell_du->ccValue+
+                                                 cell_dv->ccValue+
+                                                 cell_duv->ccValue);
+        } else {
+          // THIS IS STILL WRONG
+          octValue[duv.z][duv.y][duv.x] = 0.25f*(cell->ccValue+
+                                                 cell_du->ccValue+
+                                                 cell_dv->ccValue+
+                                                 cell_duv->ccValue);
+        }
+      }
+
+      void cornerNeighbor()
+      {
+        octValue[1][1][1] = 0.125f*(cCellPtr[0][0][0]->ccValue+
+                                    cCellPtr[0][0][1]->ccValue+
+                                    cCellPtr[0][1][0]->ccValue+
+                                    cCellPtr[0][1][1]->ccValue+
+                                    cCellPtr[1][0][0]->ccValue+
+                                    cCellPtr[1][0][1]->ccValue+
+                                    cCellPtr[1][1][0]->ccValue+
+                                    cCellPtr[1][1][1]->ccValue);
+      }
+
+      vec3f interpolate(const vec3f &gridPos) 
+      {
+        CellIdx cellIdx;
+        const Cell *cell = amr->findLeafCell(gridPos,cellIdx);
+        const vec3f cellCenter = cellIdx.centerPos();
+        
+        const int dx = gridPos.x < cellCenter.x ? -1 : +1;
+        const int dy = gridPos.y < cellCenter.y ? -1 : +1;
+        const int dz = gridPos.z < cellCenter.z ? -1 : +1;
+
+        cCellPtr[0][0][0] = cell;
+        cCellIdx[0][0][0] = cellIdx;
+        
+        // first: first all neighbor cells (or their ancestors if they do not exist
+        for (int iz=0;iz<2;iz++)
+          for (int iy=0;iy<2;iy++)
+            for (int ix=0;ix<2;ix++) {
+              if (ix==0 && iy==0 && iz==0) 
+                // we already have this cell ...
+                continue;
+              cCellPtr[iz][iy][ix] = amr->findCell(cellIdx.neighborIndex(vec3i(ix*dx,
+                                                                               iy*dy,
+                                                                               iz*dz)),
+                                                   cCellIdx[iz][iy][ix]);
+            }
+        
+#if 0
+        // =======================================================
+        // now, have all 8 neighbor cells of octant. get the 8 interpolated octant values
+        // root of octant itself
+        octValue[0][0][0] = cell->ccValue;
+        // ..................................................................
+        // face neighbors
+        faceNeighbor(vec3i(1,0,0));
+        faceNeighbor(vec3i(0,1,0));
+        faceNeighbor(vec3i(0,0,1));
+        // ..................................................................
+        // edge neighbors
+        edgeNeighbor(vec3i(1,0,0),vec3i(0,1,0));
+        edgeNeighbor(vec3i(0,1,0),vec3i(0,0,1));
+        edgeNeighbor(vec3i(0,0,1),vec3i(1,0,0));
+        // ..................................................................
+        // corner neighbors
+        cornerNeighbor();
+#endif
+
+        // =======================================================
+        // compute interpolation weights
+        
+#if 0
+        const float octWidth = 0.5f / (1 << cellIdx.m); // note we actually only need 1/octWidth below)
+        const float fx = fabsf(cellCenter.x-gridPos.x) / octWidth;
+        const float fy = fabsf(cellCenter.y-gridPos.y) / octWidth;
+        const float fz = fabsf(cellCenter.z-gridPos.z) / octWidth;
+        return vec3f(fx,fy,fz);
+#else
+        const float octWidth = 1.f / (1 << cellIdx.m); // note we actually only need 1/octWidth below)
+        const float fx = fabsf(cellCenter.x-gridPos.x) / octWidth;
+        const float fy = fabsf(cellCenter.y-gridPos.y) / octWidth;
+        const float fz = fabsf(cellCenter.z-gridPos.z) / octWidth;
+
+        const float f000 = cCellPtr[0][0][0]->ccValue;
+        const float f001 = cCellPtr[0][0][1]->ccValue;
+        const float f010 = cCellPtr[0][1][0]->ccValue;
+        const float f011 = cCellPtr[0][1][1]->ccValue;
+        const float f100 = cCellPtr[1][0][0]->ccValue;
+        const float f101 = cCellPtr[1][0][1]->ccValue;
+        const float f110 = cCellPtr[1][1][0]->ccValue;
+        const float f111 = cCellPtr[1][1][1]->ccValue;
+        return
+          (1.f/255.f)*vec3f((1.f-fz)*((1.f-fy)*((1.f-fx)*f000+
+                                                (    fx)*f001)+
+                                      (    fy)*((1.f-fx)*f010+
+                                                (    fx)*f011))+
+                            (    fz)*((1.f-fy)*((1.f-fx)*f100+
+                                                (    fx)*f101)+
+                                      (    fy)*((1.f-fx)*f110+
+                                                (    fx)*f111)));
+        
+#endif
+      }
+      
+    };
+
+    template<typename T>
     /*! this version will sample down to whatever octree leaf gets
         hit, but without interpolation, just nearest neighbor */
     // assuming that pos is in 0,0,0-1,1,1
@@ -267,50 +442,8 @@ namespace ospray {
     { 
       const vec3f gridPos = unitPos * vec3f(dimensions);
 
-      CellIdx cellIdx;
-      const AMR<T>::Cell *cell = findLeafCell(gridPos,cellIdx);
-      const vec3f cellCenter = cellIdx.centerPos();
-
-      const int dx = unitPos.x < cellCenter.x ? -1 : +1;
-      const int dy = unitPos.y < cellCenter.y ? -1 : +1;
-      const int dz = unitPos.z < cellCenter.z ? -1 : +1;
-
-      // corner cells - 0,0,0 is the current cell, the others are the
-      // neihgbors in +/- x/y/z; 'ptr' is the pointer to the cell,
-      // 'idx' its logical index
-      const Cell *cCellPtr[2][2][2];
-      CellIdx     cCellIdx[2][2][2];
-
-      cCellPtr[0][0][0] = cell;
-      cCellIdx[0][0][0] = cellIdx;
-
-      for (int iz=0;iz<2;iz++)
-        for (int iy=0;iy<2;iy++)
-          for (int ix=0;ix<2;ix++) {
-            if (ix==0 && iy==0 && iz==0) 
-              // we already have this cell ...
-              continue;
-            cCellPtr[iz][iy][ix] = findCell(cellIdx.neighborIndex(vec3i(ix*dx,iy*iy,ix*dz)),
-                                            cCellIdx[iz][iy][ix]);
-          }
-      // now, have all 8 neighbor cells of octant. get the 8 octant values
-      float       octValue[2][2][2];
-      octValue[0][0][0] = cell->ccValue;
-      for (int iz=0;iz<2;iz++)
-        for (int iy=0;iy<2;iy++)
-          for (int ix=0;ix<2;ix++) {
-            // for now, just use the cell, whatever level it might be on - THIS IS WRONG
-            octValue[iz][iy][ix] = cCellPtr[iz][iy][ix]->ccValue;
-          }
-      
-      // compute interpolation weights
-      const float octWidth = 0.5f / (1 << cellIdx.m); // note we actually only need 1/octWidth below)
-      const float fx = fabsf(cellCenter.x-gridPos.x) / octWidth;
-      const float fy = fabsf(cellCenter.y-gridPos.y) / octWidth;
-      const float fz = fabsf(cellCenter.z-gridPos.z) / octWidth;
-            
-      return vec3f(fx,fy,fz);
-      return vec3f(cell->ccValue) / 255.f;
+      Octant<T> oct(this);
+      return oct.interpolate(gridPos);
     }
 
 

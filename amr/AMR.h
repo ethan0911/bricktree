@@ -33,7 +33,7 @@ namespace ospray {
         /*! return float position of given cell center, in GRID space */
         inline vec3f centerPos() const { return (vec3f(x,y,z)+vec3f(.5f))*(1.f/(1<<m)); }
         /*! return the cell index of the coarsest (root) level ancester of the given cell index */
-        inline CellIdx rootAncestorIndex() const { return CellIdx(vec3i(x >> m, y >> m, z >> m), m); }
+        inline CellIdx rootAncestorIndex() const { return CellIdx(vec3i(x >> m, y >> m, z >> m), 0); }
         /*! return cell index of given neighbor _direction_ (ie, dx,dy,dz are RELATEIVE to *this */
         inline CellIdx neighborIndex(const vec3i &delta) const { return CellIdx(vec3i(x,y,z)+delta,m); }
         
