@@ -30,6 +30,13 @@ namespace ospray {
         CellIdx() {};
         CellIdx(const vec3i &idx, int m) : vec3i(idx), m(m) {}
 
+        /*! return float position of given cell center, in GRID space */
+        inline vec3f centerPos() const { return (vec3f(x,y,z)+vec3f(.5f))*(1.f/(1<<m)); }
+        /*! return the cell index of the coarsest (root) level ancester of the given cell index */
+        inline CellIdx rootAncestorIndex() const { return CellIdx(vec3i(x >> m, y >> m, z >> m), m); }
+        /*! return cell index of given neighbor _direction_ (ie, dx,dy,dz are RELATEIVE to *this */
+        inline CellIdx neighborIndex(const vec3i &delta) const { return CellIdx(vec3i(x,y,z)+delta,m); }
+        
         int m; /*!< level ID */
       };
 
@@ -52,17 +59,27 @@ namespace ospray {
       Range<voxel_t> getValueRange(const vec3i &rootCellID) const;
       Range<voxel_t> getValueRange() const;
 
+
+      /*! try to locate the given cell at 'desiredIdx', and return
+          either the cell itself (if it exists), or the leaf cell
+          that's the finest existing ancestor of the cell (if it
+          doesn't exist on the desired level) */
+      const Cell *findCell(const CellIdx &desiredIdx, 
+                           CellIdx &actualIdx) const;
       
       /*! find a given leaf cell, returning a pointer to the leaf cell
           itself (as return value) and the logical cell index (2nd
           reference parameters) that this cell would have had in
-          infinite nested grid space */
-      const Cell *findLeafCell(const vec3f &unitPos, CellIdx &idx) const;
+          infinite nested grid space. the location is given in GRID coordinates, ie, in [(0,0,0):dims] */
+      const Cell *findLeafCell(const vec3f &gridPos, CellIdx &idx) const;
 
 
 
       /*! return interpolated value at given unit position (ie pos must be in [(0),(1)] */
-      float sample(const vec3f &unitPos) const;
+      /*! note(iw): i'll TEMPORARILY hcnage this to return a vec3f,
+          which is easier for debugging; eventually we DO need
+          floats */
+      vec3f sample(const vec3f &unitPos) const;
       float sampleRootCellOnly(const vec3f &unitPos) const;
       /*! this version will sample down to whatever octree leaf gets
         hit, but without interpolation, just nearest neighbor */

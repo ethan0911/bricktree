@@ -17,9 +17,11 @@
 
 #undef NDEBUG
 
-// ospray
+// ours
 #include "amr/AMR.h"
 #include "amr/FromArray3DBuilder.h"
+// ospray
+#include "ospray/render/util.h"
 
 namespace ospray {
   namespace amr {
@@ -51,7 +53,7 @@ namespace ospray {
       FILE *file = fopen(name,"wb");
       assert(file);
 
-      int sizeX=512, sizeY=sizeX;
+      int sizeX=800, sizeY=sizeX;
 
       Range<float> range = amr->getValueRange();
 
@@ -62,12 +64,47 @@ namespace ospray {
             = org
             + (x+.5f)/sizeX * dx
             + (y+.5f)/sizeY * dy;
-          float f = amr->sample(pos);
+#if 0
+          // visualize cell ID
+          AMR<float>::CellIdx cellIdx;
+          const AMR<float>::Cell *cell = amr->findLeafCell(pos,cellIdx);
+          const vec3i mDims = amr->dimensions * vec3i(1<<cellIdx.m);
+          vec3f col = ospray::makeRandomColor(cellIdx.x+mDims.x*(cellIdx.y+mDims.y*(cellIdx.z)));
+          {
+            int t = int(255*col.x);
+            fwrite(&t,1,1,file);
+          }
+          {
+            int t = int(255*col.y);
+            fwrite(&t,1,1,file);
+          }
+          {
+            int t = int(255*col.z);
+            fwrite(&t,1,1,file);
+          }
+#elif 1
+          vec3f col = amr->sample(pos) * max(dx,dy);
+          {
+            int t = int(255*col.x);
+            fwrite(&t,1,1,file);
+          }
+          {
+            int t = int(255*col.y);
+            fwrite(&t,1,1,file);
+          }
+          {
+            int t = int(255*col.z);
+            fwrite(&t,1,1,file);
+          }
+
+#else
+          float f = amr->sample(pos).x;
           f = (f-range.lo)/(range.hi-range.lo);
           int t = int(255*f);
           fwrite(&t,1,1,file);
           fwrite(&t,1,1,file);
           fwrite(&t,1,1,file);
+#endif
         }
       fprintf(file,"\n");
       cout << "successfully written slice file " << name << endl;
@@ -118,7 +155,7 @@ namespace ospray {
         for (int iy=0;iy<dims.y;iy++)
           for (int ix=0;ix<dims.x;ix++) {
             vec3f pos((vec3f(ix,iy,iz)+vec3f(.5f))/vec3f(dims));
-            resampled->value[resampled->indexOf(vec3i(ix,iy,iz))] = amr->sample(pos);
+            resampled->value[resampled->indexOf(vec3i(ix,iy,iz))] = amr->sample(pos).x;
           }
     
       FILE *out = fopen(outFileName.c_str(),"wb");

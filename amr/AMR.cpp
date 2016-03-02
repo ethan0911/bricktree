@@ -201,11 +201,39 @@ namespace ospray {
       return cell->ccValue;
     }
 
+    template<typename T>
+    const typename AMR<T>::Cell *AMR<T>::findCell(const AMR<T>::CellIdx &requestedIdx, 
+                                                  AMR<T>::CellIdx &actualIdx) const 
+    { 
+      actualIdx = requestedIdx.rootAncestorIndex();
+      int trailBit = 1 << (requestedIdx.m);
+
+      const int cellID = actualIdx.x + dimensions.x*(actualIdx.y + dimensions.y*(actualIdx.z));
+      const typename AMR<T>::Cell *cell = &rootCell[cellID];
+
+      while (actualIdx.m < requestedIdx.m && cell->childID >= 0) {
+        const typename AMR<T>::OctCell &oc = this->octCell[cell->childID];
+
+        const int ix = (requestedIdx.x & trailBit) ? 1 : 0;
+        const int iy = (requestedIdx.y & trailBit) ? 1 : 0;
+        const int iz = (requestedIdx.z & trailBit) ? 1 : 0;
+        cell = &oc.child[iz][iy][ix];
+
+        actualIdx.x = 2*actualIdx.x + ix;
+        actualIdx.y = 2*actualIdx.y + iy;
+        actualIdx.z = 2*actualIdx.z + iz;
+        actualIdx.m ++;
+
+        trailBit >>= 1;
+      }
+
+      return cell;
+    }
 
     template<typename T>
-    const typename AMR<T>::Cell *AMR<T>::findLeafCell(const vec3f &unitPos, AMR<T>::CellIdx &cellIdx) const 
+    const typename AMR<T>::Cell *AMR<T>::findLeafCell(const vec3f &gridPos, AMR<T>::CellIdx &cellIdx) const 
     { 
-      const vec3f gridPos = unitPos * vec3f(dimensions);
+      // const vec3f gridPos = unitPos * vec3f(dimensions);
       const vec3f floorGridPos = floor(clamp(gridPos,vec3f(0.f),vec3f(dimensions)-vec3f(1.f)));
       const vec3i gridIdx = vec3i(floorGridPos);
       vec3f frac = gridPos - floorGridPos;
@@ -235,11 +263,54 @@ namespace ospray {
     /*! this version will sample down to whatever octree leaf gets
         hit, but without interpolation, just nearest neighbor */
     // assuming that pos is in 0,0,0-1,1,1
-    float AMR<T>::sample(const vec3f &unitPos) const 
+    vec3f AMR<T>::sample(const vec3f &unitPos) const 
     { 
+      const vec3f gridPos = unitPos * vec3f(dimensions);
+
       CellIdx cellIdx;
-      const AMR<T>::Cell *cell = findLeafCell(unitPos,cellIdx);
-      return cell->ccValue;
+      const AMR<T>::Cell *cell = findLeafCell(gridPos,cellIdx);
+      const vec3f cellCenter = cellIdx.centerPos();
+
+      const int dx = unitPos.x < cellCenter.x ? -1 : +1;
+      const int dy = unitPos.y < cellCenter.y ? -1 : +1;
+      const int dz = unitPos.z < cellCenter.z ? -1 : +1;
+
+      // corner cells - 0,0,0 is the current cell, the others are the
+      // neihgbors in +/- x/y/z; 'ptr' is the pointer to the cell,
+      // 'idx' its logical index
+      const Cell *cCellPtr[2][2][2];
+      CellIdx     cCellIdx[2][2][2];
+
+      cCellPtr[0][0][0] = cell;
+      cCellIdx[0][0][0] = cellIdx;
+
+      for (int iz=0;iz<2;iz++)
+        for (int iy=0;iy<2;iy++)
+          for (int ix=0;ix<2;ix++) {
+            if (ix==0 && iy==0 && iz==0) 
+              // we already have this cell ...
+              continue;
+            cCellPtr[iz][iy][ix] = findCell(cellIdx.neighborIndex(vec3i(ix*dx,iy*iy,ix*dz)),
+                                            cCellIdx[iz][iy][ix]);
+          }
+      // now, have all 8 neighbor cells of octant. get the 8 octant values
+      float       octValue[2][2][2];
+      octValue[0][0][0] = cell->ccValue;
+      for (int iz=0;iz<2;iz++)
+        for (int iy=0;iy<2;iy++)
+          for (int ix=0;ix<2;ix++) {
+            // for now, just use the cell, whatever level it might be on - THIS IS WRONG
+            octValue[iz][iy][ix] = cCellPtr[iz][iy][ix]->ccValue;
+          }
+      
+      // compute interpolation weights
+      const float octWidth = 0.5f / (1 << cellIdx.m); // note we actually only need 1/octWidth below)
+      const float fx = fabsf(cellCenter.x-gridPos.x) / octWidth;
+      const float fy = fabsf(cellCenter.y-gridPos.y) / octWidth;
+      const float fz = fabsf(cellCenter.z-gridPos.z) / octWidth;
+            
+      return vec3f(fx,fy,fz);
+      return vec3f(cell->ccValue) / 255.f;
     }
 
 
