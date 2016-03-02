@@ -30,6 +30,8 @@ namespace ospray {
         int32 childID; // -1 means 'no child', else this points into octCell[] array
       };
       struct OctCell {
+        // the 8 children of this node. note those are to be accessed
+        // as child[iz][iy][ix], not the other way around!
         Cell child[2][2][2];
       };
     };

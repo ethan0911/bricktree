@@ -41,8 +41,13 @@ namespace ospray {
       // dimensions of root grid
       vec3i dimensions;
 
+      Range<voxel_t> getValueRange(const int32_t subCellID) const;
+      Range<voxel_t> getValueRange(const vec3i &rootCellID) const;
+      Range<voxel_t> getValueRange() const;
+
       /*! return interpolated value at given unit position (ie pos must be in [(0),(1)] */
       float sample(const vec3f &unitPos) const;
+      float sampleRootCellOnly(const vec3f &unitPos) const;
 
       void writeTo(const std::string &outFileName);
       void mmapFrom(const unsigned char *binBasePtr);

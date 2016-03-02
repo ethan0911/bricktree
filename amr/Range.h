@@ -23,13 +23,16 @@ namespace ospray {
   
   template<typename T>
   struct Range {
+    Range(const embree::EmptyTy &t) : lo(embree::pos_inf), hi(embree::neg_inf) {};
     Range(const T &t) : lo(t), hi(t) {};
+    Range(const Range &t) : lo(t.lo), hi(t.hi) {};
 
     T lo, hi;
 
     T size() const { return hi - lo; }
     T center() const { return .5f*(lo+hi); }
     void extend(const T &t) { lo = min(lo,t); hi = max(hi,t); }
+    void extend(const Range<T> &t) { lo = min(lo,t.lo); hi = max(hi,t.hi); }
   };
 
   template<typename T>

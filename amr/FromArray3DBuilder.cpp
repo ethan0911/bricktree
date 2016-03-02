@@ -63,9 +63,9 @@ namespace ospray {
               oc.child[iz][iy][ix] = recursiveBuild(begin+vec3i(ix,iy,iz)*halfSize,halfSize);
         oct->octCell[cell.childID] = oc;
       } else {
-        cell.ccValue = range.center();
         cell.childID = -1;
       }
+      cell.ccValue = range.center();
       return cell;
     }
     

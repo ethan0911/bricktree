@@ -20,6 +20,9 @@
 namespace ospray {
   namespace amr {
 
+    using std::cout;
+    using std::endl;
+
     template<typename T>
     const char *formatNameString();
 
@@ -106,9 +109,97 @@ namespace ospray {
       fclose(osp);
     }
 
+
+
     template<typename T>
-    float AMR<T>::sample(const vec3f &pos) const 
-    { assert(0); return .5f; }
+    Range<T> AMR<T>::getValueRange(const int32_t subCellID) const
+    {
+      Range<T> vox = empty;
+      if (subCellID < 0) return vox;
+
+      const typename AMR<T>::OctCell &oc = this->octCell[subCellID];
+      for (int iz=0;iz<2;iz++)
+        for (int iy=0;iy<2;iy++)
+          for (int ix=0;ix<2;ix++) {
+            vox.extend(oc.child[iz][iy][ix].ccValue);
+            vox.extend(getValueRange(oc.child[iz][iy][ix].childID));
+          }
+      return vox;
+    }
+    
+    template<typename T>
+    Range<T> AMR<T>::getValueRange(const vec3i &rootCellID) const
+    {
+      size_t idx = rootCellID.x + dimensions.x*(rootCellID.y+dimensions.y*rootCellID.z);
+      Range<T> range = rootCell[idx].ccValue;
+      range.extend(this->getValueRange(rootCell[idx].childID));
+      return range;
+    }
+    
+    template<typename T>
+    Range<T> AMR<T>::getValueRange() const
+    {
+      Range<T> vox = empty;
+      for (int iz=0;iz<dimensions.z;iz++)
+        for (int iy=0;iy<dimensions.y;iy++)
+          for (int ix=0;ix<dimensions.x;ix++)
+            vox.extend(this->getValueRange(vec3i(ix,iy,iz)));
+      return vox;
+    }
+
+
+
+    template<typename T>
+    // assuming that pos is in 0,0,0-1,1,1
+    /* this variant samples into the root cells ONLY, with nearest neighbor sampling */
+    float AMR<T>::sampleRootCellOnly(const vec3f &unitPos) const 
+    { 
+      // cout << "-------------------------------------------------------" << endl;
+      // PRINT(unitPos);
+
+      const vec3f gridPos = unitPos * vec3f(dimensions);
+      // PRINT(gridPos);
+      const vec3f floorGridPos = floor(clamp(gridPos,vec3f(0.f),vec3f(dimensions)-vec3f(1.f)));
+      const vec3i gridIdx = vec3i(floorGridPos);
+      // PRINT(gridIdx);
+      vec3f frac = gridPos - floorGridPos;
+
+      const int cellID = gridIdx.x + dimensions.x*(gridIdx.y + dimensions.y*(gridIdx.z));
+      // PRINT(cellID);
+      // PRINT(rootCell[cellID].ccValue);
+      return rootCell[cellID].ccValue;
+    }
+
+    template<typename T>
+    /*! this version will sample down to whatever octree leaf gets
+        hit, but without interpolation, just nearest neighbor */
+    // assuming that pos is in 0,0,0-1,1,1
+    float AMR<T>::sample(const vec3f &unitPos) const 
+    { 
+      // cout << "-------------------------------------------------------" << endl;
+      // PRINT(unitPos);
+
+      const vec3f gridPos = unitPos * vec3f(dimensions);
+      // PRINT(gridPos);
+      const vec3f floorGridPos = floor(clamp(gridPos,vec3f(0.f),vec3f(dimensions)-vec3f(1.f)));
+      const vec3i gridIdx = vec3i(floorGridPos);
+      // PRINT(gridIdx);
+      vec3f frac = gridPos - floorGridPos;
+
+      const int cellID = gridIdx.x + dimensions.x*(gridIdx.y + dimensions.y*(gridIdx.z));
+      const typename AMR<T>::Cell *cell = &rootCell[cellID];
+      while (cell->childID >= 0) {
+        const typename AMR<T>::OctCell &oc = this->octCell[cell->childID];
+        int ix=0, iy=0, iz=0;
+        if (frac.x >= .5f) { ix = 1; frac.x -= .5f; }
+        if (frac.y >= .5f) { iy = 1; frac.y -= .5f; }
+        if (frac.z >= .5f) { iz = 1; frac.z -= .5f; }
+        frac *= 2.f;
+
+        cell = &oc.child[iz][iy][ix];
+      }
+      return cell->ccValue;
+    }
 
     template struct AMR<float>;
     template struct AMR<uint8>;
