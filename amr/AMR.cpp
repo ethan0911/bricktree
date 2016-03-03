@@ -206,6 +206,18 @@ namespace ospray {
                                                   AMR<T>::CellIdx &actualIdx) const 
     { 
       actualIdx = requestedIdx.rootAncestorIndex();
+      
+      if (actualIdx.x < 0 || 
+          actualIdx.y < 0 || 
+          actualIdx.z < 0 ||
+          actualIdx.x >= dimensions.x ||
+          actualIdx.y >= dimensions.y ||
+          actualIdx.z >= dimensions.z) 
+        {
+          actualIdx = CellIdx::invalidIndex();
+          return NULL;
+        }
+
       int trailBit = 1 << (requestedIdx.m);
 
       const int cellID = actualIdx.x + dimensions.x*(actualIdx.y + dimensions.y*(actualIdx.z));
@@ -435,12 +447,81 @@ namespace ospray {
     };
 
     template<typename T>
+    /*& recrusively trickly down the tree, accumulating all leaves'
+      hat-shaped basis functions that overlap our sample pos */
+    void AMR<T>::accumulateHatBasisFunctions(const vec3f &gridPos,
+                                             const Cell *cell,
+                                             const CellIdx &cellIdx,
+                                             float &num, float &den) const
+    {
+      const vec3f cellCenter = cellIdx.centerPos();
+      const vec3f delta = abs(cellCenter - gridPos);
+      const float supportWidth = 1.f/(1<<cellIdx.m);
+      if (reduce_max(delta) > supportWidth) return;
+
+      if (cell->childID >= 0) {
+        const OctCell &oc = octCell[cell->childID];
+        for (int iz=0;iz<2;iz++)
+          for (int iy=0;iy<2;iy++)
+            for (int ix=0;ix<2;ix++) {
+              accumulateHatBasisFunctions(gridPos,&oc.child[iz][iy][ix],
+                                          cellIdx.childIndex(vec3i(ix,iy,iz)),num,den);
+            }
+      } else {
+        // an actual leaf cell - evaluate the weights, and accumulate
+        const vec3f weights = vec3f(1.f) - delta * (1.f/supportWidth);
+        const float w = weights.x * weights.y * weights.z;
+        // PRINT(w);
+        // PRINT(cellIdx);
+        // PRINT(cell->ccValue);
+        den += w;
+        num += w * cell->ccValue;
+        // PRINT(num);
+      }
+    }
+
+    template<typename T>
+    void AMR<T>::accumulateHatBasisFunctions(const vec3f &gridPos,
+                                             float &num, float &den) const
+    {
+      const vec3f floorGridPos = floor(clamp(gridPos,vec3f(0.f),vec3f(dimensions)-vec3f(1.f)));
+      const vec3i gridIdx = vec3i(floorGridPos);
+      const CellIdx cellIdx = CellIdx(gridIdx,0);
+      const vec3f cellCenter = cellIdx.centerPos();
+      
+      const int dx = gridPos.x < cellCenter.x ? -1 : +1;
+      const int dy = gridPos.y < cellCenter.y ? -1 : +1;
+      const int dz = gridPos.z < cellCenter.z ? -1 : +1;
+      
+      // first: first all neighbor cells (or their ancestors if they do not exist
+      for (int iz=0;iz<2;iz++)
+        for (int iy=0;iy<2;iy++)
+          for (int ix=0;ix<2;ix++) {
+            CellIdx rootIdx = cellIdx.neighborIndex(vec3i(ix*dx,iy*dy,iz*dz));
+            CellIdx cellIdx;
+            const Cell *cell = findCell(rootIdx,cellIdx);
+            if (!cell) continue;
+            
+            accumulateHatBasisFunctions(gridPos,cell,cellIdx,num,den);
+          }
+      den += 1e-8f;
+    }
+    
+    template<typename T>
     /*! this version will sample down to whatever octree leaf gets
         hit, but without interpolation, just nearest neighbor */
     // assuming that pos is in 0,0,0-1,1,1
     vec3f AMR<T>::sample(const vec3f &unitPos) const 
     { 
       const vec3f gridPos = unitPos * vec3f(dimensions);
+
+#if 1
+      float num = 0.f;
+      float den = 0.f;
+      accumulateHatBasisFunctions(gridPos,num,den);
+
+      return vec3f(num/den/255.f);
+#endif
 
       Octant<T> oct(this);
       return oct.interpolate(gridPos);

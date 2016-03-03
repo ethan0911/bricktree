@@ -36,7 +36,10 @@ namespace ospray {
         inline CellIdx rootAncestorIndex() const { return CellIdx(vec3i(x >> m, y >> m, z >> m), 0); }
         /*! return cell index of given neighbor _direction_ (ie, dx,dy,dz are RELATEIVE to *this */
         inline CellIdx neighborIndex(const vec3i &delta) const { return CellIdx(vec3i(x,y,z)+delta,m); }
-        
+        /*! return index of given child */
+        inline CellIdx childIndex(const vec3i &d) const { return CellIdx(vec3i(2*x+d.x,2*y+d.y,2*z+d.z),m+1); }
+        /*! return a (obviously) invalid index */
+        static inline CellIdx invalidIndex() { return CellIdx(vec3i(-1),-1); }
         int m; /*!< level ID */
       };
 
@@ -74,6 +77,16 @@ namespace ospray {
       const Cell *findLeafCell(const vec3f &gridPos, CellIdx &idx) const;
 
 
+
+
+      void accumulateHatBasisFunctions(const vec3f &gridPos,
+                                       const Cell *cell,
+                                       const CellIdx &cellIdx,
+                                       float &num, float &den) const;
+      void accumulateHatBasisFunctions(const vec3f &gridPos,
+                                       float &num, float &den) const;
+        
+        
 
       /*! return interpolated value at given unit position (ie pos must be in [(0),(1)] */
       /*! note(iw): i'll TEMPORARILY hcnage this to return a vec3f,
