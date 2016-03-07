@@ -34,38 +34,37 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
     amr/Array3D.cpp
     amr/FromArray3DBuilder.cpp
     amr/AMR.cpp
-		)
-  TARGET_LINK_LIBRARIES(ospray_amr
-#  OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_amr
+    )
+  
+  OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_amr
     ospray
-		)
-
+    )
+  
   # -------------------------------------------------------
   # ospray plugin
   # -------------------------------------------------------
   OSPRAY_ADD_LIBRARY(ospray_module_amr SHARED
     ospray/AMRVolume.ispc
     ospray/AMRVolume.cpp
-		)
-
-	TARGET_LINK_LIBRARIES(ospray_module_amr
-  #OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_module_amr
+    )
+  
+  OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_module_amr
     ospray_amr
     ospray
-		)
-
+    )
+  
   IF(NOT THIS_IS_MIC)
     # -----------------------------------------------------
     # scene graph plugin
     # -----------------------------------------------------
     ADD_LIBRARY(ospray_sg_amr SHARED
       sg/AMRVolume.cpp
-			)
-    TARGET_LINK_LIBRARIES(ospray_sg_amr
+      )
+    OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_sg_amr
       ospray_amr
       ospray_sg
-			)
-
+      )
+    
     # -----------------------------------------------------
 		# raw-to-octree-amr converter: converts a structured
     # volume (in RAW format)
