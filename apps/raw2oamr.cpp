@@ -65,7 +65,8 @@ namespace ospray {
       int         maxLevels   = 4;
       float       threshold   = .01f;
       vec3i       dims        = vec3f(0);
- 
+      vec3i       repeat      = vec3f(0);
+
       for (int i=1;i<ac;i++) {
         const std::string arg = av[i];
         if (arg == "-o")
@@ -75,7 +76,11 @@ namespace ospray {
           maxLevels = atoi(av[++i]);
         else if (arg == "--threshold" || arg == "-t")
           threshold = atof(av[++i]);
-        else if (arg == "--format")
+        else if (arg == "--repeat" || arg == "-r") {
+          repeat.x = atof(av[++i]);
+          repeat.y = atof(av[++i]);
+          repeat.z = atof(av[++i]);
+        } else if (arg == "--format")
           format = av[++i];
         else if (arg == "-dims" || arg == "--dimensions") {
           dims.x = atoi(av[++i]);
@@ -106,6 +111,11 @@ namespace ospray {
       } else
         throw std::runtime_error("unsupported format '"+format+"'");
       cout << "loading complete." << endl;
+
+      if (repeat.x != 0) {
+        cout << "artificially blowing up to size " << repeat << endl;
+        input = new Array3DRepeater<float>(input,repeat);
+      }
 
       AMR<float> *amr = oamrFromVolume<float>(input,maxLevels,threshold);
       assert(amr);

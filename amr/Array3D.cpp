@@ -122,6 +122,39 @@ namespace ospray {
       assert(actual); return actual->numElements(); 
     }
 
+    // Array3DRepeater //
+
+    template<typename T>
+    Array3DRepeater<T>::Array3DRepeater(const Array3D<T> *actual, 
+                                        const vec3i &repeatedSize) :
+      actual(actual), repeatedSize(repeatedSize)
+    {}
+    
+    template<typename T>
+    vec3i Array3DRepeater<T>::size() const
+    {
+      return repeatedSize;
+    }
+    
+    template<typename T>
+    T Array3DRepeater<T>::get(const vec3i &_where) const
+    {
+      vec3i where(_where.x % repeatedSize.x,
+                  _where.y % repeatedSize.y,
+                  _where.z % repeatedSize.z);
+
+      if ((_where.x / repeatedSize.x) % 2) where.x = repeatedSize.x - 1 - where.x;
+      if ((_where.y / repeatedSize.y) % 2) where.y = repeatedSize.y - 1 - where.y;
+      if ((_where.z / repeatedSize.z) % 2) where.z = repeatedSize.z - 1 - where.z;
+
+      return actual->get(where);
+    }
+
+    template<typename T>
+    size_t Array3DRepeater<T>::numElements() const 
+    { 
+      return size_t(repeatedSize.x)*size_t(repeatedSize.y)*size_t(repeatedSize.z);
+    }
 
     // -------------------------------------------------------
     // explicit instantiations section
@@ -135,6 +168,9 @@ namespace ospray {
     template struct Array3DAccessor<float,uint8>;
     template struct Array3DAccessor<uint8,float>;
     template struct Array3DAccessor<float,float>;
+
+    template struct Array3DRepeater<uint8>;
+    template struct Array3DRepeater<float>;
 
     template Array3D<uint8> *loadRAW(const std::string &fileName, const vec3i &dims);
     template Array3D<float> *loadRAW(const std::string &fileName, const vec3i &dims);

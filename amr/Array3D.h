@@ -90,6 +90,28 @@ namespace ospray {
       const Array3D<in_t> *actual;
     };
 
+    /*! wrapper class that generates an artifically larger data set by
+        simply repeating the given input */
+    template<typename T>
+    struct Array3DRepeater : public Array3D<T> {
+
+      Array3DRepeater(const Array3D<T> *actual, const vec3i &repeatedSize);
+
+      /*! return size (ie, "dimensions") of volume */
+      virtual vec3i size() const override;
+
+      /*! get cell value at location
+
+        \warning 'where' MUST be a valid cell location */
+      virtual T get(const vec3i &where) const override;
+
+      /*! returns number of elements (as 64-bit int) across all dimensions */
+      virtual size_t numElements() const override;
+
+      const vec3i repeatedSize;
+      const Array3D<T> *const actual;
+    };
+
     /*! load raw file with given dimensions. the 'type' of the raw
         file (uint8,float,...) is given through the function's
         template parameter */
