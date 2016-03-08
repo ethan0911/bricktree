@@ -19,6 +19,7 @@
 #include "ospray/common/Model.h"
 #include "ospray/common/Data.h"
 #include "ospray/transferFunction/TransferFunction.h"
+#include "../amr/Octree.h"
 // #include "ospray/common/Core.h"
 // ispc exports
 #include "AMRVolume_ispc.h"
@@ -39,6 +40,7 @@ namespace ospray {
       : Volume(), dimensions(-1), voxelType(OSP_FLOAT)
     {
       ispcEquivalent = ispc::AMRVolume_create(this);
+      amr = NULL;
     }
 
     //! Allocate storage and populate the volume.
@@ -59,6 +61,20 @@ namespace ospray {
       Ref<TransferFunction> xf = (TransferFunction*)getParamObject("transferFunction");
       PING;
 
+      amr = new AMR<float>;
+      amr->allocate(dimensions);
+      PRINT(dimensions);
+      PRINT(rootCellData->numBytes);
+
+      memcpy(&amr->rootCell[0],rootCellData->data,rootCellData->numBytes);
+      amr->octCell.resize(octCellData->numBytes / sizeof(AMR<float>::OctCell));
+      memcpy(&amr->octCell[0],octCellData->data,octCellData->numBytes);
+
+      PRINT(amr->rootCell[0]);
+
+      PRINT(amr->octCell[0]);
+
+      // print(amr->rootCell[0]);
       ispc::AMRVolume_set(getIE(),
                           xf->getIE(),
                           (ispc::vec3i &)dimensions,
@@ -68,9 +84,13 @@ namespace ospray {
 
     extern "C" float AMR_sample_scalar(void *self, vec3f *where)
     {
-      // ManagedObject *obj = (ManagedObject *)self;
-      // PRINT(obj->toString());
-      return 0.5f;
+      AMRVolume *obj = (AMRVolume *)self;
+      //      PRINT(obj->toString());
+
+      vec3f s = obj->amr->sample(*where * rcp(vec3f(obj->amr->dimensions)));
+      PRINT(*where);
+      PRINT(s.x);
+      return s.x;
     }
     
     OSP_REGISTER_VOLUME(AMRVolume,MultiOctreeAMRVolume);

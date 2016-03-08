@@ -102,6 +102,12 @@ namespace ospray {
       void mmapFrom(const unsigned char *binBasePtr);
       static AMR<voxel_t> *loadFrom(const char *fileName);
     };
-    
+
+    // template<typename T>
+    inline std::ostream &operator<<(std::ostream &o, const typename AMR<float>::CellIdx &i)
+    { o << "(" << i.x << "," << i.y << "," << i.z << ":" << i.m << ")"; return o; }
+    inline std::ostream &operator<<(std::ostream &o, const typename AMR<uint8>::CellIdx &i)
+    { o << "(" << i.x << "," << i.y << "," << i.z << ":" << i.m << ")"; return o; }
+
   } // ::ospray::amr
 } // ::ospray

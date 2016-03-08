@@ -46,6 +46,7 @@ namespace ospray {
       // //! Create the equivalent ISPC volume container.
       // virtual void createEquivalentISPC();
 
+      AMR<float> *amr;
       Ref<Data>   rootCellData;
       Ref<Data>   octCellData;
       vec3i       dimensions;

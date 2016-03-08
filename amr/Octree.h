@@ -18,6 +18,8 @@
 
 // ospray
 #include "Array3D.h"
+// std
+#include <iostream>
 
 namespace ospray {
   namespace amr {
@@ -36,5 +38,28 @@ namespace ospray {
       };
     };
 
+    template<typename T>
+    inline std::ostream &operator<<(std::ostream &o, 
+                                    const typename ospray::amr::Octree<T>::Cell &c)
+    { o << "("<<c.ccValue<<":"<<c.childID<<")"; return o; }
+
+    template<typename T>
+    inline std::ostream &operator<<(std::ostream &o, 
+                                    const typename ospray::amr::Octree<T>::OctCell &c)
+    { 
+      for (int iz=0;iz<2;iz++)
+        for (int iy=0;iy<2;iy++)
+          for (int ix=0;ix<2;ix++) {
+            o << ((ix||iy||iz)?" ":"(") 
+              << c.child[iz][iy][ix] 
+              << ((!ix||!iy||!iz)?",":")") 
+              << std::endl;
+          }
+      return o;
+    }
+
   } // ::ospray::amr
 } // ::ospray
+
+
+

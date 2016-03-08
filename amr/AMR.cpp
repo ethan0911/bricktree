@@ -455,8 +455,13 @@ namespace ospray {
                                              float &num, float &den) const
     {
       const vec3f cellCenter = cellIdx.centerPos();
+      PRINT(cellIdx);
+      PRINT(cellCenter);
       const vec3f delta = abs(cellCenter - gridPos);
       const float supportWidth = 1.f/(1<<cellIdx.m);
+      PRINT(delta);
+      PRINT(supportWidth);
+      PRINT(*(typename Octree<T>::Cell *)cell);
       if (reduce_max(delta) > supportWidth) return;
 
       if (cell->childID >= 0) {
@@ -464,8 +469,10 @@ namespace ospray {
         for (int iz=0;iz<2;iz++)
           for (int iy=0;iy<2;iy++)
             for (int ix=0;ix<2;ix++) {
+              CellIdx ci = cellIdx.childIndex(vec3i(ix,iy,iz));
+              cout << "child[" << vec3i(ix,iy,iz) << "] = " << ci << endl;
               accumulateHatBasisFunctions(gridPos,&oc.child[iz][iy][ix],
-                                          cellIdx.childIndex(vec3i(ix,iy,iz)),num,den);
+                                          ci,num,den);
             }
       } else {
         // an actual leaf cell - evaluate the weights, and accumulate
@@ -476,7 +483,7 @@ namespace ospray {
         // PRINT(cell->ccValue);
         den += w;
         num += w * cell->ccValue;
-        // PRINT(num);
+        PRINT(num);
       }
     }
 
@@ -489,10 +496,15 @@ namespace ospray {
       const CellIdx cellIdx = CellIdx(gridIdx,0);
       const vec3f cellCenter = cellIdx.centerPos();
       
+      PRINT(gridPos);
+      PRINT(cellIdx);
+
       const int dx = gridPos.x < cellCenter.x ? -1 : +1;
       const int dy = gridPos.y < cellCenter.y ? -1 : +1;
       const int dz = gridPos.z < cellCenter.z ? -1 : +1;
       
+      PING;
+
       // first: first all neighbor cells (or their ancestors if they do not exist
       for (int iz=0;iz<2;iz++)
         for (int iy=0;iy<2;iy++)
@@ -500,6 +512,9 @@ namespace ospray {
             CellIdx rootIdx = cellIdx.neighborIndex(vec3i(ix*dx,iy*dy,iz*dz));
             CellIdx cellIdx;
             const Cell *cell = findCell(rootIdx,cellIdx);
+            cout << "Neighbor[" << vec3f(ix,iy,iz) << "] = " << rootIdx << "/" << cell << endl;
+            // PRINT(rootIdx);
+            // PRINT(cell);
             if (!cell) continue;
             
             accumulateHatBasisFunctions(gridPos,cell,cellIdx,num,den);
@@ -518,9 +533,10 @@ namespace ospray {
 #if 1
       float num = 0.f;
       float den = 0.f;
+      PRINT(num); PRINT(den);
       accumulateHatBasisFunctions(gridPos,num,den);
 
-      return vec3f(num/den/255.f);
+      return vec3f(num/den);
 #endif
 
       Octant<T> oct(this);
