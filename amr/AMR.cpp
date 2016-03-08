@@ -461,6 +461,13 @@ namespace ospray {
       const float supportWidth = 1.f/(1<<cellIdx.m);
       PRINT(delta);
       PRINT(supportWidth);
+      /* FIXME: this following print doesn't resolve w/ my compiler, even though
+         it should (see ../amr/Octree.h) 
+
+wald@latte ~/Projects/ospray/modules/module-amr-volume $ icpc --version
+icpc (ICC) 15.0.3 20150407
+Copyright (C) 1985-2015 Intel Corporation.  All rights reserved.
+      */
       PRINT(*(typename Octree<T>::Cell *)cell);
       if (reduce_max(delta) > supportWidth) return;
 
