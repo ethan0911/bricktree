@@ -30,33 +30,31 @@ namespace ospray {
       struct Cell {
         float ccValue; //!< cell center value
         int32 childID; // -1 means 'no child', else this points into octCell[] array
+        inline friend std::ostream &operator<<(std::ostream &o,
+                                               const typename ospray::amr::Octree<voxel_t>::Cell &c)
+        { o << "("<<c.ccValue<<":"<<c.childID<<")"; return o; }
+
       };
       struct OctCell {
         // the 8 children of this node. note those are to be accessed
         // as child[iz][iy][ix], not the other way around!
         Cell child[2][2][2];
+        inline friend std::ostream &operator<<(std::ostream &o,
+                                           const typename ospray::amr::Octree<voxel_t>::OctCell &c)
+        {
+          for (int iz=0;iz<2;iz++)
+            for (int iy=0;iy<2;iy++)
+              for (int ix=0;ix<2;ix++) {
+                o << ((ix||iy||iz)?" ":"(")
+                  << c.child[iz][iy][ix]
+                  << ((!ix||!iy||!iz)?",":")")
+                  << std::endl;
+              }
+          return o;
+        }
       };
     };
 
-    template<typename T>
-    inline std::ostream &operator<<(std::ostream &o, 
-                                    const typename ospray::amr::Octree<T>::Cell &c)
-    { o << "("<<c.ccValue<<":"<<c.childID<<")"; return o; }
-
-    template<typename T>
-    inline std::ostream &operator<<(std::ostream &o, 
-                                    const typename ospray::amr::Octree<T>::OctCell &c)
-    { 
-      for (int iz=0;iz<2;iz++)
-        for (int iy=0;iy<2;iy++)
-          for (int ix=0;ix<2;ix++) {
-            o << ((ix||iy||iz)?" ":"(") 
-              << c.child[iz][iy][ix] 
-              << ((!ix||!iy||!iz)?",":")") 
-              << std::endl;
-          }
-      return o;
-    }
 
   } // ::ospray::amr
 } // ::ospray
