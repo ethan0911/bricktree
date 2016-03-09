@@ -20,9 +20,25 @@
 #include "ospray/math/AffineSpace.ih"
 #include "ospray/geometry/Geometry.ih"
 
+struct AMRCell {
+  uniform float ccValue;
+  uniform int32 childID;
+};
+
+struct AMROctCell {
+  uniform AMRCell child[2][2][2];
+};
+
 struct AMRVolume {
   Volume    super; //!< inherited from superclass
 
   /* nothing as yet - we'll simply call back to c++ side ... */
+
+  // root grid dimensions
+  vec3i rootDims;
+  // array of root cells
+  uniform AMRCell *uniform rootCell;
+  // array of octree cells
+  uniform AMROctCell *uniform octCell;
 };
 

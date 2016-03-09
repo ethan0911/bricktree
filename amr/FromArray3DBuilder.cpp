@@ -77,6 +77,7 @@ namespace ospray {
       vec3i begin = blockID*vec3i(blockSize);
 
       oct->rootCell[rootCellID(blockID)] = recursiveBuild(begin,blockSize);
+      cout << "rootBlock[" << rootCellID(blockID) << " = " << oct->rootCell[rootCellID(blockID)].ccValue << endl;
     }
 
     template<typename T>

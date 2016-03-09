@@ -455,12 +455,21 @@ namespace ospray {
                                              float &num, float &den) const
     {
       const vec3f cellCenter = cellIdx.centerPos();
-      PRINT(cellIdx);
-      PRINT(cellCenter);
+      // PRINT(cellIdx);
+      // PRINT(cellCenter);
       const vec3f delta = abs(cellCenter - gridPos);
       const float supportWidth = 1.f/(1<<cellIdx.m);
-      PRINT(delta);
-      PRINT(supportWidth);
+
+#if 0
+      // PRINT(cell->ccValue);
+      const vec3f weights = max(vec3f(1.f) - delta * (1.f/supportWidth),vec3f(0.f));
+      const float w = weights.x * weights.y * weights.z;
+      num += w * cell->ccValue;
+      den += w;
+      return;
+#endif
+      // PRINT(delta);
+      // PRINT(supportWidth);
       /* FIXME: this following print doesn't resolve w/ my compiler, even though
          it should (see ../amr/Octree.h) 
 
@@ -468,16 +477,21 @@ wald@latte ~/Projects/ospray/modules/module-amr-volume $ icpc --version
 icpc (ICC) 15.0.3 20150407
 Copyright (C) 1985-2015 Intel Corporation.  All rights reserved.
       */
-      PRINT(*(typename Octree<T>::Cell *)cell);
+      // PRINT(cell);
+      // if (cellIdx.m == 0) 
+      //   PRINT(cell-&rootCell[0]);
+      // else
+      //   PRINT(cell-&octCell[0].child[0][0][0]);
       if (reduce_max(delta) > supportWidth) return;
 
+      // PRINT(cell->childID);
       if (cell->childID >= 0) {
         const OctCell &oc = octCell[cell->childID];
         for (int iz=0;iz<2;iz++)
           for (int iy=0;iy<2;iy++)
             for (int ix=0;ix<2;ix++) {
               CellIdx ci = cellIdx.childIndex(vec3i(ix,iy,iz));
-              cout << "child[" << vec3i(ix,iy,iz) << "] = " << ci << endl;
+              // cout << "child[" << vec3i(ix,iy,iz) << "] = " << ci << endl;
               accumulateHatBasisFunctions(gridPos,&oc.child[iz][iy][ix],
                                           ci,num,den);
             }
@@ -485,12 +499,19 @@ Copyright (C) 1985-2015 Intel Corporation.  All rights reserved.
         // an actual leaf cell - evaluate the weights, and accumulate
         const vec3f weights = vec3f(1.f) - delta * (1.f/supportWidth);
         const float w = weights.x * weights.y * weights.z;
-        // PRINT(w);
-        // PRINT(cellIdx);
-        // PRINT(cell->ccValue);
+        if (cellIdx.m > 0) {
+          cout << "LEAF" << endl;
+          // PRINT(w);
+          PRINT(cellIdx);
+          PRINT(cell->ccValue);
+          cout << "ofs " << (cell - &octCell[0].child[0][0][0]) << endl;
+        }        
+        // if (cell->ccValue != 0.f) {
+        //   exit(0);
+        // }
         den += w;
         num += w * cell->ccValue;
-        PRINT(num);
+        // PRINT(num);
       }
     }
 
@@ -498,19 +519,20 @@ Copyright (C) 1985-2015 Intel Corporation.  All rights reserved.
     void AMR<T>::accumulateHatBasisFunctions(const vec3f &gridPos,
                                              float &num, float &den) const
     {
+      // cout << "=======================================================" << endl;
       const vec3f floorGridPos = floor(clamp(gridPos,vec3f(0.f),vec3f(dimensions)-vec3f(1.f)));
       const vec3i gridIdx = vec3i(floorGridPos);
       const CellIdx cellIdx = CellIdx(gridIdx,0);
       const vec3f cellCenter = cellIdx.centerPos();
       
-      PRINT(gridPos);
-      PRINT(cellIdx);
+      // PRINT(gridPos);
+      // PRINT(cellIdx);
 
       const int dx = gridPos.x < cellCenter.x ? -1 : +1;
       const int dy = gridPos.y < cellCenter.y ? -1 : +1;
       const int dz = gridPos.z < cellCenter.z ? -1 : +1;
-      
-      PING;
+       
+      // PING;
 
       // first: first all neighbor cells (or their ancestors if they do not exist
       for (int iz=0;iz<2;iz++)
@@ -519,11 +541,17 @@ Copyright (C) 1985-2015 Intel Corporation.  All rights reserved.
             CellIdx rootIdx = cellIdx.neighborIndex(vec3i(ix*dx,iy*dy,iz*dz));
             CellIdx cellIdx;
             const Cell *cell = findCell(rootIdx,cellIdx);
-            cout << "Neighbor[" << vec3f(ix,iy,iz) << "] = " << rootIdx << "/" << cell << endl;
+            // cout << "Neighbor[" << vec3f(ix,iy,iz) << "] = " << rootIdx << "/" << cell << endl;
+
             // PRINT(rootIdx);
             // PRINT(cell);
             if (!cell) continue;
             
+      // if (rootIdx.m == 0) 
+      //   PRINT(cell-&rootCell[0]);
+      // else
+      //   PRINT(cell-&octCell[0].child[0][0][0]);
+
             accumulateHatBasisFunctions(gridPos,cell,cellIdx,num,den);
           }
       den += 1e-8f;
@@ -536,12 +564,13 @@ Copyright (C) 1985-2015 Intel Corporation.  All rights reserved.
     vec3f AMR<T>::sample(const vec3f &unitPos) const 
     { 
       const vec3f gridPos = unitPos * vec3f(dimensions);
-
+      cout << "-------------------------------------------------------" << endl;
+      PRINT(gridPos);
 #if 1
       float num = 0.f;
       float den = 0.f;
-      PRINT(num); PRINT(den);
       accumulateHatBasisFunctions(gridPos,num,den);
+      PRINT(num); PRINT(den);
 
       return vec3f(num/den);
 #endif
@@ -555,4 +584,4 @@ Copyright (C) 1985-2015 Intel Corporation.  All rights reserved.
     template struct AMR<uint8>;
 
   } // ::ospray::amr
-} // ::ospray
+  } // ::ospray

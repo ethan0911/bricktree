@@ -57,6 +57,11 @@ namespace ospray {
       std::cout << "#sg:amr: creating root cell data buffer" << std::endl;
       rootCellData = ospNewData(moa->rootCell.size()*sizeof(moa->rootCell[0]),OSP_UCHAR,
                                 &moa->rootCell[0],OSP_DATA_SHARED_BUFFER);
+      // PRINT(moa->rootCell.size());
+      // PRINT(moa->rootCell.size()*sizeof(moa->rootCell[0]));
+      // for (int i=0;i<moa->rootCell.size();i++)
+      //   cout << "moa[" << i << "] = " << moa->rootCell[i].ccValue << endl;
+
       assert(rootCellData);
       ospSetData(ospVolume, "rootCellData", rootCellData);
 

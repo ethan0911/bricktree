@@ -55,11 +55,8 @@ namespace ospray {
       Ref<Data> octCellData = getParamData("octCellData");
       assert(octCellData);
       dimensions = getParam3i("dimensions",vec3i(-1));
-      PRINT(dimensions);
 
-      PING;
       Ref<TransferFunction> xf = (TransferFunction*)getParamObject("transferFunction");
-      PING;
 
       amr = new AMR<float>;
       amr->allocate(dimensions);
@@ -70,9 +67,17 @@ namespace ospray {
       amr->octCell.resize(octCellData->numBytes / sizeof(AMR<float>::OctCell));
       memcpy(&amr->octCell[0],octCellData->data,octCellData->numBytes);
 
-      PRINT(amr->rootCell[0]);
+      // PRINT(amr->rootCell[0]);
 
-      PRINT(amr->octCell[0]);
+      // PRINT(amr->rootCell.size());
+      // for (int i=0;i<amr->rootCell.size();i++)
+      //   cout << i << " : " << amr->rootCell[i].ccValue << endl;
+      // PRINT(amr->octCell[0]);
+      // PRINT(amr->octCell.size());
+      // for (int i=0;i<amr->octCell.size();i++) {
+      //   cout << "cell[" << i <<" ]=" 
+      //        << amr->octCell[i].child[0][0][0].ccValue << endl;
+      // }
 
       // print(amr->rootCell[0]);
       ispc::AMRVolume_set(getIE(),
@@ -88,8 +93,8 @@ namespace ospray {
       //      PRINT(obj->toString());
 
       vec3f s = obj->amr->sample(*where * rcp(vec3f(obj->amr->dimensions)));
-      PRINT(*where);
-      PRINT(s.x);
+      // PRINT(*where);
+      // PRINT(s.x);
       return s.x;
     }
     
