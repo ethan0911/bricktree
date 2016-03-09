@@ -137,7 +137,7 @@ static varying float AMRVolume_sample(void *uniform _self,
       }
     }
   }
-  
+
   return num / (den + 1e-8f);
 #else
   /*! iw: for now we're just passing everything back to c, so we don't

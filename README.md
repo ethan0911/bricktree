@@ -19,7 +19,7 @@ with the following options:
 
 specifies the dimensions of the input volume (required)
 
-    -format {float|int8}
+    --format {float|int8}
 
 specifies the data format of the input raw file (required)
 
@@ -38,38 +38,24 @@ the coarse grid will refer to a leaf; if the range of these voxel
 values exceeds this threshold, then the coarse grid will refer to a
 refined 8^3 gridlet that contains the respective voxel values.
 
---brick-size <numLevels> <brickSize0> <brickSize1> ... <brickSize(N-1)>
+--depth <d>
 
-specifies the resolution of the respective AMR levels. NumLevels
-specifies how many levels there will be; then each following value
-specifies the resolution of the respective level as follows.
+specifies the depth of the octree's in the multi-octree data
+structure. For example., a depth of 0 means the data set is actually
+_only_ a root grid (each cell is a leaf); a depth of 3 means octrees
+are 3 levels deep, and cover 8x8x8 input cells. I.e., a 1k^3 RAW data
+set built with a depth of d=6 would have a root grid of 1k / 2^d =
+16^3 root cells of (up to) 6-deep octrees; with a depth of d=10 it
+would be a single octree of up to 10 levels.
 
 RAW to AMR conversion example
 -----------------------------
 
-For example, consider you have a volume test.raw of 1024^3 floating
-point voxels, and you want to convert this to an AMR representation
-using 8^3 blocks. Further assume that all voxel values are in the
-[0..1] range, and you want to use a threshold of 0.1. In that case,
-you'd be using the command
+As an example, consider the 'magnetic' data set, which is
+512^3. Here's how to convert it to a 15^5 root grid with up to 5
+levels, and a refinement threshold of 5%:
 
-    ospRawToAmr test.raw -dims 1024 1024 1024 -format float \
-         -o test_8.osp --threshold .1 --brick-size 1 8
-
-Given that the fine grid has 1024^3 voxels (that is 1023^3 cells),
-using bricks of 8^3 cells (that is 9^3 voxels) the output grid will
-have 129^3 voxels (128^3 cells, because 128=roundup(1023/8)), and each
-of these cells will be either a leaf (if its corresponding 9^3 voxels
-in the fine grid didn't vary by more than 0.1, or point to a brick of
-9^3 voxels that contain the original cells. The voxel values at the
-coarse grid will correspond to the voxel values at the corners of the
-fine grid's cells, i.e., at (0,0,0), (0,0,8), (0,0,16), ... etc.
-
-Since the number of input _cells_ (1023) is not an exact multiple of
-the brick size the tool will automatically pad the fine grid by the
-voxel values from the last valid cell. I.e., for the voxel (0,0,1024)
-required for the right-most bricks and coarse-grid voxel values, it
-will simply use the closest valid voxel value, at (0,0,1023).
+  ./ospRaw2OctAMR ~/models/magnetic-512-volume/magnetic-512-volume.raw -dims 512 512 512 --format float -o /tmp/magnetic.osp -t .05 --depth 5
 
 
 Rendering an AMR Data Set
@@ -78,7 +64,5 @@ Rendering an AMR Data Set
 Given an ospray AMR data set as produced in the 'RAW to AMR
 conversion' section, you should be able to render this via
 
-    ./ospQTViewer --module amr test_8.osp --renderer raycast_volume_renderer
+    ./ospQTViewer --module amr /tmp/magnetic.osp --renderer 
        
-NOTE: SO FAR THIS IS AMR MODULE IS NOT FULLY IMPLEMENTED, SO THIS WILL
-NOT RENDER ANYTHING AT ALL RIGHT NOW.
