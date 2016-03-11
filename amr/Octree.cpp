@@ -17,42 +17,28 @@
 #pragma once
 
 // ospray
-#include "ospray/volume/Volume.h"
-// amr base
-#include "../amr/AMR.h"
+#include "Octree.h"
 
 namespace ospray {
   namespace amr {
-
-    struct AMRVolume : public ospray::Volume {
-      AMRVolume();
-
-      //! \brief common function to help printf-debugging 
-      virtual std::string toString() const { return "ospray::amr::AMRVolume"; }
-      
-      /*! \brief integrates this volume's primitives into the respective
-        model's comperation structure */
-      // virtual void finalize(Model *model);
-
-      //! Allocate storage and populate the volume.
-      virtual void commit();
-
-      //! Copy voxels into the volume at the given index (non-zero return value indicates success).
-      virtual int setRegion(const void *source, const vec3i &index, const vec3i &count)
-      {
-        FATAL("'setRegion()' doesn't make sense for AMR volumes; they can only be set from existing data");
-      }
-
-      // //! Create the equivalent ISPC volume container.
-      // virtual void createEquivalentISPC();
-
-      AMR *amr;
-      Ref<Data>   rootCellData;
-      Ref<Data>   octCellData;
-      vec3i       dimensions;
-      OSPDataType voxelType;
-    };
     
-  }
-}
-
+    std::ostream &operator<<(std::ostream &o,
+                             const ospray::amr::Octree::Cell &c)
+    { o << "("<<c.ccValue<<":"<<c.childID<<")"; return o; }
+    
+    std::ostream &operator<<(std::ostream &o,
+                             const ospray::amr::Octree::OctCell &c)
+    {
+      for (int iz=0;iz<2;iz++)
+        for (int iy=0;iy<2;iy++)
+          for (int ix=0;ix<2;ix++) {
+            o << ((ix||iy||iz)?" ":"(")
+              << c.child[iz][iy][ix]
+              << ((!ix||!iy||!iz)?",":")")
+              << std::endl;
+          }
+      return o;
+    }
+    
+  } // ::ospray::amr
+} // ::ospray

@@ -23,7 +23,6 @@ namespace ospray {
   namespace amr {
 
     /*! out multi-octree data structure - one root grid with one octree per cell */
-    template<typename voxel_t>
     struct AMR {
       
       struct CellIdx : public vec3i {
@@ -43,18 +42,20 @@ namespace ospray {
         int m; /*!< level ID */
 
         inline friend std::ostream &operator<<(std::ostream &o,
-                                 const typename AMR<voxel_t>::CellIdx &i)
+                                 const typename AMR::CellIdx &i)
         { o << "(" << i.x << "," << i.y << "," << i.z << ":" << i.m << ")"; return o;}
       };
 
-      typedef typename Octree<voxel_t>::Cell Cell;
-      typedef typename Octree<voxel_t>::OctCell OctCell;
+      typedef typename Octree::Cell Cell;
+      typedef typename Octree::OctCell OctCell;
       
       AMR() : dimensions(0) {}
       
       void allocate(const vec3i &newDims) { dimensions = newDims; rootCell.resize(numCells()); }
       size_t numCells() const { return dimensions.x*dimensions.y*dimensions.z; }
       
+      virtual float sample(const vec3f &unitPos);
+
       // 3D array of root nodes
       std::vector<Cell> rootCell;
       // array of (all) child cells, across all octrees
@@ -62,49 +63,13 @@ namespace ospray {
       // dimensions of root grid
       vec3i dimensions;
 
-      Range<voxel_t> getValueRange(const int32_t subCellID) const;
-      Range<voxel_t> getValueRange(const vec3i &rootCellID) const;
-      Range<voxel_t> getValueRange() const;
-
-
-      /*! try to locate the given cell at 'desiredIdx', and return
-          either the cell itself (if it exists), or the leaf cell
-          that's the finest existing ancestor of the cell (if it
-          doesn't exist on the desired level) */
-      const Cell *findCell(const CellIdx &desiredIdx, 
-                           CellIdx &actualIdx) const;
-      
-      /*! find a given leaf cell, returning a pointer to the leaf cell
-          itself (as return value) and the logical cell index (2nd
-          reference parameters) that this cell would have had in
-          infinite nested grid space. the location is given in GRID coordinates, ie, in [(0,0,0):dims] */
-      const Cell *findLeafCell(const vec3f &gridPos, CellIdx &idx) const;
-
-
-
-
-      void accumulateHatBasisFunctions(const vec3f &gridPos,
-                                       const Cell *cell,
-                                       const CellIdx &cellIdx,
-                                       float &num, float &den) const;
-      void accumulateHatBasisFunctions(const vec3f &gridPos,
-                                       float &num, float &den) const;
-        
-        
-
-      /*! return interpolated value at given unit position (ie pos must be in [(0),(1)] */
-      /*! note(iw): i'll TEMPORARILY hcnage this to return a vec3f,
-          which is easier for debugging; eventually we DO need
-          floats */
-      vec3f sample(const vec3f &unitPos) const;
-      float sampleRootCellOnly(const vec3f &unitPos) const;
-      /*! this version will sample down to whatever octree leaf gets
-        hit, but without interpolation, just nearest neighbor */
-      float sampleFinestLeafNearestNeighbor(const vec3f &unitPos) const; 
+      Range<float> getValueRange(const int32_t subCellID) const;
+      Range<float> getValueRange(const vec3i &rootCellID) const;
+      Range<float> getValueRange() const;
 
       void writeTo(const std::string &outFileName);
       void mmapFrom(const unsigned char *binBasePtr);
-      static AMR<voxel_t> *loadFrom(const char *fileName);
+      static AMR *loadFrom(const char *fileName);
     };
 
   } // ::ospray::amr

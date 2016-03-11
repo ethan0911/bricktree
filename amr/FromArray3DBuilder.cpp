@@ -24,37 +24,33 @@ namespace ospray {
     using std::endl;
     
     // constructor
-    template<typename T>
-    FromArray3DBuilder<T>::FromArray3DBuilder()
+    FromArray3DBuilder::FromArray3DBuilder()
       : input(NULL), maxLevels(2), threshold(.1f)
     {
-      oct = new AMR<T>;
+      oct = new AMR;
     }
     
-    template<typename T>
-    size_t FromArray3DBuilder<T>::inputCellID(const vec3i &cellID) const
+    size_t FromArray3DBuilder::inputCellID(const vec3i &cellID) const
     {
       vec3i dims = input->size();
       return (size_t)cellID.x + dims.x*((size_t)cellID.y + dims.y * (size_t)cellID.z);
     }
     
-    template<typename T>
-    size_t FromArray3DBuilder<T>::rootCellID(const vec3i &cellID) const
+    size_t FromArray3DBuilder::rootCellID(const vec3i &cellID) const
     {
       return (size_t)cellID.x + oct->dimensions.x*((size_t)cellID.y + oct->dimensions.y * (size_t)cellID.z);
     }
     
-    template<typename T>
-    typename Octree<T>::Cell 
-    FromArray3DBuilder<T>::recursiveBuild(const vec3i &begin, int blockSize)
+    Octree::Cell 
+    FromArray3DBuilder::recursiveBuild(const vec3i &begin, int blockSize)
     {
       vec3i end = begin+vec3i(blockSize);
-      Range<T> range = input->getValueRange(begin,end);
+      Range<float> range = input->getValueRange(begin,end);
       // oct->rootCell[getCellID(blockID)].ccValue = range.center();
-      typename Octree<T>::Cell  cell;
+      Octree::Cell  cell;
       if (blockSize > 1 && range.size() > threshold) {
         cell.childID = oct->octCell.size();
-        typename Octree<T>::OctCell oc;
+        Octree::OctCell oc;
         oct->octCell.push_back(oc);
         int halfSize = blockSize/2;
         for (int iz=0;iz<2;iz++)
@@ -69,9 +65,34 @@ namespace ospray {
       return cell;
     }
     
+#if 0
+    Octree::NodeRef 
+    FromArray3DBuilder::recursiveBuildRef(const vec3i &begin, int blockSize)
+    {
+      vec3i end = begin+vec3i(blockSize);
+      Range<float> range = input->getValueRange(begin,end);
+      // oct->rootCell[getCellID(blockID)].ccValue = range.center();
+      if (blockSize > 1 && range.size() > threshold) {
+        int childID = oct->node.size();
+        Octree::Node node;
+        cell.childID = oct->octCell.size();
+        Octree::OctCell oc;
+        oct->octCell.push_back(oc);
+        int halfSize = blockSize/2;
+        for (int iz=0;iz<2;iz++)
+          for (int iy=0;iy<2;iy++)
+            for (int ix=0;ix<2;ix++)
+              oc.child[iz][iy][ix] = recursiveBuildRef(begin+vec3i(ix,iy,iz)*halfSize,halfSize);
+        oct->octCell[cell.childID] = oc;
+        
+      } else {
+        return Octree::NodeRef(input->get(begin));
+      }
+    }
+#endif    
+
     // build octree for block i,j,k (in root grid coordinates)
-    template<typename T>
-    void FromArray3DBuilder<T>::makeBlock(const vec3i &blockID)
+    void FromArray3DBuilder::makeBlock(const vec3i &blockID)
     {
       size_t blockSize = (1<<maxLevels);
       vec3i begin = blockID*vec3i(blockSize);
@@ -80,10 +101,9 @@ namespace ospray {
       cout << "rootBlock[" << rootCellID(blockID) << " = " << oct->rootCell[rootCellID(blockID)].ccValue << endl;
     }
 
-    template<typename T>
-    AMR<T> *FromArray3DBuilder<T>::makeAMR(const Array3D<T> *input, 
-                                          int maxLevels, 
-                                          float threshold)
+    AMR *FromArray3DBuilder::makeAMR(const Array3D<float> *input, 
+                                     int maxLevels, 
+                                     float threshold)
     {
       this->input = input;
       this->maxLevels = maxLevels;
@@ -103,7 +123,7 @@ namespace ospray {
       oct->allocate(numBlocks);//(numBlocks.x*numBlocks.y*numBlocks.z);
 
       cout << "computing value range for entire volume..." << endl;
-      Range<T> mm = input->getValueRange(vec3i(0),dims);
+      Range<float> mm = input->getValueRange(vec3i(0),dims);
       std::cout << "value range for entire input is " << mm << std::endl;
       threshold = threshold * mm.size();
       std::cout << "at specified rel threshold of " << threshold << " this triggers splitting nodes whose difference exceeds " << threshold << std::endl;
@@ -130,8 +150,6 @@ namespace ospray {
       return oct;
     }
 
-    template struct FromArray3DBuilder<float>;
-    template struct FromArray3DBuilder<uint8>;
   } // ::ospray::amr
 } // ::ospray
 

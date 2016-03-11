@@ -44,15 +44,14 @@ namespace ospray {
       exit(msg != "");
     }
 
-    template<typename T>
-    AMR<T> *oamrFromVolume(const Array3D<T> *input,
-                           int maxLevels,
-                           float threshold)
+    AMR *oamrFromVolume(const Array3D<float> *input,
+                        int maxLevels,
+                        float threshold)
     {
-      FromArray3DBuilder<T> builder;
+      FromArray3DBuilder builder;
 
       cout << "read input, now building AMR Octree" << endl;
-      AMR<T> *oct = builder.makeAMR(input,maxLevels,threshold);
+      AMR *oct = builder.makeAMR(input,maxLevels,threshold);
       cout << "done building" << endl;
       return oct;
     }
@@ -117,7 +116,7 @@ namespace ospray {
         input = new Array3DRepeater<float>(input,repeat);
       }
 
-      AMR<float> *amr = oamrFromVolume<float>(input,maxLevels,threshold);
+      AMR *amr = oamrFromVolume(input,maxLevels,threshold);
       assert(amr);
       amr->writeTo(outFileName);
       

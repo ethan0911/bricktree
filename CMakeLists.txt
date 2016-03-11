@@ -34,6 +34,7 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
     amr/Array3D.cpp
     amr/FromArray3DBuilder.cpp
     amr/AMR.cpp
+    amr/Octree.cpp
     )
   
   OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_amr

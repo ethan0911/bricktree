@@ -24,7 +24,6 @@ namespace ospray {
 
     template<typename T> T inline divRoundUp(const T&a, const T &b) { return (a+b-T(1))/b; }
 
-    template<typename T>
     struct FromArray3DBuilder {
       // constructor
       FromArray3DBuilder();
@@ -32,16 +31,17 @@ namespace ospray {
       // build one root block (the one with given ID, obviously)
       void makeBlock(const vec3i &blockID);
 
-      typename Octree<T>::Cell recursiveBuild(const vec3i &begin, int blockSize);
+      Octree::Cell recursiveBuild(const vec3i &begin, int blockSize);
+      // Octree::NodeRef recursiveBuildRef(const vec3i &begin, int blockSize);
 
       size_t inputCellID(const vec3i &cellID) const;
       size_t rootCellID(const vec3i &cellID) const;
 
       // build the entire thing
-      AMR<T> *makeAMR(const Array3D<T> *input, int maxLevels, float threshold);
+      AMR *makeAMR(const Array3D<float> *input, int maxLevels, float threshold);
       
       // pre-loaded input volume
-      const Array3D<T> *input;
+      const Array3D<float> *input;
       
       // max number of levels we are allowed to create
       int maxLevels;
@@ -49,7 +49,7 @@ namespace ospray {
       // threshold for refining
       float threshold;
 
-      AMR<T> *oct;
+      AMR *oct;
     };
     
   } // ::ospray::amr

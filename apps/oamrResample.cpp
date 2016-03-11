@@ -44,72 +44,72 @@ namespace ospray {
       exit(msg != "");
     }
     
-    void createSliceImage(AMR<float> *amr,
-                          const vec3f &org,
-                          const vec3f &dx, 
-                          const vec3f &dy,
-                          const char *name)
-    {
-      FILE *file = fopen(name,"wb");
-      assert(file);
+//     void createSliceImage(AMR *amr,
+//                           const vec3f &org,
+//                           const vec3f &dx, 
+//                           const vec3f &dy,
+//                           const char *name)
+//     {
+//       FILE *file = fopen(name,"wb");
+//       assert(file);
 
-      int sizeX=800, sizeY=sizeX;
+//       int sizeX=800, sizeY=sizeX;
 
-      Range<float> range = amr->getValueRange();
+//       Range<float> range = amr->getValueRange();
 
-      fprintf(file,"P6\n%i %i\n255\n",sizeX,sizeY);
-      for (int y=0;y<sizeY;y++)
-        for (int x=0;x<sizeX;x++) {
-          vec3f pos
-            = org
-            + (x+.5f)/sizeX * dx
-            + (y+.5f)/sizeY * dy;
-#if 0
-          // visualize cell ID
-          AMR<float>::CellIdx cellIdx;
-          const AMR<float>::Cell *cell = amr->findLeafCell(pos,cellIdx);
-          const vec3i mDims = amr->dimensions * vec3i(1<<cellIdx.m);
-          vec3f col = ospray::makeRandomColor(cellIdx.x+mDims.x*(cellIdx.y+mDims.y*(cellIdx.z)));
-          {
-            int t = int(255*col.x);
-            fwrite(&t,1,1,file);
-          }
-          {
-            int t = int(255*col.y);
-            fwrite(&t,1,1,file);
-          }
-          {
-            int t = int(255*col.z);
-            fwrite(&t,1,1,file);
-          }
-#elif 1
-          vec3f col = amr->sample(pos) * max(dx,dy);
-          {
-            int t = int(255*col.x);
-            fwrite(&t,1,1,file);
-          }
-          {
-            int t = int(255*col.y);
-            fwrite(&t,1,1,file);
-          }
-          {
-            int t = int(255*col.z);
-            fwrite(&t,1,1,file);
-          }
+//       fprintf(file,"P6\n%i %i\n255\n",sizeX,sizeY);
+//       for (int y=0;y<sizeY;y++)
+//         for (int x=0;x<sizeX;x++) {
+//           vec3f pos
+//             = org
+//             + (x+.5f)/sizeX * dx
+//             + (y+.5f)/sizeY * dy;
+// #if 0
+//           // visualize cell ID
+//           AMR::CellIdx cellIdx;
+//           const AMR::Cell *cell = amr->findLeafCell(pos,cellIdx);
+//           const vec3i mDims = amr->dimensions * vec3i(1<<cellIdx.m);
+//           vec3f col = ospray::makeRandomColor(cellIdx.x+mDims.x*(cellIdx.y+mDims.y*(cellIdx.z)));
+//           {
+//             int t = int(255*col.x);
+//             fwrite(&t,1,1,file);
+//           }
+//           {
+//             int t = int(255*col.y);
+//             fwrite(&t,1,1,file);
+//           }
+//           {
+//             int t = int(255*col.z);
+//             fwrite(&t,1,1,file);
+//           }
+// #elif 1
+//           vec3f col = amr->sample(pos) * max(dx,dy);
+//           {
+//             int t = int(255*col.x);
+//             fwrite(&t,1,1,file);
+//           }
+//           {
+//             int t = int(255*col.y);
+//             fwrite(&t,1,1,file);
+//           }
+//           {
+//             int t = int(255*col.z);
+//             fwrite(&t,1,1,file);
+//           }
 
-#else
-          float f = amr->sample(pos).x;
-          f = (f-range.lo)/(range.hi-range.lo);
-          int t = int(255*f);
-          fwrite(&t,1,1,file);
-          fwrite(&t,1,1,file);
-          fwrite(&t,1,1,file);
-#endif
-        }
-      fprintf(file,"\n");
-      cout << "successfully written slice file " << name << endl;
-      fclose(file);
-    }
+// #else
+//           float f = amr->sample(pos).x;
+//           f = (f-range.lo)/(range.hi-range.lo);
+//           int t = int(255*f);
+//           fwrite(&t,1,1,file);
+//           fwrite(&t,1,1,file);
+//           fwrite(&t,1,1,file);
+// #endif
+//         }
+//       fprintf(file,"\n");
+//       cout << "successfully written slice file " << name << endl;
+//       fclose(file);
+//     }
     
     extern "C" int main(int ac, char **av)
     {
@@ -139,15 +139,15 @@ namespace ospray {
       if (outFileName == "")
         error("no output file specified");
       
-      AMR<float> *amr = AMR<float>::loadFrom(inFileName.c_str());
+      AMR *amr = AMR::loadFrom(inFileName.c_str());
       assert(amr);
 
-      if (1) {
-        createSliceImage(amr,vec3f(0,0,0.5f),vec3f(1,0,0),vec3f(0,1,0),"centerSlice_x.ppm");
-        createSliceImage(amr,vec3f(0,0.5f,0),vec3f(1,0,0),vec3f(0,0,1),"centerSlice_y.ppm");
-        createSliceImage(amr,vec3f(0.5f,0,0),vec3f(0,1,0),vec3f(0,0,1),"centerSlice_z.ppm");
-        return 1;
-      }
+      // if (1) {
+      //   createSliceImage(amr,vec3f(0,0,0.5f),vec3f(1,0,0),vec3f(0,1,0),"centerSlice_x.ppm");
+      //   createSliceImage(amr,vec3f(0,0.5f,0),vec3f(1,0,0),vec3f(0,0,1),"centerSlice_y.ppm");
+      //   createSliceImage(amr,vec3f(0.5f,0,0),vec3f(0,1,0),vec3f(0,0,1),"centerSlice_z.ppm");
+      //   return 1;
+      // }
 
 
       ActualArray3D<float> *resampled = new ActualArray3D<float>(dims);
@@ -155,7 +155,7 @@ namespace ospray {
         for (int iy=0;iy<dims.y;iy++)
           for (int ix=0;ix<dims.x;ix++) {
             vec3f pos((vec3f(ix,iy,iz)+vec3f(.5f))/vec3f(dims));
-            resampled->value[resampled->indexOf(vec3i(ix,iy,iz))] = amr->sample(pos).x;
+            resampled->value[resampled->indexOf(vec3i(ix,iy,iz))] = amr->sample(pos);
           }
     
       FILE *out = fopen(outFileName.c_str(),"wb");

@@ -98,13 +98,14 @@ namespace ospray {
         throw std::runtime_error("can only do float AMR right now");
       this->voxelType = typeForString(voxelType.c_str());
 
-      this->moa = new AMR<float>;
+      this->moa = new AMR;
       this->moa->mmapFrom(binBasePtr);
 
       this->transferFunction = new TransferFunction;
     }
 
     typedef AMRVolume MultiOctreeAMR;
+
     OSP_REGISTER_SG_NODE(MultiOctreeAMR);
     OSP_REGISTER_SG_NODE(AMRVolume);
 

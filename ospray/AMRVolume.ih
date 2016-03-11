@@ -20,6 +20,10 @@
 #include "ospray/math/AffineSpace.ih"
 #include "ospray/geometry/Geometry.ih"
 
+struct range1f {
+  float lo, hi;
+};
+
 struct AMRCell {
   uniform float ccValue;
   uniform int32 childID;
@@ -40,5 +44,10 @@ struct AMRVolume {
   uniform AMRCell *uniform rootCell;
   // array of octree cells
   uniform AMROctCell *uniform octCell;
+  // array of cell ranges - note that this includes even leaves,
+  // because the _interpolant_ in a cell is not constant, and thus
+  // _not_ the same as the leaf cell value itself.
+  uniform range1f *uniform octCellRange;
+  uniform range1f *uniform rootCellRange;
 };
 

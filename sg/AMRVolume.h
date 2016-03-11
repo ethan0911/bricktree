@@ -57,7 +57,7 @@ namespace ospray {
       OSPData rootCellData;
 
       /*! the actual MOA we're handling */
-      amr::AMR<float> *moa;
+      amr::AMR *moa;
     };
 
   } // ::ospray::sg

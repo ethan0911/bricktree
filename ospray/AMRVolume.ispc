@@ -34,7 +34,7 @@ export void *uniform AMRVolume_create(void *uniform cppEquivalent)
   return self;
 };
 
-extern "C" uniform float AMR_sample_scalar(void *uniform self, uniform vec3f *uniform v);
+// extern "C" uniform float AMR_sample_scalar(void *uniform self, uniform vec3f *uniform v);
 
 
 struct TentAlgoStackEntry {
@@ -42,6 +42,12 @@ struct TentAlgoStackEntry {
   uniform float cellWidth;
   // lower-left-front coordinate (in grid space) of cell
   uniform vec3f basePos;
+};
+
+/*! struct for a cached octant - not used yet */
+struct CachedOctant {
+  box3f bounds;
+  float corner[2][2][2];
 };
 
 
@@ -162,59 +168,70 @@ static varying float AMRVolume_sample(void *uniform _self,
 #endif
 }
 
-  //! The gradient at the given sample location in world coordinates.
-  static varying vec3f AMRVolume_gradient(void *uniform _self, 
-                                          const varying vec3f &worldCoordinates)
-  {
-    return make_vec3f(1,0,0);
-  }
+//! The gradient at the given sample location in world coordinates.
+static varying vec3f AMRVolume_gradient(void *uniform _self, 
+                                        const varying vec3f &worldCoordinates)
+{
+  return make_vec3f(1,0,0);
+}
 
-  //! Find the next hit point in the volume for ray casting based renderers.
-  static void AMRVolume_intersect(void *uniform _self, 
-                                  varying Ray &ray)
-  {
-    AMRVolume *uniform self = (AMRVolume *uniform) _self;
+//! Find the next hit point in the volume for ray casting based renderers.
+static void AMRVolume_intersect(void *uniform _self, 
+                                varying Ray &ray)
+{
+  AMRVolume *uniform self = (AMRVolume *uniform) _self;
 
-    // TODO: clean this up, properly implemnt an integrator with
-    // variable step size...
-    const uniform float step
-      = self->super.samplingStep / self->super.samplingRate;
+  // TODO: clean this up, properly implemnt an integrator with
+  // variable step size...
+  const uniform float step
+    = self->super.samplingStep / self->super.samplingRate;
 
-    ray.t0 += step;
-  }
+  ray.t0 += step;
+}
+
+void computeTreeRanges(AMRVolume *uniform self)
+{
+  for (uniform int iz=0;iz<self->rootDims.z;iz++)
+    for (uniform int iy=0;iy<self->rootDims.y;iy++)
+      for (uniform int ix=0;ix<self->rootDims.x;ix++) {
+        // TODO
+        //        computeNodeRange(
+      }
+}
 
 
+export void AMRVolume_set(void *uniform _self,
+                          void *uniform _xf,
+                          const uniform vec3i &dimensions,
+                          void *uniform rootCell,
+                          void *uniform octCell)
+{
+  AMRVolume *uniform self = (AMRVolume *uniform)_self;
+  assert(self);
 
-  export void AMRVolume_set(void *uniform _self,
-                            void *uniform _xf,
-                            const uniform vec3i &dimensions,
-                            void *uniform rootCell,
-                            void *uniform octCell)
-  {
-    AMRVolume *uniform self = (AMRVolume *uniform)_self;
-    assert(self);
+  self->super.boundingBox.lower = make_vec3f(0.f);
+  self->super.boundingBox.upper = make_vec3f(dimensions);
 
-    self->super.boundingBox.lower = make_vec3f(0.f);
-    self->super.boundingBox.upper = make_vec3f(dimensions);
+  self->super.volumeClippingBox.lower = make_vec3f(0.f);
+  self->super.volumeClippingBox.upper = make_vec3f(dimensions);
 
-    self->super.volumeClippingBox.lower = make_vec3f(0.f);
-    self->super.volumeClippingBox.upper = make_vec3f(dimensions);
+  self->super.intersect = &AMRVolume_intersect;
+  self->super.computeSample = &AMRVolume_sample;
+  self->super.computeGradient = &AMRVolume_gradient;
 
-    self->super.intersect = &AMRVolume_intersect;
-    self->super.computeSample = &AMRVolume_sample;
-    self->super.computeGradient = &AMRVolume_gradient;
+  self->super.samplingRate = 1.f;
+  self->super.samplingStep = 1.f;
 
-    self->super.samplingRate = 1.f;
-    self->super.samplingStep = 1.f;
+  self->super.gradientShadingEnabled = 0;
 
-    self->super.gradientShadingEnabled = 0;
+  self->super.transferFunction = (TransferFunction *uniform)_xf;
 
-    self->super.transferFunction = (TransferFunction *uniform)_xf;
+  self->rootDims = dimensions;
+  self->rootCell = (AMRCell*uniform)rootCell;
+  self->octCell  = (AMROctCell*uniform)octCell;
 
-    self->rootDims = dimensions;
-    self->rootCell = (AMRCell*uniform)rootCell;
-    self->octCell  = (AMROctCell*uniform)octCell;
-  }
+  computeTreeRanges(self);
+}
 
 
 
