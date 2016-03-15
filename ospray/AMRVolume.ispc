@@ -230,20 +230,20 @@ inline float tentApproximation_packet(AMRVolume *uniform self,
                   for (uniform int iiz=0;iiz<2;iiz++) {
                     newBasePos.z = cur.basePos.z + (iiz?newCellWidth:0.f);
                     if (abs(newBasePos.z + 0.5f *newCellWidth - gridPos.z) < newCellWidth)
-                    for (uniform int iiy=0;iiy<2;iiy++) {
-                      newBasePos.y = cur.basePos.y + (iiy?newCellWidth:0.f);
-                      if (abs(newBasePos.y + 0.5f *newCellWidth - gridPos.y) < newCellWidth)
-                      for (uniform int iix=0;iix<2;iix++) {
-                        newBasePos.x = cur.basePos.x + (iix?newCellWidth:0.f);
-                        if (abs(newBasePos.x + 0.5f *newCellWidth - gridPos.x) < newCellWidth)
-                          {
-                          stackPtr->basePos = newBasePos;
-                          stackPtr->cellWidth = newCellWidth;
-                          stackPtr->cell = &oc->child[iiz][iiy][iix];
-                          ++stackPtr;
-                        }
+                      for (uniform int iiy=0;iiy<2;iiy++) {
+                        newBasePos.y = cur.basePos.y + (iiy?newCellWidth:0.f);
+                        if (abs(newBasePos.y + 0.5f *newCellWidth - gridPos.y) < newCellWidth)
+                          for (uniform int iix=0;iix<2;iix++) {
+                            newBasePos.x = cur.basePos.x + (iix?newCellWidth:0.f);
+                            if (abs(newBasePos.x + 0.5f *newCellWidth - gridPos.x) < newCellWidth)
+                              {
+                                stackPtr->basePos = newBasePos;
+                                stackPtr->cellWidth = newCellWidth;
+                                stackPtr->cell = &oc->child[iiz][iiy][iix];
+                                ++stackPtr;
+                              }
+                          }
                       }
-                    }
                   }
                 }
               }
@@ -259,7 +259,7 @@ inline float tentApproximation_packet(AMRVolume *uniform self,
                                
 
 inline float tentApproximation_spmd(AMRVolume *uniform self,
-                                      const varying vec3f &worldCoordinates)
+                                    const varying vec3f &worldCoordinates)
 {
   // "packet" variant
   varying VaryTentAlgoStackEntry stack[40];
