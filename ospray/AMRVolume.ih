@@ -25,12 +25,12 @@ struct range1f {
 };
 
 struct AMRCell {
-  uniform float ccValue;
-  uniform int32 childID;
+  float ccValue;
+  int32 childID;
 };
 
 struct AMROctCell {
-  uniform AMRCell child[2][2][2];
+  AMRCell child[2][2][2];
 };
 
 struct AMRVolume {

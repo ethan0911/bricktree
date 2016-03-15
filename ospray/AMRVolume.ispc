@@ -48,6 +48,13 @@ struct TentAlgoStackEntry {
   uniform vec3f basePos;
 };
 
+struct VaryTentAlgoStackEntry {
+  varying int cellID;
+  varying float cellWidth;
+  // lower-left-front coordinate (in grid space) of cell
+  varying vec3f basePos;
+};
+
 /*! struct for a cached octant - not used yet */
 struct CachedOctant {
   box3f bounds;
@@ -58,102 +65,102 @@ struct CachedOctant {
 
 
 
-inline uniform float tentApproximation_single(AMRVolume *uniform self,
-                                              const uniform vec3f worldCoordinates)
-{
-  uniform TentAlgoStackEntry stackBase[100];
-  uniform TentAlgoStackEntry *uniform stackPtr = stackBase;
+// inline uniform float tentApproximation_single(AMRVolume *uniform self,
+//                                               const uniform vec3f worldCoordinates)
+// {
+//   uniform TentAlgoStackEntry stackBase[100];
+//   uniform TentAlgoStackEntry *uniform stackPtr = stackBase;
 
-  // // init numerator and denominator
-  float num = 0.f;
-  float den = 0.f;
-  const uniform vec3f gridPos = worldCoordinates;
+//   // // init numerator and denominator
+//   float num = 0.f;
+//   float den = 0.f;
+//   const uniform vec3f gridPos = worldCoordinates;
 
-  // -------------------------------------------------------
-  // do initial stack fill
-  // ------------------------------------------------------- 
-  // - compute region of cells in root grid
-  uniform vec3i root_beg = make_vec3i(floor(gridPos - make_vec3f(.5f)));
-  uniform vec3i root_end = make_vec3i(root_beg+make_vec3i(2));
-  root_beg = max(root_beg,make_vec3i(0));
-  root_end = min(root_end,self->rootDims);
+//   // -------------------------------------------------------
+//   // do initial stack fill
+//   // ------------------------------------------------------- 
+//   // - compute region of cells in root grid
+//   uniform vec3i root_beg = make_vec3i(floor(gridPos - make_vec3f(.5f)));
+//   uniform vec3i root_end = make_vec3i(root_beg+make_vec3i(2));
+//   root_beg = max(root_beg,make_vec3i(0));
+//   root_end = min(root_end,self->rootDims);
   
-  // now, throw the 2x2x2 possibly overlapping root cells on the stack.
-  for (uniform int iz=root_beg.z; iz < root_end.z; iz++) {
-    for (uniform int iy=root_beg.y; iy < root_end.y; iy++) {
-      for (uniform int ix=root_beg.x; ix < root_end.x; ix++) {
-        const uniform int rootCellID
-          = ix + self->rootDims.x*(iy+self->rootDims.y*(iz));
-        stackPtr->cell = self->rootCell+rootCellID;
-        stackPtr->basePos = make_vec3f(ix,iy,iz);
-        stackPtr->cellWidth = 1.f;
-        stackPtr++;
+//   // now, throw the 2x2x2 possibly overlapping root cells on the stack.
+//   for (uniform int iz=root_beg.z; iz < root_end.z; iz++) {
+//     for (uniform int iy=root_beg.y; iy < root_end.y; iy++) {
+//       for (uniform int ix=root_beg.x; ix < root_end.x; ix++) {
+//         const uniform int rootCellID
+//           = ix + self->rootDims.x*(iy+self->rootDims.y*(iz));
+//         stackPtr->cell = self->rootCell+rootCellID;
+//         stackPtr->basePos = make_vec3f(ix,iy,iz);
+//         stackPtr->cellWidth = 1.f;
+//         stackPtr++;
         
-        // -------------------------------------------------------
-        // process stack nodes...
-        // -------------------------------------------------------
-        // note we do NOT know if the stack entries actually
-        // overlap - that makes the pushing easier.
-        while (stackPtr > stackBase) {
-          -- stackPtr;
-          uniform TentAlgoStackEntry cur = *stackPtr;
+//         // -------------------------------------------------------
+//         // process stack nodes...
+//         // -------------------------------------------------------
+//         // note we do NOT know if the stack entries actually
+//         // overlap - that makes the pushing easier.
+//         while (stackPtr > stackBase) {
+//           -- stackPtr;
+//           uniform TentAlgoStackEntry cur = *stackPtr;
           
-          const vec3f base = make_vec3f(cur.basePos);
-          const float cellWidth  = cur.cellWidth;
-          const vec3f cellCenter = base+0.5f*cellWidth;
-          const vec3f delta = absf(cellCenter - gridPos);
+//           const vec3f base = make_vec3f(cur.basePos);
+//           const float cellWidth  = cur.cellWidth;
+//           const vec3f cellCenter = base+0.5f*cellWidth;
+//           const vec3f delta = absf(cellCenter - gridPos);
           
-          if (reduce_max(delta) >= cellWidth) 
-            continue;
+//           if (reduce_max(delta) >= cellWidth) 
+//             continue;
           
-          if (cur.cell->childID < 0) {
-            // leaf node ...
-            const vec3f weight = make_vec3f(1.f) - delta * rcp(cellWidth);
-            const float w = reduce_mul(weight);
-            den += w;
-            num += w * cur.cell->ccValue;
-          } else {
-            uniform AMROctCell *uniform oc = self->octCell+cur.cell->childID;
-            uniform vec3f newBasePos;
-            const uniform float newCellWidth = 0.5f * cur.cellWidth;
-            for (uniform int iiz=0;iiz<2;iiz++) {
-              newBasePos.z = cur.basePos.z + (iiz?newCellWidth:0.f);
-              for (uniform int iiy=0;iiy<2;iiy++) {
-                newBasePos.y = cur.basePos.y + (iiy?newCellWidth:0.f);
-                for (uniform int iix=0;iix<2;iix++) {
-                  newBasePos.x = cur.basePos.x + (iix?newCellWidth:0.f);
-                  stackPtr->basePos = newBasePos;
-                  stackPtr->cellWidth = newCellWidth;
-                  stackPtr->cell = &oc->child[iiz][iiy][iix];
-                  ++stackPtr;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+//           if (cur.cell->childID < 0) {
+//             // leaf node ...
+//             const vec3f weight = make_vec3f(1.f) - delta * rcp(cellWidth);
+//             const float w = reduce_mul(weight);
+//             den += w;
+//             num += w * cur.cell->ccValue;
+//           } else {
+//             uniform AMROctCell *uniform oc = self->octCell+cur.cell->childID;
+//             uniform vec3f newBasePos;
+//             const uniform float newCellWidth = 0.5f * cur.cellWidth;
+//             for (uniform int iiz=0;iiz<2;iiz++) {
+//               newBasePos.z = cur.basePos.z + (iiz?newCellWidth:0.f);
+//               for (uniform int iiy=0;iiy<2;iiy++) {
+//                 newBasePos.y = cur.basePos.y + (iiy?newCellWidth:0.f);
+//                 for (uniform int iix=0;iix<2;iix++) {
+//                   newBasePos.x = cur.basePos.x + (iix?newCellWidth:0.f);
+//                   stackPtr->basePos = newBasePos;
+//                   stackPtr->cellWidth = newCellWidth;
+//                   stackPtr->cell = &oc->child[iiz][iiy][iix];
+//                   ++stackPtr;
+//                 }
+//               }
+//             }
+//           }
+//         }
+//       }
+//     }
+//   }
   
-  return reduce_add(num) / reduce_add(den+1e-8f);
-}
-inline float tentApproximation_srs(AMRVolume *uniform self,
-                                   const varying vec3f &worldCoordinates)
-{
-  uniform float wx[programCount];
-  uniform float wy[programCount];
-  uniform float wz[programCount];
-  unmasked {
-    wx[programIndex] = worldCoordinates.x; 
-    wy[programIndex] = worldCoordinates.y; 
-    wz[programIndex] = worldCoordinates.z; 
-  }
+//   return reduce_add(num) / reduce_add(den+1e-8f);
+// }
+// inline float tentApproximation_srs(AMRVolume *uniform self,
+//                                    const varying vec3f &worldCoordinates)
+// {
+//   uniform float wx[programCount];
+//   uniform float wy[programCount];
+//   uniform float wz[programCount];
+//   unmasked {
+//     wx[programIndex] = worldCoordinates.x; 
+//     wy[programIndex] = worldCoordinates.y; 
+//     wz[programIndex] = worldCoordinates.z; 
+//   }
 
-  uniform float ret[programCount];
-  foreach_active(lane)
-    ret[lane] = tentApproximation_single(self,make_vec3f(wx[lane],wy[lane],wz[lane]));
-  return ret[programIndex];
-}
+//   uniform float ret[programCount];
+//   foreach_active(lane)
+//     ret[lane] = tentApproximation_single(self,make_vec3f(wx[lane],wy[lane],wz[lane]));
+//   return ret[programIndex];
+// }
 
 
 inline float tentApproximation_packet(AMRVolume *uniform self,
@@ -206,35 +213,130 @@ inline float tentApproximation_packet(AMRVolume *uniform self,
                 const vec3f cellCenter = base+0.5f*cellWidth;
                 const vec3f delta = absf(cellCenter - gridPos);
                 
-                if (reduce_max(delta) >= cellWidth) 
-                  continue;
-                
                 if (cur.cell->childID < 0) {
                   // leaf node ...
-                  const vec3f weight = make_vec3f(1.f) - delta * rcp(cellWidth);
+                  const vec3f weight = max(make_vec3f(0.f),
+                                           make_vec3f(1.f) - delta * rcp(cellWidth));
                   const float w = reduce_mul(weight);
                   den += w;
                   num += w * cur.cell->ccValue;
                 } else {
+                  if (reduce_max(delta) >= cellWidth) 
+                    continue;
+                
                   uniform AMROctCell *uniform oc = self->octCell+cur.cell->childID;
-                  uniform vec3f newBasePos;
                   const uniform float newCellWidth = 0.5f * cur.cellWidth;
+                  uniform vec3f newBasePos;
                   for (uniform int iiz=0;iiz<2;iiz++) {
                     newBasePos.z = cur.basePos.z + (iiz?newCellWidth:0.f);
+                    if (abs(newBasePos.z + 0.5f *newCellWidth - gridPos.z) < newCellWidth)
                     for (uniform int iiy=0;iiy<2;iiy++) {
                       newBasePos.y = cur.basePos.y + (iiy?newCellWidth:0.f);
+                      if (abs(newBasePos.y + 0.5f *newCellWidth - gridPos.y) < newCellWidth)
                       for (uniform int iix=0;iix<2;iix++) {
                         newBasePos.x = cur.basePos.x + (iix?newCellWidth:0.f);
-                        stackPtr->basePos = newBasePos;
-                        stackPtr->cellWidth = newCellWidth;
-                        stackPtr->cell = &oc->child[iiz][iiy][iix];
-                        ++stackPtr;
+                        if (abs(newBasePos.x + 0.5f *newCellWidth - gridPos.x) < newCellWidth)
+                          {
+                          stackPtr->basePos = newBasePos;
+                          stackPtr->cellWidth = newCellWidth;
+                          stackPtr->cell = &oc->child[iiz][iiy][iix];
+                          ++stackPtr;
+                        }
                       }
                     }
                   }
                 }
               }
             }
+          }
+        }
+      }
+    }
+  }
+
+  return num / (den + 1e-8f);
+}
+                               
+
+inline float tentApproximation_spmd(AMRVolume *uniform self,
+                                      const varying vec3f &worldCoordinates)
+{
+  // "packet" variant
+  varying VaryTentAlgoStackEntry stack[40];
+  varying int stackPtr = 0;
+
+  const vec3f gridPos = worldCoordinates;
+
+  // init numerator and denominator
+  float num = 0.f;
+  float den = 0.f;
+  
+  // -------------------------------------------------------
+  // do initial stack fill
+  // ------------------------------------------------------- 
+  // - compute region of cells in root grid
+  vec3i root_beg = make_vec3i(floor(gridPos - make_vec3f(.5f)));
+  vec3i root_end = make_vec3i(root_beg+make_vec3i(2));
+  root_beg = max(root_beg,make_vec3i(0));
+  root_end = min(root_end,self->rootDims);
+
+  // now, throw the 2x2x2 possibly overlapping root cells on the stack.
+  for (int iz=root_beg.z; iz < root_end.z; iz++) {
+    for (int iy=root_beg.y; iy < root_end.y; iy++) {
+      for (int ix=root_beg.x; ix < root_end.x; ix++) {
+        const int rootCellID
+          = (1<<31) + ix + self->rootDims.x*(iy+self->rootDims.y*(iz));
+        stack[stackPtr].cellID = rootCellID;
+        stack[stackPtr].basePos = make_vec3f(ix,iy,iz);
+        stack[stackPtr].cellWidth = 1.f;
+        stackPtr++;
+      }
+    }
+  }
+
+  // -------------------------------------------------------
+  // process stack nodes...
+  // -------------------------------------------------------
+  // note we do NOT know if the stack entries actually
+  // overlap - that makes the pushing easier.
+  while (stackPtr > 0) {
+    -- stackPtr;
+    VaryTentAlgoStackEntry cur = stack[stackPtr];
+    
+    const vec3f base = make_vec3f(cur.basePos);
+    const float cellWidth  = cur.cellWidth;
+    const vec3f cellCenter = base+0.5f*cellWidth;
+    const vec3f delta = absf(cellCenter - gridPos);
+                
+    if (reduce_max(delta) >= cellWidth) 
+      continue;
+            
+    AMRCell cell
+      = cur.cellID < 0
+      ? self->rootCell[cur.cellID - (1<<31)]
+      : ((AMRCell *uniform)self->octCell)[cur.cellID];
+    if (cell.childID < 0) {
+      // leaf node ...
+      const vec3f weight = make_vec3f(1.f) - delta * rcp(cellWidth);
+      const float w = reduce_mul(weight);
+      den += w;
+      num += w * cell.ccValue;
+    } else {
+      // uniform AMROctCell *uniform oc = self->octCell+cur.cell->childID;
+      const float newCellWidth = 0.5f * cur.cellWidth;
+      vec3f newBasePos;
+      int newCellID = 8*cell.childID;
+      for (uniform int iiz=0;iiz<2;iiz++) {
+        newBasePos.z = cur.basePos.z + (iiz?newCellWidth:0.f);
+        for (uniform int iiy=0;iiy<2;iiy++) {
+          newBasePos.y = cur.basePos.y + (iiy?newCellWidth:0.f);
+          for (uniform int iix=0;iix<2;iix++) {
+            newBasePos.x = cur.basePos.x + (iix?newCellWidth:0.f);
+            stack[stackPtr].basePos = newBasePos;
+            stack[stackPtr].cellWidth = newCellWidth;
+            stack[stackPtr].cellID = newCellID;
+            newCellID++;
+            ++stackPtr;
           }
         }
       }
@@ -253,8 +355,9 @@ static varying float AMRVolume_sample(void *uniform _self,
   assert(self);
 
 #if 1
+  // return tentApproximation_spmd(self,worldCoordinates);
   return tentApproximation_packet(self,worldCoordinates);
-  //  return tentApproximation_srs(self,worldCoordinates);
+  // return tentApproximation_srs(self,worldCoordinates);
 #else
   /*! iw: for now we're just passing everything back to c, so we don't
     have to deal with new algorithms AND ispc at the same time
