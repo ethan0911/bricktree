@@ -221,9 +221,9 @@ inline float tentApproximation_packet(AMRVolume *uniform self,
                   den += w;
                   num += w * cur.cell->ccValue;
                 } else {
-                  if (reduce_max(delta) >= cellWidth) 
-                    continue;
                 
+                  // if (reduce_max(delta) >= cellWidth) 
+                  //   continue;
                   uniform AMROctCell *uniform oc = self->octCell+cur.cell->childID;
                   const uniform float newCellWidth = 0.5f * cur.cellWidth;
                   uniform vec3f newBasePos;
