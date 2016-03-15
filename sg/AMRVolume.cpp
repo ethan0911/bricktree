@@ -101,7 +101,16 @@ namespace ospray {
       this->moa = new AMR;
       this->moa->mmapFrom(binBasePtr);
 
-      this->transferFunction = new TransferFunction;
+      std::string xfName = node->getProp("transferFunction");
+      if (xfName != "") {
+        this->transferFunction = dynamic_cast<TransferFunction*>(sg::findNamedNode(xfName));
+        cout << "USING NAMED XF " << this->transferFunction << endl;
+      }
+      
+      if (this->transferFunction == NULL)
+        this->transferFunction = new TransferFunction;
+
+      cout << "AMRVolume has xf: " << this->transferFunction << endl;
     }
 
     typedef AMRVolume MultiOctreeAMR;
