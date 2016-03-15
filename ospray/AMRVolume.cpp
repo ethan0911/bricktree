@@ -34,8 +34,6 @@ namespace ospray {
     using std::ostream;
     using std::flush;
 
-    using embree::area;
-
     AMRVolume::AMRVolume()
       : Volume(), dimensions(-1), voxelType(OSP_FLOAT)
     {

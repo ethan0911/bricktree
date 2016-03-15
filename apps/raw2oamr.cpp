@@ -63,8 +63,8 @@ namespace ospray {
       std::string format      = "float";
       int         maxLevels   = 4;
       float       threshold   = .01f;
-      vec3i       dims        = vec3f(0);
-      vec3i       repeat      = vec3f(0);
+      vec3i       dims        = vec3i(0);
+      vec3i       repeat      = vec3i(0);
 
       for (int i=1;i<ac;i++) {
         const std::string arg = av[i];

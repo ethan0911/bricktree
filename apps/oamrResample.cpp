@@ -115,7 +115,7 @@ namespace ospray {
     {
       std::string inFileName  = "";
       std::string outFileName = "";
-      vec3i       dims        = vec3f(0);
+      vec3i       dims        = vec3i(0);
 
       for (int i=1;i<ac;i++) {
         const std::string arg = av[i];

@@ -23,7 +23,7 @@ namespace ospray {
   
   template<typename T>
   struct Range {
-    Range(const embree::EmptyTy &t) : lo(embree::pos_inf), hi(embree::neg_inf) {};
+    Range(const ospcommon::EmptyTy &t) : lo(ospcommon::pos_inf), hi(ospcommon::neg_inf) {};
     Range(const T &t) : lo(t), hi(t) {};
     Range(const Range &t) : lo(t.lo), hi(t.hi) {};
 
