@@ -86,7 +86,7 @@ namespace ospray {
 
     template<typename T>
     ActualArray3D<T>::ActualArray3D(const vec3i &dims, void *externalMem)
-      : dims(dims), value = (T*)externalMem, valuesAreMine(externalMem != NULL)
+      : dims(dims), value((T*)externalMem), valuesAreMine(externalMem != NULL)
     {
       try {
         if (!value) {
