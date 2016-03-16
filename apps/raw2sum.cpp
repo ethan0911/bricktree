@@ -179,16 +179,16 @@ namespace ospray {
         error("no input dimensions (-dims) specified");
       if (inFileName == "")
         error("no input file specified");
-       
+      
       const Array3D<float> *input = NULL;
-      cout << "going to load RAW file:" << endl;
+      cout << "going to mmap RAW file:" << endl;
       cout << "  input file is   " << inFileName << endl;
       cout << "  expected format " << format << endl;
       cout << "  expected dims   " << dims << endl;
       if (format == "float") {
-        input = loadRAW<float>(inFileName,dims);
+        input = mmapRAW<float>(inFileName,dims);
       } else if (format == "uint8") {
-        const Array3D<uint8> *input_uint8 = loadRAW<uint8>(inFileName,dims);
+        const Array3D<uint8> *input_uint8 = mmapRAW<uint8>(inFileName,dims);
         input = new Array3DAccessor<uint8,float>(input_uint8);
       } else
         throw std::runtime_error("unsupported format '"+format+"'");
