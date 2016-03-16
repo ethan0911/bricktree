@@ -16,6 +16,17 @@
 
 // ospray
 #include "AMR.h"
+// stdlib, for mmap
+#include <sys/types.h>
+#include <sys/stat.h>
+#ifdef _WIN32
+#  include <windows.h>
+#else
+#  include <sys/mman.h>
+#endif
+#include <fcntl.h>
+#include <string>
+#include <cstring>
 
 namespace ospray {
   namespace amr {
@@ -53,15 +64,35 @@ namespace ospray {
       return volume;
     }
     
+    template<typename T>
+    Array3D<T> *mmapRAW(const std::string &fileName, const vec3i &dims)
+    {
+      ssize_t fileSize = size_t(dims.x)*size_t(dims.y)*size_t(dims.z)*sizeof(T);
+      PING;
+      PRINT(fileSize);
+
+      int fd = ::open(fileName.c_str(), O_LARGEFILE | O_RDONLY);
+      assert(fd >= 0);
+
+      void *mem = mmap(NULL,fileSize,PROT_READ,MAP_SHARED,fd,0);
+      assert(mem);
+
+      ActualArray3D<T> *volume = new ActualArray3D<T>(dims,mem);
+
+      return volume;
+    }
+    
     // ActualArray3D //
 
     template<typename T>
-    ActualArray3D<T>::ActualArray3D(const vec3i &dims)
-      : dims(dims)
+    ActualArray3D<T>::ActualArray3D(const vec3i &dims, void *externalMem)
+      : dims(dims), value = (T*)externalMem, valuesAreMine(externalMem != NULL)
     {
-      const size_t numVoxels = size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
       try {
-        value = new T[numVoxels];
+        if (!value) {
+          const size_t numVoxels = size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
+          value = new T[numVoxels];
+        }
       } catch (std::bad_alloc e) {
         std::stringstream ss;
         ss << "could not allocate memory for Array3D of dimensions "
@@ -162,18 +193,26 @@ namespace ospray {
 
     template struct Array3D<uint8>;
     template struct Array3D<float>;
+    template struct Array3D<double>;
     template struct ActualArray3D<uint8>;
     template struct ActualArray3D<float>;
+    template struct ActualArray3D<double>;
     template struct Array3DAccessor<uint8,uint8>;
     template struct Array3DAccessor<float,uint8>;
     template struct Array3DAccessor<uint8,float>;
     template struct Array3DAccessor<float,float>;
+    template struct Array3DAccessor<double,float>;
 
     template struct Array3DRepeater<uint8>;
     template struct Array3DRepeater<float>;
 
-    template Array3D<uint8> *loadRAW(const std::string &fileName, const vec3i &dims);
-    template Array3D<float> *loadRAW(const std::string &fileName, const vec3i &dims);
+    template Array3D<uint8>  *loadRAW(const std::string &fileName, const vec3i &dims);
+    template Array3D<float>  *loadRAW(const std::string &fileName, const vec3i &dims);
+    template Array3D<double> *loadRAW(const std::string &fileName, const vec3i &dims);
+
+    template Array3D<uint8>  *mmapRAW(const std::string &fileName, const vec3i &dims);
+    template Array3D<float>  *mmapRAW(const std::string &fileName, const vec3i &dims);
+    template Array3D<double> *mmapRAW(const std::string &fileName, const vec3i &dims);
 
   } // ::ospray::amr
 } // ::ospray

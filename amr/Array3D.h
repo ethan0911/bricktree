@@ -47,7 +47,8 @@ namespace ospray {
     template<typename value_t>
     struct ActualArray3D : public Array3D<value_t> {
 
-      ActualArray3D(const vec3i &dims);
+      ActualArray3D(const vec3i &dims, void *externalMem=NULL);
+      virtual ~ActualArray3D() { if (valuesAreMine) delete[] value; }
 
       /*! return size (ie, "dimensions") of volume */
       virtual vec3i size() const override;
@@ -65,6 +66,9 @@ namespace ospray {
 
       const vec3i dims;
       value_t *value;
+      // bool that specified whether it was us that alloc'ed this mem,
+      // and thus, whether we should free it upon termination.
+      bool valuesAreMine;
     };
 
     /*! implemnetaiton of a wrapper class that makes an actual array3d
@@ -117,6 +121,12 @@ namespace ospray {
         template parameter */
     template<typename T>
     Array3D<T> *loadRAW(const std::string &fileName, const vec3i &dims);
+
+    /*! load raw file with given dimensions. the 'type' of the raw
+        file (uint8,float,...) is given through the function's
+        template parameter */
+    template<typename T>
+    Array3D<T> *mmapRAW(const std::string &fileName, const vec3i &dims);
 
   } // ::ospray::amr
 } // ::ospray
