@@ -70,25 +70,34 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
       )
     
     # -----------------------------------------------------
-		# raw-to-octree-amr converter: converts a structured
+    # raw-to-octree-amr converter: converts a structured
     # volume (in RAW format)
     # -----------------------------------------------------
     ADD_EXECUTABLE(ospRaw2OctAMR
       apps/raw2oamr
-			)
+      )
     TARGET_LINK_LIBRARIES(ospRaw2OctAMR
       ospray_amr
-			)
+      )
 
     # -----------------------------------------------------
-		# octree-amr resampling tool
+    # octree-amr resampling tool
     # -----------------------------------------------------
     ADD_EXECUTABLE(ospOAmrResample
       apps/oamrResample.cpp
-			)
-		TARGET_LINK_LIBRARIES(ospOAmrResample
-#		OSPRAY_EXE_LINK_LIBRARIES(ospOAmrResample
-			ospray_amr
-			)
+      )
+    TARGET_LINK_LIBRARIES(ospOAmrResample
+      ospray_amr
+      )
+
+    # -----------------------------------------------------
+    # rool that mmaps file and prints value range
+    # -----------------------------------------------------
+    ADD_EXECUTABLE(ospRawRange
+      apps/rawRange.cpp
+      )
+    TARGET_LINK_LIBRARIES(ospRawRange
+      ospray_amr
+      )
   ENDIF()
 ENDIF()

@@ -39,6 +39,10 @@ namespace ospray {
         begin/end region of the volume */
       Range<value_t> getValueRange(const vec3i &begin, const vec3i &end) const;
 
+      /*! get value range over entire volume */
+      Range<value_t> getValueRange() const
+      { return getValueRange(vec3i(0),size()); }
+
       /*! returns number of elements (as 64-bit int) across all dimensions */
       virtual size_t numElements() const = 0;
     };
