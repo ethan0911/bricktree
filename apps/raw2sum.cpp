@@ -41,9 +41,10 @@ namespace ospray {
       exit(msg != "");
     }
 
-    void printStatus(MultiSumBuilder *builder,
-                     const Array3D<float> *input,
-                     const vec3i &begin=vec3i(-1), const vec3i &end=vec3i(-1))
+    void progress(MultiSumBuilder *builder,
+                  const Array3D<float> *input,
+                  const vec3i &begin=vec3i(-1), 
+                  const vec3i &end=vec3i(-1))
     {
       static size_t numDone = 0;
 
@@ -77,6 +78,16 @@ namespace ospray {
            << " (estd " << prettyNumber(long(numIndexBlocks * 100.f / pctgDone)) << ")" << endl;
       cout << "- total num data blocks " << prettyNumber(numDataBlocks)
            << " (estd " << prettyNumber(long(numDataBlocks * 100.f / pctgDone)) << ")" << endl;
+
+      size_t totalSize
+        = numIndexBlocks * sizeof(Sumerian::IndexBlock)
+        + numDataBlocks * (sizeof(Sumerian::DataBlock) + sizeof(int));
+      
+      cout << "- total size (bytes) " << prettyNumber(totalSize)
+           << " (estd " << prettyNumber(long(totalSize * 100.f / pctgDone)) << ")" << endl;
+      size_t sizeExpected = long(totalSize * 100.f / pctgDone);
+      size_t sizeOriginal = input->numElements()*sizeof(float);
+      cout << "[that's a compression rate (ASSUMING INPUT WAS FLOATS) of " << (sizeExpected *100.f / sizeOriginal) << "%]" << endl << endl;;
     }
 
     struct SumFromArrayBuilder {
@@ -185,7 +196,7 @@ namespace ospray {
       }
       if (output) {
         // PRINT(range);
-        printStatus(builder,input,lo,hi);
+        progress(builder,input,lo,hi);
       }
 
 
@@ -290,7 +301,7 @@ namespace ospray {
       MultiSumBuilder *builder = new MultiSumBuilder;
       SumFromArrayBuilder(input,builder,threshold,skipLevels);
       cout << "done building!" << endl;
-      printStatus(builder,input);
+      progress(builder,input);
 
       cout << "saving to output file " << outFileName << endl;
       builder->save(outFileName);

@@ -74,9 +74,8 @@ namespace ospray {
     Array3D<T> *mmapRAW(const std::string &fileName, const vec3i &dims)
     {
       ssize_t fileSize = size_t(dims.x)*size_t(dims.y)*size_t(dims.z)*sizeof(T);
-      PING;
-      PRINT(fileSize);
-
+      std::cout << "mapping file " << fileName
+                << " size " << prettyNumber(fileSize) << std::endl;
       int fd = ::open(fileName.c_str(), O_LARGEFILE | O_RDONLY);
       assert(fd >= 0);
 
