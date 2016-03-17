@@ -159,7 +159,11 @@ namespace ospray {
       assert(value != NULL);
       const vec3i where = max(vec3i(0),min(_where,dims - vec3i(1)));
       size_t index = where.x+size_t(dims.x)*(where.y+size_t(dims.y)*(where.z));
-      return value[index];
+      // PRINT(where);
+      // PRINT(index);
+      const T v = value[index];
+      // PRINT(v);
+      return v;
     }
 
     template<typename T>

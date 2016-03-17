@@ -50,6 +50,18 @@ namespace ospray {
       size_t numIndexBlocks = 0;
       size_t numDataBlocks = 0;
 
+      assert(builder);
+      cout << "done block " << begin << " - " << end
+           << " num = " << reduce_mul(end-begin) << endl;
+      numDone += reduce_mul((end-begin));
+      double pctgDone = 100.f * numDone / double(input->numElements());
+      cout << "build update (done w/ " << pctgDone << "% of volume)" << endl;
+
+      if (!builder->rootGrid) {
+        cout << "(no nodes created, yet)" << endl;
+        return;
+      }
+
       for (int iz=0;iz<builder->rootGrid->size().z;iz++)
         for (int iy=0;iy<builder->rootGrid->size().y;iy++)
           for (int ix=0;ix<builder->rootGrid->size().x;ix++) {
@@ -60,10 +72,6 @@ namespace ospray {
             }
           }
 
-      cout << "done block " << begin << " - " << end << " num = " << reduce_mul(end-begin) << endl;
-      numDone += reduce_mul((end-begin));
-      double pctgDone = 100.f * numDone / double(input->numElements());
-      cout << "build update (done w/ " << pctgDone << "% of volume)" << endl;
       cout << "- root grid size " << builder->rootGrid->size() << endl;
       cout << "- total num index blocks " << prettyNumber(numIndexBlocks)
            << " (estd " << prettyNumber(long(numIndexBlocks * 100.f / pctgDone)) << ")" << endl;
@@ -132,9 +140,13 @@ namespace ospray {
         for (int iz=0;iz<4;iz++)
           for (int iy=0;iy<4;iy++)
             for (int ix=0;ix<4;ix++) {
-              db.value[iz][iy][ix] = input->get(begin+vec3i(ix,iy,iz));
+              db.value[iz][iy][ix] = input->get(4*begin+vec3i(ix,iy,iz));
+              // PRINT(db.value[iz][iy][ix]);
               range.extend(db.value[iz][iy][ix]);
             }
+        // cout << "leaf  " << (4*begin) << " bs " << blockSize << " rg " << range << endl;
+        // if (range.lo < range.hi)
+        //   cout << "NON EMPTY RANGE" << endl;
       }
       else {
         // -------------------------------------------------------
@@ -171,8 +183,10 @@ namespace ospray {
               }
             }
       }
-      if (output)
+      if (output) {
+        // PRINT(range);
         printStatus(builder,input,lo,hi);
+      }
 
 
       return range;
@@ -184,7 +198,7 @@ namespace ospray {
       std::string outFileName = "";
       std::string format      = "float";
       int         maxLevels   = 3;
-      float       threshold   = .01f;
+      float       threshold   = 0.f; //.01f;
       vec3i       dims        = vec3i(0);
       vec3i       repeat      = vec3i(0);
 
@@ -221,6 +235,7 @@ namespace ospray {
       if (outFileName == "")
         error("no output file specified");
       
+      
       const Array3D<float> *input = NULL;
       cout << "going to mmap RAW file:" << endl;
       cout << "  input file is   " << inFileName << endl;
@@ -233,6 +248,22 @@ namespace ospray {
         input = new Array3DAccessor<uint8,float>(input_uint8);
       } else
         throw std::runtime_error("unsupported format '"+format+"'");
+
+
+      for (int i=0;i<302;i++) {
+        // PRINT(i);
+        Range<float> vr = input->getValueRange(vec3i(0),vec3i(i));
+        // PRINT(vr);
+        if (vr.lo < vr.hi) {
+          cout << "first non-empty region at " << vec3i(0) << " - " << vec3i(i) << endl;
+          break;
+        }
+      }
+      // Range<float> vr = input->getValueRange();
+      // PRINT(vr);
+      // exit(0);
+
+
       cout << "loading complete." << endl;
 
       if (repeat.x != 0) {
