@@ -28,6 +28,12 @@
 #include <string>
 #include <cstring>
 
+// O_LARGEFILE is a GNU extension.
+#ifdef __APPLE__
+#define  O_LARGEFILE  0
+#endif
+
+
 namespace ospray {
   namespace amr {
 

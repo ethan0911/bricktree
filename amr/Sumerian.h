@@ -63,6 +63,9 @@ namespace ospray {
 
       struct Builder {
         virtual void set(const vec3i &coord, int level, float v) = 0;
+        /*! be done with the build, and save all data to the xml/bin
+            file of 'fileName' and 'filename+"bin"' */
+        virtual void save(const std::string &ospFileName) = 0;
       };
 
     };
@@ -83,6 +86,10 @@ namespace ospray {
       std::vector<uint32> indexBlockOf;
       std::vector<Sumerian::DataBlock *>  dataBlock;
       std::vector<Sumerian::IndexBlock *> indexBlock;
+
+      /*! be done with the build, and save all data to the xml/bin
+        file of 'fileName' and 'filename+"bin"' */
+      virtual void save(const std::string &ospFileName);
     };
 
     /*! multi-sumerian - a root grid of cell, with one sumerian per
@@ -94,6 +101,10 @@ namespace ospray {
       void allocateAtLeast(const vec3i &neededSize);
 
       ActualArray3D<MemorySumBuilder *> *rootGrid;
+
+      /*! be done with the build, and save all data to the xml/bin
+        file of 'fileName' and 'filename+"bin"' */
+      virtual void save(const std::string &ospFileName);
     };
 
   } // ::ospray::amr

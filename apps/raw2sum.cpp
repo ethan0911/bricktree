@@ -258,6 +258,10 @@ namespace ospray {
       SumFromArrayBuilder(input,builder,threshold,skipLevels);
       cout << "done building!" << endl;
       printStatus(builder,input);
+
+      cout << "saving to output file " << outFileName << endl;
+      builder->save(outFileName);
+      cout << "done writing multi-sum tree" << endl;
       return 0;
     }
 

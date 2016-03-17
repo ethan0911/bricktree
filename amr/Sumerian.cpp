@@ -119,6 +119,81 @@ namespace ospray {
       return indexBlock[indexBlockID];
     }
 
+
+    /*! be done with the build, and save all data to the xml/bin
+      file of 'fileName' and 'filename+"bin"' */
+    void MemorySumBuilder::save(const std::string &ospFileName)
+    {
+      throw std::runtime_error("saving an individual sumerian not implemented yet (use multisum instead)");
+    }
+
+    /*! be done with the build, and save all data to the xml/bin
+      file of 'fileName' and 'filename+"bin"' */
+    void MultiSumBuilder::save(const std::string &ospFileName)
+    {
+      FILE *osp = fopen(ospFileName.c_str(),"w");
+      assert(osp);
+      std::string binFileName = ospFileName+"bin";
+      FILE *bin = fopen(binFileName.c_str(),"w");
+      assert(bin);
+      
+      fprintf(osp,"<MultiSumAMR\n");
+      fprintf(osp,"   rootGrid=\"%i %i %i\"\n",rootGrid->size().x,rootGrid->size().y,rootGrid->size().z);
+      fprintf(osp,"   voxelType=\"float\"\n");
+
+      fprintf(osp,"\t<dataBlocks>\n");
+      for (int iz=0;iz<rootGrid->size().z;iz++)
+        for (int iy=0;iy<rootGrid->size().y;iy++)
+          for (int ix=0;ix<rootGrid->size().x;ix++) {
+            MemorySumBuilder *msb = getRootCell(vec3i(ix,iy,iz));
+            if (!msb) {
+              fprintf(osp,"\t\t%i\n",0);
+            } else {
+              fprintf(osp,"\t\tl%i\n",msb->dataBlock.size());
+              for (int i=0;i<msb->dataBlock.size();i++) {
+                fwrite(msb->dataBlock[i],sizeof(*msb->dataBlock[i]),1,bin);
+              }
+            }
+          }
+      fprintf(osp,"\t</dataBlocks>\n");
+      
+      fprintf(osp,"\t<indexBlocks>\n");
+      for (int iz=0;iz<rootGrid->size().z;iz++)
+        for (int iy=0;iy<rootGrid->size().y;iy++)
+          for (int ix=0;ix<rootGrid->size().x;ix++) {
+            MemorySumBuilder *msb = getRootCell(vec3i(ix,iy,iz));
+            if (!msb) {
+              fprintf(osp,"\t\t%i\n",0);
+            } else {
+              fprintf(osp,"\t\tl%i\n",msb->indexBlock.size());
+              for (int i=0;i<msb->indexBlock.size();i++) {
+                fwrite(msb->indexBlock[i],sizeof(*msb->indexBlock[i]),1,bin);
+              }
+            }
+          }
+      fprintf(osp,"\t</indexBlocks>\n");
+
+      fprintf(osp,"\t<indexBlockOf>\n");
+      for (int iz=0;iz<rootGrid->size().z;iz++)
+        for (int iy=0;iy<rootGrid->size().y;iy++)
+          for (int ix=0;ix<rootGrid->size().x;ix++) {
+            MemorySumBuilder *msb = getRootCell(vec3i(ix,iy,iz));
+            if (!msb) {
+              fprintf(osp,"\t\t%i\n",0);
+            } else {
+              fprintf(osp,"\t\tl%i\n",msb->indexBlockOf.size());
+              fwrite(&msb->indexBlockOf[0],msb->indexBlockOf.size(),sizeof(msb->indexBlockOf[0]),bin);
+            }
+          }
+      fprintf(osp,"\t</indexBlockOf>\n");
+      
+      fprintf(osp,"</MultiSumAMR>\n");
+      fclose(osp);
+      fclose(bin);
+    }
+
+
+
     Sumerian::DataBlock *MemorySumBuilder::findDataBlock(const vec3i &coord, int level)
     {
       // cout << "." << flush;

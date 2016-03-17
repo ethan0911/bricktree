@@ -107,7 +107,7 @@ namespace ospray {
         cout << "USING NAMED XF " << this->transferFunction << endl;
       }
       
-      if (this->transferFunction == NULL)
+      if (this->transferFunction.ptr == NULL)
         this->transferFunction = new TransferFunction;
 
       cout << "AMRVolume has xf: " << this->transferFunction << endl;
