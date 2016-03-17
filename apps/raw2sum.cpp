@@ -60,6 +60,7 @@ namespace ospray {
             }
           }
 
+      cout << "done block " << begin << " - " << end << " num = " << reduce_mul(end-begin) << endl;
       numDone += reduce_mul((end-begin));
       double pctgDone = 100.f * numDone / double(input->numElements());
       cout << "build update (done w/ " << pctgDone << "% of volume)" << endl;
@@ -107,7 +108,7 @@ namespace ospray {
                                                int level,
                                                int blockSize)
     {
-      vec3i lo = begin*blockSize;
+      vec3i lo = min(input->size(),begin*blockSize);
       vec3i hi = min(input->size(),lo + vec3i(blockSize));
       bool output = (blockSize == 256);
       if (output) 
