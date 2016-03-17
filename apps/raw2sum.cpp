@@ -41,10 +41,39 @@ namespace ospray {
       exit(msg != "");
     }
 
+    void printStatus(MultiSumBuilder *builder,
+                     const Array3D<float> *input,
+                     const vec3i &begin=vec3i(-1), const vec3i &end=vec3i(-1))
+    {
+      static size_t numDone = 0;
+
+      size_t numIndexBlocks = 0;
+      size_t numDataBlocks = 0;
+
+      for (int iz=0;iz<builder->rootGrid->size().z;iz++)
+        for (int iy=0;iy<builder->rootGrid->size().y;iy++)
+          for (int ix=0;ix<builder->rootGrid->size().x;ix++) {
+            MemorySumBuilder *msb = builder->rootGrid->get(vec3i(ix,iy,iz));
+            if (msb) {
+              numIndexBlocks += msb->indexBlock.size();
+              numDataBlocks += msb->dataBlock.size();
+            }
+          }
+
+      numDone += reduce_mul((end-begin));
+      double pctgDone = 100.f * numDone / double(input->numElements());
+      cout << "build update (done w/ " << pctgDone << "% of volume)" << endl;
+      cout << "- root grid size " << builder->rootGrid->size() << endl;
+      cout << "- total num index blocks " << prettyNumber(numIndexBlocks)
+           << " (estd " << prettyNumber(long(numIndexBlocks * 100.f / pctgDone)) << ")" << endl;
+      cout << "- total num data blocks " << prettyNumber(numDataBlocks)
+           << " (estd " << prettyNumber(long(numDataBlocks * 100.f / pctgDone)) << ")" << endl;
+    }
+
     struct SumFromArrayBuilder {
       
       SumFromArrayBuilder(const Array3D<float> *input, 
-                          Sumerian::Builder *builder,
+                          MultiSumBuilder *builder,
                           float threshold = 0.f,
                           int skipLevels = 0)
         : input(input), threshold(threshold), valueRange(empty), builder(builder),
@@ -69,7 +98,7 @@ namespace ospray {
       Range<float> valueRange;
       const Array3D<float> *input;
       const float threshold;
-      Sumerian::Builder *builder;
+      MultiSumBuilder *builder;
       int skipLevels;
     };
 
@@ -78,6 +107,12 @@ namespace ospray {
                                                int level,
                                                int blockSize)
     {
+      vec3i lo = begin*blockSize;
+      vec3i hi = min(input->size(),lo + vec3i(blockSize));
+      bool output = (blockSize == 256);
+      if (output) 
+        cout << "building block " << lo << " - " << hi << " bs " << blockSize << endl;
+
       // if (level < 2) {
       //   PRINT(begin);
       //   PRINT(blockSize);
@@ -135,7 +170,10 @@ namespace ospray {
               }
             }
       }
-      
+      if (output)
+        printStatus(builder,input,lo,hi);
+
+
       return range;
     }
     
@@ -218,23 +256,7 @@ namespace ospray {
       MultiSumBuilder *builder = new MultiSumBuilder;
       SumFromArrayBuilder(input,builder,threshold,skipLevels);
       cout << "done building!" << endl;
-
-      size_t numIndexBlocks = 0;
-      size_t numDataBlocks = 0;
-      PRINT(builder->rootGrid->size());
-      for (int iz=0;iz<builder->rootGrid->size().z;iz++)
-        for (int iy=0;iy<builder->rootGrid->size().y;iy++)
-          for (int ix=0;ix<builder->rootGrid->size().x;ix++) {
-            MemorySumBuilder *msb = builder->rootGrid->get(vec3i(ix,iy,iz));
-            if (msb) {
-              numIndexBlocks += msb->indexBlock.size();
-              numDataBlocks += msb->dataBlock.size();
-            }
-          }
-      cout << "done building ..." << endl;
-      cout << "- root grid size " << builder->rootGrid->size() << endl;
-      cout << "- total num index blocks " << numIndexBlocks << endl;
-      cout << "- total num data blocks " << numDataBlocks << endl;
+      printStatus(builder,input);
       return 0;
     }
 
