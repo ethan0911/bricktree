@@ -39,6 +39,10 @@ namespace ospray {
         begin/end region of the volume */
       Range<value_t> getValueRange(const vec3i &begin, const vec3i &end) const;
 
+      /*! get value range over entire volume */
+      Range<value_t> getValueRange() const
+      { return getValueRange(vec3i(0),size()); }
+
       /*! returns number of elements (as 64-bit int) across all dimensions */
       virtual size_t numElements() const = 0;
     };
@@ -47,7 +51,8 @@ namespace ospray {
     template<typename value_t>
     struct ActualArray3D : public Array3D<value_t> {
 
-      ActualArray3D(const vec3i &dims);
+      ActualArray3D(const vec3i &dims, void *externalMem=NULL);
+      virtual ~ActualArray3D() { if (valuesAreMine) delete[] value; }
 
       /*! return size (ie, "dimensions") of volume */
       virtual vec3i size() const override;
@@ -72,6 +77,9 @@ namespace ospray {
 
       const vec3i dims;
       value_t *value;
+      // bool that specified whether it was us that alloc'ed this mem,
+      // and thus, whether we should free it upon termination.
+      bool valuesAreMine;
     };
 
     /*! implemnetaiton of a wrapper class that makes an actual array3d
@@ -125,6 +133,20 @@ namespace ospray {
     template<typename T>
     Array3D<T> *loadRAW(const std::string &fileName, const vec3i &dims);
 
+    /*! load raw file with given dimensions. the 'type' of the raw
+        file (uint8,float,...) is given through the function's
+        template parameter */
+    template<typename T>
+    Array3D<T> *mmapRAW(const std::string &fileName, const vec3i &dims);
+
+
+
+
+
+    // -------------------------------------------------------
+    // iplementation section
+    // -------------------------------------------------------
+
     template<typename T>
     inline vec3i ActualArray3D<T>::size() const
     {
@@ -147,12 +169,14 @@ namespace ospray {
     }
 
     template<typename T>
-    inline ActualArray3D<T>::ActualArray3D(const vec3i &dims)
-      : dims(dims)
+    ActualArray3D<T>::ActualArray3D(const vec3i &dims, void *externalMem)
+      : dims(dims), value((T*)externalMem), valuesAreMine(externalMem != NULL)
     {
-      const size_t numVoxels = size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
       try {
-        value = new T[numVoxels];
+        if (!value) {
+          const size_t numVoxels = size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
+          value = new T[numVoxels];
+        }
       } catch (std::bad_alloc e) {
         std::stringstream ss;
         ss << "could not allocate memory for Array3D of dimensions "
@@ -160,6 +184,22 @@ namespace ospray {
         throw std::runtime_error(ss.str());
       }
     }
+    
+
+    // template<typename T>
+    // inline ActualArray3D<T>::ActualArray3D(const vec3i &dims)
+    //   : dims(dims)
+    // {
+    //   const size_t numVoxels = size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
+    //   try {
+    //     value = new T[numVoxels];
+    //   } catch (std::bad_alloc e) {
+    //     std::stringstream ss;
+    //     ss << "could not allocate memory for Array3D of dimensions "
+    //        << dims << " (in Array3D::Array3D())";
+    //     throw std::runtime_error(ss.str());
+    //   }
+    // }
     
     template<typename T>
     inline void ActualArray3D<T>::set(const vec3i &where, const T &t)
