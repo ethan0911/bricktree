@@ -37,7 +37,7 @@ namespace ospray {
       cout << " --format <uint8|float> : input voxel format" << endl;
       cout << " --depth <maxlevels>    : use maxlevels octree refinement levels" << endl;
       cout << " -o <outfilename.xml>   : output file name" << endl;
-      cout << " -t <threshold>         : threshold of which nodes to split or not (float val rel to min/max)" << endl;
+      cout << " -t <threshold>         : threshold of which nodes to split or not (ABSOLUTE float val)" << endl;
       exit(msg != "");
     }
 
@@ -54,8 +54,6 @@ namespace ospray {
         while (rootSize < reduce_max(input->size())) 
           rootSize *= 4;
         float avg;
-        PING;
-        PRINT(rootSize);
         valueRange = buildRec(avg,vec3i(0),0,rootSize);
       }
 
@@ -80,10 +78,10 @@ namespace ospray {
                                                int level,
                                                int blockSize)
     {
-      if (level < 2) {
-        PRINT(begin);
-        PRINT(blockSize);
-      }
+      // if (level < 2) {
+      //   PRINT(begin);
+      //   PRINT(blockSize);
+      // }
 
       Range<float> range = empty;
       Sumerian::DataBlock db;
@@ -146,7 +144,7 @@ namespace ospray {
       std::string inFileName  = "";
       std::string outFileName = "";
       std::string format      = "float";
-      int         maxLevels   = 4;
+      int         maxLevels   = 3;
       float       threshold   = .01f;
       vec3i       dims        = vec3i(0);
       vec3i       repeat      = vec3i(0);
@@ -201,8 +199,17 @@ namespace ospray {
         input = new Array3DRepeater<float>(input,repeat);
       }
 
-      threshold = 0.f;
-      const int skipLevels = 0;
+      // threshold = 0.f;
+      int skipLevels = 0;
+      // compute num skiplevels based on num levels specified:
+      int levelWidth = reduce_max(input->size());
+      for (int i=0;i<maxLevels;i++)
+        levelWidth = divRoundUp(levelWidth,4);
+      while (levelWidth > 4) {
+        skipLevels++;
+        levelWidth = divRoundUp(levelWidth,4);
+      }
+      cout << "building tree with " << skipLevels << " skip levels" << endl;
 
       // Sumerian::Builder *builder 
       //   = skipLevels
@@ -210,9 +217,11 @@ namespace ospray {
       //   : (Sumerian::Builder *)new MemorySumBuilder;
       MultiSumBuilder *builder = new MultiSumBuilder;
       SumFromArrayBuilder(input,builder,threshold,skipLevels);
+      cout << "done building!" << endl;
 
       size_t numIndexBlocks = 0;
       size_t numDataBlocks = 0;
+      PRINT(builder->rootGrid->size());
       for (int iz=0;iz<builder->rootGrid->size().z;iz++)
         for (int iy=0;iy<builder->rootGrid->size().y;iy++)
           for (int ix=0;ix<builder->rootGrid->size().x;ix++) {

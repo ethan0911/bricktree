@@ -20,6 +20,10 @@
 namespace ospray {
   namespace amr {
 
+    using std::cout;
+    using std::endl;
+    using std::flush;
+
     const uint32 Sumerian::invalidID;
 
     void Sumerian::DataBlock::clear()
@@ -117,6 +121,7 @@ namespace ospray {
 
     Sumerian::DataBlock *MemorySumBuilder::findDataBlock(const vec3i &coord, int level)
     {
+      // cout << "." << flush;
       // PING;
       // PRINT(coord);
       // PRINT(level);
@@ -158,11 +163,13 @@ namespace ospray {
       }
       
       assert(blockID < dataBlock.size());
+      // cout << "/" << flush;
       return dataBlock[blockID];
     }
     
     void MemorySumBuilder::set(const vec3i &coord, int level, float v)
     {
+      // PING;
       assert(reduce_max(coord) < blockSizeOf(level));
       Sumerian::DataBlock *db = findDataBlock(coord, level);
       assert(db);
@@ -171,6 +178,7 @@ namespace ospray {
 
     void MultiSumBuilder::set(const vec3i &coord, int level, float v)
     {
+      // PING;
       int blockSize = blockSizeOf(level);
       assert(level >= 0);
       vec3i rootBlockID = coord / vec3i(blockSize);
@@ -186,8 +194,10 @@ namespace ospray {
     
     void MultiSumBuilder::allocateAtLeast(const vec3i &_neededSize)
     {
-      if (rootGrid == NULL) rootGrid = new ActualArray3D<MemorySumBuilder *>(vec3i(1));
-
+      if (rootGrid == NULL) {
+        rootGrid = new ActualArray3D<MemorySumBuilder *>(vec3i(1));
+        rootGrid->set(vec3i(0,0,0),NULL);
+      }
       const vec3i newSize = max(_neededSize,rootGrid->size());
 
       if (rootGrid->size().x >= newSize.x && 
