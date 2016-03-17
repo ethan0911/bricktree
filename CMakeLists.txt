@@ -38,6 +38,7 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
     amr/FromArray3DBuilder.cpp
     amr/AMR.cpp
     amr/Octree.cpp
+    amr/Sumerian.cpp
     )
   
   OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_amr
@@ -69,26 +70,6 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
       ospray_sg
       )
     
-    # -----------------------------------------------------
-		# raw-to-octree-amr converter: converts a structured
-    # volume (in RAW format)
-    # -----------------------------------------------------
-    ADD_EXECUTABLE(ospRaw2OctAMR
-      apps/raw2oamr
-			)
-    TARGET_LINK_LIBRARIES(ospRaw2OctAMR
-      ospray_amr
-			)
-
-    # -----------------------------------------------------
-		# octree-amr resampling tool
-    # -----------------------------------------------------
-    ADD_EXECUTABLE(ospOAmrResample
-      apps/oamrResample.cpp
-			)
-		TARGET_LINK_LIBRARIES(ospOAmrResample
-#		OSPRAY_EXE_LINK_LIBRARIES(ospOAmrResample
-			ospray_amr
-			)
+    ADD_SUBDIRECTORY(apps)
   ENDIF()
 ENDIF()

@@ -56,45 +56,9 @@ namespace ospray {
     // ActualArray3D //
 
     template<typename T>
-    ActualArray3D<T>::ActualArray3D(const vec3i &dims)
-      : dims(dims)
-    {
-      const size_t numVoxels = size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
-      try {
-        value = new T[numVoxels];
-      } catch (std::bad_alloc e) {
-        std::stringstream ss;
-        ss << "could not allocate memory for Array3D of dimensions "
-           << dims << " (in Array3D::Array3D())";
-        throw std::runtime_error(ss.str());
-      }
-    }
-    
-    template<typename T>
-    vec3i ActualArray3D<T>::size() const
-    {
-      return dims;
-    }
-
-    template<typename T>
-    size_t ActualArray3D<T>::numElements() const
-    {
-      return size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
-    }
-
-    template<typename T>
     size_t ActualArray3D<T>::indexOf(const vec3i &pos) const
     {
       return pos.x+size_t(dims.x)*(pos.y+size_t(dims.y)*pos.z);
-    }
-
-    template<typename T>
-    T ActualArray3D<T>::get(const vec3i &_where) const
-    {
-      assert(value != NULL);
-      const vec3i where = max(vec3i(0),min(_where,dims - vec3i(1)));
-      size_t index = where.x+size_t(dims.x)*(where.y+size_t(dims.y)*(where.z));
-      return value[index];
     }
 
     // Array3DAccessor //

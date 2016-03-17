@@ -57,6 +57,13 @@ namespace ospray {
         \warning 'where' MUST be a valid cell location */
       virtual value_t get(const vec3i &where) const override;
 
+      /*! set cell value at location to given value
+
+        \warning 'where' MUST be a valid cell location */
+      virtual void set(const vec3i &where, const value_t &t);
+
+      void clear(const value_t &t);
+
       /*! returns number of elements (as 64-bit int) across all dimensions */
       virtual size_t numElements() const override;
 
@@ -117,6 +124,62 @@ namespace ospray {
         template parameter */
     template<typename T>
     Array3D<T> *loadRAW(const std::string &fileName, const vec3i &dims);
+
+    template<typename T>
+    inline vec3i ActualArray3D<T>::size() const
+    {
+      return dims;
+    }
+
+    template<typename T>
+    inline T ActualArray3D<T>::get(const vec3i &_where) const
+    {
+      assert(value != NULL);
+      const vec3i where = max(vec3i(0),min(_where,dims - vec3i(1)));
+      size_t index = where.x+size_t(dims.x)*(where.y+size_t(dims.y)*(where.z));
+      return value[index];
+    }
+
+    template<typename T>
+    inline size_t ActualArray3D<T>::numElements() const
+    {
+      return size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
+    }
+
+    template<typename T>
+    inline ActualArray3D<T>::ActualArray3D(const vec3i &dims)
+      : dims(dims)
+    {
+      const size_t numVoxels = size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
+      try {
+        value = new T[numVoxels];
+      } catch (std::bad_alloc e) {
+        std::stringstream ss;
+        ss << "could not allocate memory for Array3D of dimensions "
+           << dims << " (in Array3D::Array3D())";
+        throw std::runtime_error(ss.str());
+      }
+    }
+    
+    template<typename T>
+    inline void ActualArray3D<T>::set(const vec3i &where, const T &t)
+    {
+      assert(value != NULL);
+      assert(where.x < size().x);
+      assert(where.y < size().y);
+      assert(where.z < size().z);
+      size_t index = where.x+size_t(dims.x)*(where.y+size_t(dims.y)*(where.z));
+      value[index] = t;
+    }
+    
+    template<typename T>
+    inline void ActualArray3D<T>::clear(const T &t)
+    { 
+      for (int iz=0;iz<size().z;iz++)
+        for (int iy=0;iy<size().y;iy++)
+          for (int ix=0;ix<size().x;ix++)
+            set(vec3i(ix,iy,iz),t);
+    }
 
   } // ::ospray::amr
 } // ::ospray
