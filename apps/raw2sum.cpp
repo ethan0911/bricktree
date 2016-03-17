@@ -304,7 +304,15 @@ namespace ospray {
       progress(builder,input);
 
       cout << "saving to output file " << outFileName << endl;
-      builder->save(outFileName);
+
+      vec3i encodedSize = builder->rootGrid->size();
+      while (encodedSize.x < input->size().x) encodedSize.x *= 4;
+      while (encodedSize.y < input->size().y) encodedSize.y *= 4;
+      while (encodedSize.z < input->size().z) encodedSize.z *= 4;
+
+      vec3f clipBoxSize = vec3f(input->size()) / vec3f(encodedSize);
+      
+      builder->save(outFileName,clipBoxSize);
       cout << "done writing multi-sum tree" << endl;
       return 0;
     }

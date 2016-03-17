@@ -122,14 +122,14 @@ namespace ospray {
 
     /*! be done with the build, and save all data to the xml/bin
       file of 'fileName' and 'filename+"bin"' */
-    void MemorySumBuilder::save(const std::string &ospFileName)
+    void MemorySumBuilder::save(const std::string &ospFileName, const vec3f &clipBoxSize)
     {
       throw std::runtime_error("saving an individual sumerian not implemented yet (use multisum instead)");
     }
 
     /*! be done with the build, and save all data to the xml/bin
       file of 'fileName' and 'filename+"bin"' */
-    void MultiSumBuilder::save(const std::string &ospFileName)
+    void MultiSumBuilder::save(const std::string &ospFileName, const vec3f &clipBoxSize)
     {
       FILE *osp = fopen(ospFileName.c_str(),"w");
       assert(osp);
@@ -140,6 +140,8 @@ namespace ospray {
       fprintf(osp,"<MultiSumAMR\n");
       fprintf(osp,"   rootGrid=\"%i %i %i\"\n",rootGrid->size().x,rootGrid->size().y,rootGrid->size().z);
       fprintf(osp,"   voxelType=\"float\"\n");
+      fprintf(osp,"   clipBoxSize=\"%f %f %f\"\n",clipBoxSize.x,clipBoxSize.y,clipBoxSize.z);
+      fprintf(osp,"   >\n");
 
       fprintf(osp,"\t<dataBlocks>\n");
       for (int iz=0;iz<rootGrid->size().z;iz++)
@@ -147,7 +149,7 @@ namespace ospray {
           for (int ix=0;ix<rootGrid->size().x;ix++) {
             MemorySumBuilder *msb = getRootCell(vec3i(ix,iy,iz));
             if (!msb) {
-              fprintf(osp,"\t\t%i\n",0);
+              fprintf(osp," %i\n",0);
             } else {
               fprintf(osp,"\t\t%li\n",msb->dataBlock.size());
               for (int i=0;i<msb->dataBlock.size();i++) {
@@ -264,7 +266,7 @@ namespace ospray {
     }
 
     MultiSumBuilder::MultiSumBuilder() 
-      : rootGrid(NULL) 
+      : rootGrid(NULL)
     {}
     
     void MultiSumBuilder::allocateAtLeast(const vec3i &_neededSize)
