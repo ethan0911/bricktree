@@ -149,7 +149,7 @@ namespace ospray {
             if (!msb) {
               fprintf(osp,"\t\t%i\n",0);
             } else {
-              fprintf(osp,"\t\tl%i\n",msb->dataBlock.size());
+              fprintf(osp,"\t\t%li\n",msb->dataBlock.size());
               for (int i=0;i<msb->dataBlock.size();i++) {
                 fwrite(msb->dataBlock[i],sizeof(*msb->dataBlock[i]),1,bin);
               }
@@ -165,7 +165,7 @@ namespace ospray {
             if (!msb) {
               fprintf(osp,"\t\t%i\n",0);
             } else {
-              fprintf(osp,"\t\tl%i\n",msb->indexBlock.size());
+              fprintf(osp,"\t\t%li\n",msb->indexBlock.size());
               for (int i=0;i<msb->indexBlock.size();i++) {
                 fwrite(msb->indexBlock[i],sizeof(*msb->indexBlock[i]),1,bin);
               }
@@ -181,7 +181,7 @@ namespace ospray {
             if (!msb) {
               fprintf(osp,"\t\t%i\n",0);
             } else {
-              fprintf(osp,"\t\tl%i\n",msb->indexBlockOf.size());
+              fprintf(osp,"\t\t%li\n",msb->indexBlockOf.size());
               fwrite(&msb->indexBlockOf[0],msb->indexBlockOf.size(),sizeof(msb->indexBlockOf[0]),bin);
             }
           }

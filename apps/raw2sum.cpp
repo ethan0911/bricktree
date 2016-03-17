@@ -218,6 +218,8 @@ namespace ospray {
         error("no input dimensions (-dims) specified");
       if (inFileName == "")
         error("no input file specified");
+      if (outFileName == "")
+        error("no output file specified");
       
       const Array3D<float> *input = NULL;
       cout << "going to mmap RAW file:" << endl;
