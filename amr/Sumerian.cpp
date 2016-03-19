@@ -134,9 +134,11 @@ namespace ospray {
       FILE *osp = fopen(ospFileName.c_str(),"w");
       assert(osp);
       std::string binFileName = ospFileName+"bin";
-      FILE *bin = fopen(binFileName.c_str(),"w");
+      FILE *bin = fopen(binFileName.c_str(),"wb");
       assert(bin);
       
+      fprintf(osp,"<?xml?>\n");
+      fprintf(osp,"<ospray>\n");
       fprintf(osp,"<MultiSumAMR\n");
       fprintf(osp,"   rootGrid=\"%i %i %i\"\n",rootGrid->size().x,rootGrid->size().y,rootGrid->size().z);
       fprintf(osp,"   voxelType=\"float\"\n");
@@ -151,6 +153,8 @@ namespace ospray {
             if (!msb) {
               fprintf(osp," %i\n",0);
             } else {
+              if (msb->dataBlock.size())
+                std::cout << "data block " << vec3i(ix,iy,iz) << " = " << *msb->dataBlock[0] << std::endl;
               fprintf(osp,"\t\t%li\n",msb->dataBlock.size());
               for (int i=0;i<msb->dataBlock.size();i++) {
                 fwrite(msb->dataBlock[i],sizeof(*msb->dataBlock[i]),1,bin);
@@ -190,6 +194,7 @@ namespace ospray {
       fprintf(osp,"\t</indexBlockOf>\n");
       
       fprintf(osp,"</MultiSumAMR>\n");
+      fprintf(osp,"</ospray>\n");
       fclose(osp);
       fclose(bin);
     }

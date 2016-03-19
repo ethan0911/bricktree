@@ -23,6 +23,8 @@
 #include "sg/common/Node.h"
 #include "sg/common/Integrator.h"
 #include "sg/module/Module.h"
+
+#include "amr/Sumerian.h"
 	 
 namespace ospray {
   namespace sg {
@@ -113,9 +115,84 @@ namespace ospray {
       cout << "AMRVolume has xf: " << this->transferFunction << endl;
     }
 
+    void parseVecInt(std::vector<int> &vec, const std::string &s)
+    {
+      char *ss = strdup(s.c_str());
+      char *tok = strtok(ss," \t\n");
+      while (tok) {
+        vec.push_back(atoi(tok));
+        tok = strtok(NULL," \n\t");
+      }
+      free(ss);
+    }
+
+    //! \brief Initialize this node's value from given XML node 
+    void MultiSumAMR::setFromXML(const xml::Node *const node, 
+                                 const unsigned char *binBasePtr)
+    {
+      size_t ofs = node->getPropl("ofs");
+      size_t dataSize = node->getPropl("size");
+      const std::string voxelType = node->getProp("voxelType");
+      if (voxelType != "float")
+        throw std::runtime_error("can only do float MultiSumAMR right now");
+      this->voxelType = typeForString(voxelType.c_str());
+
+      std::string xfName = node->getProp("transferFunction");
+      if (xfName != "") {
+        this->transferFunction = dynamic_cast<TransferFunction*>(sg::findNamedNode(xfName));
+        cout << "USING NAMED XF " << this->transferFunction << endl;
+      }
+      if (this->transferFunction.ptr == NULL)
+        this->transferFunction = new TransferFunction;
+      
+      rootGridSize = toVec3i(node->getProp("rootGrid").c_str());
+      PRINT(rootGridSize);
+      clipBoxSize = toVec3f(node->getProp("clipBoxSize").c_str());
+      PRINT(clipBoxSize);
+
+      std::vector<int> dataBlockCount;
+      std::vector<int> indexBlockCount;
+      PRINT(node->child.size());
+      for (int childID=0;childID<node->child.size();childID++) {
+        const xml::Node *child = node->child[childID];
+        if (child->name == "dataBlocks")
+          parseVecInt(dataBlockCount,child->content.c_str());
+        if (child->name == "indexBlocks")
+          parseVecInt(indexBlockCount,child->content.c_str());
+      }
+
+      size_t numDataBlocks = 0;
+      for (int i=0;i<dataBlockCount.size();i++)
+        numDataBlocks += dataBlockCount[i];
+
+      size_t numIndexBlocks = 0;
+      for (int i=0;i<indexBlockCount.size();i++)
+        numIndexBlocks += indexBlockCount[i];
+
+      const Sumerian::DataBlock *dataBlock = (const Sumerian::DataBlock *)binBasePtr;
+      binBasePtr += numDataBlocks*sizeof(Sumerian::DataBlock);
+      PRINT(dataBlock[0]);
+
+      const Sumerian::IndexBlock *indexBlock = (const Sumerian::IndexBlock *)binBasePtr;
+      binBasePtr += numIndexBlocks*sizeof(Sumerian::IndexBlock);
+      PRINT(indexBlock[0].childID[0][0][0]);
+
+      const int *indexOf = (const int *)binBasePtr;
+      PRINT(indexOf[0]);
+
+      PRINT(dataBlockCount.size());
+      PRINT(indexBlockCount.size());
+      cout << "-------------------------------------------------------" << endl;
+    }
+
+
+
+
+
     typedef AMRVolume MultiOctreeAMR;
 
     OSP_REGISTER_SG_NODE(MultiOctreeAMR);
+    OSP_REGISTER_SG_NODE(MultiSumAMR);
     OSP_REGISTER_SG_NODE(AMRVolume);
 
     OSPRAY_SG_DECLARE_MODULE(amr)

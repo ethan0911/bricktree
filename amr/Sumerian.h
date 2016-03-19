@@ -77,6 +77,19 @@ namespace ospray {
 
     };
     
+    inline std::ostream &operator<<(std::ostream &o, const Sumerian::DataBlock &db)
+    {      
+      for (int iz=0;iz<4;iz++) {
+        for (int iy=0;iy<4;iy++) {
+          for (int ix=0;ix<4;ix++)
+            o << db.value[iz][iy][ix] << " ";
+          o << "| ";
+        }
+        if (iz < 3) o << std::endl;
+      }
+        
+      return o;
+    }
 
 
 

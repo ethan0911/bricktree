@@ -60,6 +60,44 @@ namespace ospray {
       amr::AMR *moa;
     };
 
+
+    /*! multi-octree amr node - for now only working for float format */
+    struct MultiSumAMR : public sg::Volume {
+      
+      MultiSumAMR() {};
+      
+      /*! \brief returns a std::string with the c++ name of this class */
+      virtual    std::string toString() const
+      { return "ospray::sg::MultiSumAMR (ospray_amr module)"; }
+
+      /*! 'render' the nodes - all geometries, materials, etc will
+          create their ospray counterparts, and store them in the
+          node  */
+      virtual void render(RenderContext &ctx) {};
+
+      //! \brief Initialize this node's value from given XML node 
+      virtual void setFromXML(const xml::Node *const node, 
+                              const unsigned char *binBasePtr);
+
+      //! return bounding box of all primitives
+      virtual box3f getBounds() { return box3f(vec3f(0.f),clipBoxSize); }
+      
+      //! handle to the ospray volume object
+      OSPVolume   ospVolume;
+
+      //! type of voxel (uint8,float) that we have to deal with 
+      OSPDataType voxelType;
+      
+      vec3f clipBoxSize;
+      vec3i rootGridSize;
+
+      OSPData dataBlockData;
+      OSPData indexBlockData;
+      OSPData indexOfData;
+      OSPData indexBlockCountData;
+      OSPData dataBlockCountData;
+    };
+
   } // ::ospray::sg
 } // ::ospray
 
