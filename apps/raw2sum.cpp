@@ -155,7 +155,9 @@ namespace ospray {
               // PRINT(db.value[iz][iy][ix]);
               range.extend(db.value[iz][iy][ix]);
             }
-        // cout << "leaf  " << (4*begin) << " bs " << blockSize << " rg " << range << endl;
+
+        if (begin == vec3i(0))
+          cout << "leaf  " << (4*begin) << " bs " << blockSize << " rg " << range << endl;
         // if (range.lo < range.hi)
         //   cout << "NON EMPTY RANGE" << endl;
       }
@@ -173,6 +175,8 @@ namespace ospray {
                                     ));
             }
       }
+      if (begin == vec3i(0))
+        cout << "inner  " << (4*begin) << " bs " << blockSize << " rg " << range << endl;
 
       // now, compute average of this node - we need this even if the node gets killed...
       avg = db.computeWeightedAverage(begin,blockSize,input->size());        
@@ -185,7 +189,7 @@ namespace ospray {
         for (int iz=0;iz<4;iz++)
           for (int iy=0;iy<4;iy++)
             for (int ix=0;ix<4;ix++) {
-              const vec3i cellID = begin + vec3i(ix,iy,iz);
+              const vec3i cellID = 4*begin + vec3i(ix,iy,iz);
               if (cellID.x*cellSize < input->size().x &&
                   cellID.y*cellSize < input->size().y &&
                   cellID.z*cellSize < input->size().z) {
