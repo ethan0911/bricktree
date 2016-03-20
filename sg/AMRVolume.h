@@ -19,6 +19,7 @@
 #include "sg/volume/Volume.h"
 // amr base
 #include "../amr/AMR.h"
+#include "../amr/Sumerian.h"
 	 
 namespace ospray {
   namespace sg {
@@ -73,7 +74,7 @@ namespace ospray {
       /*! 'render' the nodes - all geometries, materials, etc will
           create their ospray counterparts, and store them in the
           node  */
-      virtual void render(RenderContext &ctx) {};
+      virtual void render(RenderContext &ctx);
 
       //! \brief Initialize this node's value from given XML node 
       virtual void setFromXML(const xml::Node *const node, 
@@ -93,9 +94,10 @@ namespace ospray {
 
       OSPData dataBlockData;
       OSPData indexBlockData;
-      OSPData indexOfData;
-      OSPData indexBlockCountData;
-      OSPData dataBlockCountData;
+      OSPData blockInfoData;
+      OSPData rootCellData;
+
+      amr::Sumerian *multiSum;
     };
 
   } // ::ospray::sg

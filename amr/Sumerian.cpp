@@ -53,6 +53,42 @@ namespace ospray {
     }
 
 
+
+    void Sumerian::mapFrom(const unsigned char *ptr, 
+                           const vec3i &rootGrid,
+                           const vec3f &fracOfRootGrid,
+                           std::vector<int32_t> numDataBlocksPerTree,
+                           std::vector<int32_t> numIndexBlocksPerTree)
+    {
+      this->rootGridDims = rootGrid;
+      PRINT(rootGridDims);
+      this->validFractionOfRootGrid = fracOfRootGrid;
+
+      const size_t numRootCells = rootGridDims.product();
+      uint32_t *firstBlockOfRootCell = new uint32_t[numRootCells];
+      size_t sum = 0;
+      for (int i=0;i<numRootCells;i++) {
+        firstBlockOfRootCell[i] = sum;
+        sum += numDataBlocksPerTree[i];
+      }
+      this->firstBlockOfRootCell = firstBlockOfRootCell;
+      
+      numDataBlocks = 0;
+      for (int i=0;i<numDataBlocksPerTree.size();i++)
+        numDataBlocks += numDataBlocksPerTree[i];
+      numIndexBlocks = 0;
+      for (int i=0;i<numIndexBlocksPerTree.size();i++)
+        numIndexBlocks += numIndexBlocksPerTree[i];
+      
+      dataBlock = (const DataBlock *)ptr;
+      ptr += numDataBlocks * sizeof(DataBlock);
+      
+      indexBlock = (const IndexBlock *)ptr;
+      ptr += numIndexBlocks * sizeof(IndexBlock);
+      
+      blockInfo = (const BlockInfo *)ptr;
+    }      
+
     float Sumerian::DataBlock::computeWeightedAverage(// coordinates of lower-left-front
                                                       // voxel, in resp level
                                                       const vec3i &brickCoord,
@@ -118,6 +154,8 @@ namespace ospray {
                    indexBlock[indexBlockID]->childID[iz][iy][ix] < dataBlock.size());
       return indexBlock[indexBlockID];
     }
+
+
 
 
     /*! be done with the build, and save all data to the xml/bin

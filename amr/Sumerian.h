@@ -75,6 +75,23 @@ namespace ospray {
         virtual void save(const std::string &ospFileName, const vec3f &clipBoxSize) = 0;
       };
 
+      void mapFrom(const unsigned char *ptr, 
+                   const vec3i &rootGrid,
+                   const vec3f &fracOfRootGrid,
+                   std::vector<int32_t> numDataBlocksPerTree,
+                   std::vector<int32_t> numIndexBlocksPerTree);
+
+      const DataBlock *dataBlock;
+      size_t numDataBlocks;
+      const IndexBlock *indexBlock;
+      size_t numIndexBlocks;
+      const BlockInfo *blockInfo;
+      size_t numBlockInfos;
+
+      vec3i rootGridDims;
+      vec3f validFractionOfRootGrid;
+
+      const uint32_t *firstBlockOfRootCell;
     };
     
     inline std::ostream &operator<<(std::ostream &o, const Sumerian::DataBlock &db)

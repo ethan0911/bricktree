@@ -161,31 +161,52 @@ namespace ospray {
           parseVecInt(indexBlockCount,child->content.c_str());
       }
 
-      size_t numDataBlocks = 0;
-      for (int i=0;i<dataBlockCount.size();i++)
-        numDataBlocks += dataBlockCount[i];
-
-      size_t numIndexBlocks = 0;
-      for (int i=0;i<indexBlockCount.size();i++)
-        numIndexBlocks += indexBlockCount[i];
-
-      const Sumerian::DataBlock *dataBlock = (const Sumerian::DataBlock *)binBasePtr;
-      binBasePtr += numDataBlocks*sizeof(Sumerian::DataBlock);
-      PRINT(dataBlock[0]);
-
-      const Sumerian::IndexBlock *indexBlock = (const Sumerian::IndexBlock *)binBasePtr;
-      binBasePtr += numIndexBlocks*sizeof(Sumerian::IndexBlock);
-      PRINT(indexBlock[0].childID[0][0][0]);
-
-      const int *indexOf = (const int *)binBasePtr;
-      PRINT(indexOf[0]);
-
-      PRINT(dataBlockCount.size());
-      PRINT(indexBlockCount.size());
+      multiSum = new Sumerian;
+      multiSum->mapFrom(binBasePtr,rootGridSize,clipBoxSize,dataBlockCount,indexBlockCount);
       cout << "-------------------------------------------------------" << endl;
     }
 
+    void MultiSumAMR::render(RenderContext &ctx)
+    {
+      if (ospVolume) 
+        return;
 
+      ospLoadModule("amr");
+      ospVolume = ospNewVolume("MultiSumAMRVolume");
+      if (!ospVolume) 
+        throw std::runtime_error("could not create ospray 'MultiSumAMRVolume'");
+      
+      // -------------------------------------------------------
+      dataBlockData = ospNewData(multiSum->numDataBlocks*sizeof(multiSum->dataBlock[0]),OSP_UCHAR,
+                                 multiSum->dataBlock,OSP_DATA_SHARED_BUFFER);
+      ospSetData(ospVolume,"dataBlockData",dataBlockData);
+      indexBlockData = ospNewData(multiSum->numIndexBlocks*sizeof(multiSum->indexBlock[0]),OSP_UCHAR,
+                                   multiSum->indexBlock,OSP_DATA_SHARED_BUFFER);
+      ospSetData(ospVolume,"indexBlockData",indexBlockData);
+      blockInfoData = ospNewData(multiSum->numIndexBlocks*sizeof(multiSum->blockInfo[0]),OSP_UCHAR,
+                                  multiSum->blockInfo,OSP_DATA_SHARED_BUFFER);
+      ospSetData(ospVolume,"blockInfoData",blockInfoData);
+      rootCellData = ospNewData(multiSum->rootGridDims.product(),OSP_INT,
+                                multiSum->firstBlockOfRootCell,OSP_DATA_SHARED_BUFFER);
+      ospSetData(ospVolume,"rootCellData",rootCellData);
+      ospSetVec3i(ospVolume,"rootGridDims",(osp::vec3i&)multiSum->rootGridDims);
+      ospSetVec3f(ospVolume,"validFractionOfRootGrid",multiSum->validFractionOfRootGrid);
+
+      // -------------------------------------------------------
+      std::cout << "#sg:amr: adding transfer function" << std::endl;
+      if (transferFunction) {
+        transferFunction->render(ctx);
+        ospSetObject(ospVolume,"transferFunction",transferFunction->getOSPHandle());
+      }
+      
+      // -------------------------------------------------------
+      std::cout << "#sg:amr: committing Multi-Octree AMR volume" << std::endl;
+      ospCommit(ospVolume);
+      
+      // and finally, add this volume to the model
+      ospAddVolume(ctx.world->ospModel,ospVolume);
+
+    }    
 
 
 
