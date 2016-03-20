@@ -65,7 +65,7 @@ namespace ospray {
     /*! multi-octree amr node - for now only working for float format */
     struct MultiSumAMR : public sg::Volume {
       
-      MultiSumAMR() {};
+      MultiSumAMR() : multiSum(NULL), ospVolume(NULL) {};
       
       /*! \brief returns a std::string with the c++ name of this class */
       virtual    std::string toString() const

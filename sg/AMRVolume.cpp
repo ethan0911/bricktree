@@ -173,6 +173,8 @@ namespace ospray {
 
       ospLoadModule("amr");
       ospVolume = ospNewVolume("MultiSumAMRVolume");
+      PING;
+      exit(0);
       if (!ospVolume) 
         throw std::runtime_error("could not create ospray 'MultiSumAMRVolume'");
       
