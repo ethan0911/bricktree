@@ -25,7 +25,7 @@ struct range1f {
 };
 
 struct SumDataBlock {
-  float child[4][4][4];
+  float value[4][4][4];
 };
 
 struct SumIndexBlock {
@@ -33,7 +33,7 @@ struct SumIndexBlock {
 };
 
 struct SumBlockInfo {
-  int32 childBlockID;
+  int32 indexBlockID;
 };
 
 struct MultiSumAMRVolume {

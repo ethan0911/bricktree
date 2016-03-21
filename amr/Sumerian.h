@@ -98,6 +98,7 @@ namespace ospray {
     {      
       for (int iz=0;iz<4;iz++) {
         for (int iy=0;iy<4;iy++) {
+          std::cout << std::endl;
           for (int ix=0;ix<4;ix++)
             o << db.value[iz][iy][ix] << " ";
           o << "| ";

@@ -181,7 +181,10 @@ namespace ospray {
       // now, compute average of this node - we need this even if the node gets killed...
       avg = db.computeWeightedAverage(begin,blockSize,input->size());        
 
-      if ((range.hi - range.lo) <= threshold) {
+      if (((range.hi - range.lo) <= threshold)
+          && 
+          level > skipLevels
+          ) {
         // do not set any fields - kill that block
         // cout << "killing " << begin << " level " << level << endl;
       } else {
@@ -264,6 +267,8 @@ namespace ospray {
       } else
         throw std::runtime_error("unsupported format '"+format+"'");
 
+
+      input = new DummyArray3D<float>(dims);
 
       for (int i=0;i<302;i++) {
         // PRINT(i);

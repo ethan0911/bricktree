@@ -53,6 +53,9 @@ namespace ospray {
       rootGridDims   = getParam3i("rootGridDims",vec3i(-1));
       validFractionOfRootGrid = getParam3f("validFractionOfRootGrid",vec3f(0.f));
 
+      PRINT(rootGridDims);
+      PRINT(validFractionOfRootGrid);
+
       Ref<TransferFunction> xf = (TransferFunction*)getParamObject("transferFunction");
 
       ispc::MultiSumAMRVolume_set(getIE(),

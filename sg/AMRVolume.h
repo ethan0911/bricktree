@@ -81,7 +81,7 @@ namespace ospray {
                               const unsigned char *binBasePtr);
 
       //! return bounding box of all primitives
-      virtual box3f getBounds() { return box3f(vec3f(0.f),clipBoxSize); }
+      virtual box3f getBounds() { return box3f(vec3f(0.f),clipBoxSize*vec3f(rootGridSize)); }
       
       //! handle to the ospray volume object
       OSPVolume   ospVolume;

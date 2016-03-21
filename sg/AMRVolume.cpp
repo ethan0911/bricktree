@@ -59,10 +59,6 @@ namespace ospray {
       std::cout << "#sg:amr: creating root cell data buffer" << std::endl;
       rootCellData = ospNewData(moa->rootCell.size()*sizeof(moa->rootCell[0]),OSP_UCHAR,
                                 &moa->rootCell[0],OSP_DATA_SHARED_BUFFER);
-      // PRINT(moa->rootCell.size());
-      // PRINT(moa->rootCell.size()*sizeof(moa->rootCell[0]));
-      // for (int i=0;i<moa->rootCell.size();i++)
-      //   cout << "moa[" << i << "] = " << moa->rootCell[i].ccValue << endl;
 
       assert(rootCellData);
       ospSetData(ospVolume, "rootCellData", rootCellData);
@@ -146,13 +142,10 @@ namespace ospray {
         this->transferFunction = new TransferFunction;
       
       rootGridSize = toVec3i(node->getProp("rootGrid").c_str());
-      PRINT(rootGridSize);
       clipBoxSize = toVec3f(node->getProp("clipBoxSize").c_str());
-      PRINT(clipBoxSize);
 
       std::vector<int> dataBlockCount;
       std::vector<int> indexBlockCount;
-      PRINT(node->child.size());
       for (int childID=0;childID<node->child.size();childID++) {
         const xml::Node *child = node->child[childID];
         if (child->name == "dataBlocks")
@@ -204,6 +197,7 @@ namespace ospray {
       ospCommit(ospVolume);
       
       // and finally, add this volume to the model
+      cout << "adding volume " << ospVolume << endl;
       ospAddVolume(ctx.world->ospModel,ospVolume);
 
     }    

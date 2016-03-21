@@ -82,6 +82,38 @@ namespace ospray {
       bool valuesAreMine;
     };
 
+
+    /*! implementation for an actual array3d that stores a 3D array of values */
+    template<typename value_t>
+    struct DummyArray3D : public Array3D<value_t> {
+
+      DummyArray3D(const vec3i &dims) : dims(dims) {};
+
+      /*! return size (ie, "dimensions") of volume */
+      virtual vec3i size() const override { return dims; };
+
+      /*! get cell value at location
+
+        \warning 'where' MUST be a valid cell location */
+      virtual value_t get(const vec3i &where) const override {
+        return reduce_mul(where) / ((float)reduce_mul(dims-vec3i(1))); 
+      }
+      
+      /*! set cell value at location to given value
+
+        \warning 'where' MUST be a valid cell location */
+      virtual void set(const vec3i &where, const value_t &t) { throw std::runtime_error("cannot 'set' in a dummyarray3d"); };
+
+      void clear(const value_t &t) {};
+
+      /*! returns number of elements (as 64-bit int) across all dimensions */
+      virtual size_t numElements() const override { return dims.product(); };
+
+      const vec3i dims;
+    };
+
+
+
     /*! implemnetaiton of a wrapper class that makes an actual array3d
         of one type look like that of another type */
     template<typename in_t, typename out_t>

@@ -108,12 +108,14 @@ namespace ospray {
             vec3i cellEnd = min(cellBegin + vec3i(cellSize),maxSize);
 
             float weight = reduce_mul(cellEnd-cellBegin);
-            den += weight;
-            num += weight * value[iz][iy][ix];
+            if (weight > 0.f) {
+              den += weight;
+              num += weight * value[iz][iy][ix];
+            }
           }
 
       assert(den != 0.f);
-      return num / den;
+      return num / (den+1e-8f);
     }
 
     inline int blockSizeOf(int level)
@@ -325,6 +327,8 @@ namespace ospray {
           rootGrid->size().z >= newSize.z)
         return;
 
+      PRINT(newSize);
+
       ActualArray3D<MemorySumBuilder *> *newGrid
         = new ActualArray3D<MemorySumBuilder *>(newSize);
       
@@ -345,6 +349,7 @@ namespace ospray {
     
     MemorySumBuilder *MultiSumBuilder::getRootCell(const vec3i &rootCellID)
     {
+      // if (rootCellID.x >= 17) PRINT(rootCellID);
       allocateAtLeast(rootCellID+vec3i(1));
       if (rootGrid->get(rootCellID) == NULL) {
         MemorySumBuilder *newBuilder = new MemorySumBuilder;
