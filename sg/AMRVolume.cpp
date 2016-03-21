@@ -179,9 +179,17 @@ namespace ospray {
       blockInfoData = ospNewData(multiSum->numIndexBlocks*sizeof(multiSum->blockInfo[0]),OSP_UCHAR,
                                   multiSum->blockInfo,OSP_DATA_SHARED_BUFFER);
       ospSetData(ospVolume,"blockInfoData",blockInfoData);
-      rootCellData = ospNewData(multiSum->rootGridDims.product(),OSP_INT,
-                                multiSum->firstBlockOfRootCell,OSP_DATA_SHARED_BUFFER);
-      ospSetData(ospVolume,"rootCellData",rootCellData);
+
+      firstIndexBlockOfTreeData
+        = ospNewData(multiSum->rootGridDims.product(),OSP_INT,
+                     multiSum->firstIndexBlockOfTree,OSP_DATA_SHARED_BUFFER);
+      ospSetData(ospVolume,"firstIndexBlockOfTree",firstIndexBlockOfTreeData);
+
+      firstDataBlockOfTreeData
+        = ospNewData(multiSum->rootGridDims.product(),OSP_INT,
+                     multiSum->firstDataBlockOfTree,OSP_DATA_SHARED_BUFFER);
+      ospSetData(ospVolume,"firstDataBlockOfTree",firstDataBlockOfTreeData);
+
       ospSetVec3i(ospVolume,"rootGridDims",(osp::vec3i&)multiSum->rootGridDims);
       ospSetVec3f(ospVolume,"validFractionOfRootGrid",multiSum->validFractionOfRootGrid);
 

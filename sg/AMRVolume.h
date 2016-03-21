@@ -95,7 +95,8 @@ namespace ospray {
       OSPData dataBlockData;
       OSPData indexBlockData;
       OSPData blockInfoData;
-      OSPData rootCellData;
+      OSPData firstIndexBlockOfTreeData;
+      OSPData firstDataBlockOfTreeData;
 
       amr::Sumerian *multiSum;
     };

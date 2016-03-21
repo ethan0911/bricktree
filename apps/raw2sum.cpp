@@ -156,10 +156,15 @@ namespace ospray {
               range.extend(db.value[iz][iy][ix]);
             }
 
-        if (begin == vec3i(0))
+        if (begin == vec3i(0)) {
           cout << "leaf  " << (4*begin) << " bs " << blockSize << " rg " << range << endl;
-        // if (range.lo < range.hi)
-        //   cout << "NON EMPTY RANGE" << endl;
+          // for (int iz=0;iz<4;iz++)
+          //   for (int iy=0;iy<4;iy++)
+          //     for (int ix=0;ix<4;ix++) 
+          //       cout << "leaf: db[" << vec3i(ix,iy,iz) << "] = " << db.value[iz][iy][ix] << endl;
+        }
+      // if (range.lo < range.hi)
+      //   cout << "NON EMPTY RANGE" << endl;
       }
       else {
         // -------------------------------------------------------
@@ -186,7 +191,8 @@ namespace ospray {
           level > skipLevels
           ) {
         // do not set any fields - kill that block
-        // cout << "killing " << begin << " level " << level << endl;
+        if (begin == vec3i(0))
+          cout << "killing " << begin << " level " << level << endl;
       } else {
         // need to actually create this block:
         for (int iz=0;iz<4;iz++)
@@ -196,8 +202,11 @@ namespace ospray {
               if (cellID.x*cellSize < input->size().x &&
                   cellID.y*cellSize < input->size().y &&
                   cellID.z*cellSize < input->size().z) {
-                if (level >= skipLevels)
+                if (level >= skipLevels) {
                   builder->set(cellID,level-skipLevels,db.value[iz][iy][ix]);
+                  // if (begin == vec3i(0))
+                  //   cout << "setting " << cellID << ":" << (level-skipLevels) << " val " << db.value[iz][iy][ix] << endl;
+                }
               }
             }
       }
@@ -268,7 +277,7 @@ namespace ospray {
         throw std::runtime_error("unsupported format '"+format+"'");
 
 
-      input = new DummyArray3D<float>(dims);
+      // input = new DummyArray3D<float>(dims);
 
       for (int i=0;i<302;i++) {
         // PRINT(i);
@@ -282,7 +291,6 @@ namespace ospray {
       // Range<float> vr = input->getValueRange();
       // PRINT(vr);
       // exit(0);
-
 
       cout << "loading complete." << endl;
 

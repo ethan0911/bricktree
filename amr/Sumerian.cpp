@@ -65,20 +65,21 @@ namespace ospray {
       this->validFractionOfRootGrid = fracOfRootGrid;
 
       const size_t numRootCells = rootGridDims.product();
-      uint32_t *firstBlockOfRootCell = new uint32_t[numRootCells];
-      size_t sum = 0;
+      uint32_t *firstIndexBlockOfTree = new uint32_t[numRootCells];
+      uint32_t *firstDataBlockOfTree = new uint32_t[numRootCells];
+      size_t sumIndex = 0;
+      size_t sumData = 0;
       for (int i=0;i<numRootCells;i++) {
-        firstBlockOfRootCell[i] = sum;
-        sum += numDataBlocksPerTree[i];
+        firstIndexBlockOfTree[i] = sumIndex;
+        firstDataBlockOfTree[i] = sumData;
+        sumData += numDataBlocksPerTree[i];
+        sumIndex += numIndexBlocksPerTree[i];
       }
-      this->firstBlockOfRootCell = firstBlockOfRootCell;
+      this->firstIndexBlockOfTree = firstIndexBlockOfTree;
+      this->firstDataBlockOfTree = firstDataBlockOfTree;
       
-      numDataBlocks = 0;
-      for (int i=0;i<numDataBlocksPerTree.size();i++)
-        numDataBlocks += numDataBlocksPerTree[i];
-      numIndexBlocks = 0;
-      for (int i=0;i<numIndexBlocksPerTree.size();i++)
-        numIndexBlocks += numIndexBlocksPerTree[i];
+      numDataBlocks = sumData;
+      numIndexBlocks = sumIndex;
       
       dataBlock = (const DataBlock *)ptr;
       ptr += numDataBlocks * sizeof(DataBlock);
@@ -87,6 +88,12 @@ namespace ospray {
       ptr += numIndexBlocks * sizeof(IndexBlock);
       
       blockInfo = (const BlockInfo *)ptr;
+
+      // int *indexOf = (int *)blockInfo;
+      // for (int i=0;i<numDataBlocksPerTree.size();i++) {
+      //   cout << "indexOf[0] for tree " << i << " -> " << indexOf[0] << " (@" << (indexOf - (int *)blockInfo) << ")" << endl;
+      //   indexOf += numDataBlocksPerTree[i];
+      // }
     }      
 
     float Sumerian::DataBlock::computeWeightedAverage(// coordinates of lower-left-front
@@ -193,8 +200,8 @@ namespace ospray {
             if (!msb) {
               fprintf(osp," %i\n",0);
             } else {
-              if (msb->dataBlock.size())
-                std::cout << "data block " << vec3i(ix,iy,iz) << " = " << *msb->dataBlock[0] << std::endl;
+              // if (msb->dataBlock.size())
+              //   std::cout << "data block " << vec3i(ix,iy,iz) << " = " << *msb->dataBlock[0] << std::endl;
               fprintf(osp,"\t\t%li\n",msb->dataBlock.size());
               for (int i=0;i<msb->dataBlock.size();i++) {
                 fwrite(msb->dataBlock[i],sizeof(*msb->dataBlock[i]),1,bin);
@@ -204,6 +211,7 @@ namespace ospray {
       fprintf(osp,"\t</dataBlocks>\n");
       
       fprintf(osp,"\t<indexBlocks>\n");
+      size_t treeRootOffset = 0;
       for (int iz=0;iz<rootGrid->size().z;iz++)
         for (int iy=0;iy<rootGrid->size().y;iy++)
           for (int ix=0;ix<rootGrid->size().x;ix++) {
@@ -213,8 +221,15 @@ namespace ospray {
             } else {
               fprintf(osp,"\t\t%li\n",msb->indexBlock.size());
               for (int i=0;i<msb->indexBlock.size();i++) {
-                fwrite(msb->indexBlock[i],sizeof(*msb->indexBlock[i]),1,bin);
+                Sumerian::IndexBlock ib = *msb->indexBlock[i];
+                // iw - no longer do offsetting: index and data blcoks
+                // required ifferent offsets, so we have to store
+                // differnet base pointers per rooot grid, anyway.
+
+                // ib.addOffset(treeRootOffset);
+                fwrite(&ib,sizeof(ib),1,bin);
               }
+              treeRootOffset += msb->dataBlock.size();
             }
           }
       fprintf(osp,"\t</indexBlocks>\n");
@@ -228,7 +243,8 @@ namespace ospray {
               fprintf(osp,"\t\t%i\n",0);
             } else {
               fprintf(osp,"\t\t%li\n",msb->indexBlockOf.size());
-              fwrite(&msb->indexBlockOf[0],msb->indexBlockOf.size(),sizeof(msb->indexBlockOf[0]),bin);
+              fwrite(&msb->indexBlockOf[0],msb->indexBlockOf.size(),
+                     sizeof(msb->indexBlockOf[0]),bin);
             }
           }
       fprintf(osp,"\t</indexBlockOf>\n");
@@ -249,7 +265,7 @@ namespace ospray {
       // PRINT(level);
 
       // start with the root block
-      int blockSize = blockSizeOf(level-1);
+      int blockSize = blockSizeOf(level);
 
       // PRINT(blockSize);
 

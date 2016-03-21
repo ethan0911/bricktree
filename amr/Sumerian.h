@@ -49,8 +49,17 @@ namespace ospray {
         ... (see BlockInfo description) */
       struct IndexBlock {
         void clear();
+        /*! when we write multiple sumerians into the same file we can
+            use this function to offset all child IDs */
+        void addOffset(uint32 offset) {
+          for (int iz=0;iz<4;iz++)
+            for (int iy=0;iy<4;iy++)
+              for (int ix=0;ix<4;ix++) 
+                if (childID[iz][iy][ix] >= 0)
+                  childID[iz][iy][ix] += offset;
+        };
 
-        uint32 childID[4][4][4];
+        int32 childID[4][4][4];
       };
       struct BlockInfo {
         BlockInfo(uint32 ID=invalidID) : indexBlockID(ID) {};
@@ -91,7 +100,8 @@ namespace ospray {
       vec3i rootGridDims;
       vec3f validFractionOfRootGrid;
 
-      const uint32_t *firstBlockOfRootCell;
+      const uint32_t *firstIndexBlockOfTree;
+      const uint32_t *firstDataBlockOfTree;
     };
     
     inline std::ostream &operator<<(std::ostream &o, const Sumerian::DataBlock &db)

@@ -42,7 +42,8 @@ struct MultiSumAMRVolume {
   SumIndexBlock *indexBlock;
   SumDataBlock  *dataBlock;
   SumBlockInfo  *blockInfo;
-  uint32        *rootCell;
+  uint32        *firstIndexBlockOfTree;
+  uint32        *firstDataBlockOfTree;
   // root grid dimensions
   vec3i rootGridDims;
   vec3f validFractionOfRootGrid;

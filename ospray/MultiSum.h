@@ -39,7 +39,8 @@ namespace ospray {
         FATAL("'setRegion()' doesn't make sense for AMR volumes; they can only be set from existing data");
       }
 
-      Ref<Data>   rootCellData;
+      Ref<Data>   firstIndexBlockOfTreeData;
+      Ref<Data>   firstDataBlockOfTreeData;
       Ref<Data>   dataBlockData;
       Ref<Data>   indexBlockData;
       Ref<Data>   blockInfoData;
