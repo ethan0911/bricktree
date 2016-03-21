@@ -29,7 +29,7 @@ struct SumDataBlock {
 };
 
 struct SumIndexBlock {
-  uint32 child[4][4][4];
+  int32 child[4][4][4];
 };
 
 struct SumBlockInfo {
@@ -42,8 +42,8 @@ struct MultiSumAMRVolume {
   SumIndexBlock *indexBlock;
   SumDataBlock  *dataBlock;
   SumBlockInfo  *blockInfo;
-  uint32        *firstIndexBlockOfTree;
-  uint32        *firstDataBlockOfTree;
+  int32        *firstIndexBlockOfTree;
+  int32        *firstDataBlockOfTree;
   // root grid dimensions
   vec3i rootGridDims;
   vec3f validFractionOfRootGrid;

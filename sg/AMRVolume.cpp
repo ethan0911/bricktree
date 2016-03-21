@@ -132,6 +132,8 @@ namespace ospray {
       if (voxelType != "float")
         throw std::runtime_error("can only do float MultiSumAMR right now");
       this->voxelType = typeForString(voxelType.c_str());
+      
+      this->samplingRate = node->getPropf("samplingRate",1.f);
 
       std::string xfName = node->getProp("transferFunction");
       if (xfName != "") {
@@ -179,6 +181,8 @@ namespace ospray {
       blockInfoData = ospNewData(multiSum->numIndexBlocks*sizeof(multiSum->blockInfo[0]),OSP_UCHAR,
                                   multiSum->blockInfo,OSP_DATA_SHARED_BUFFER);
       ospSetData(ospVolume,"blockInfoData",blockInfoData);
+
+      ospSet1f(ospVolume,"samplingRate",samplingRate);
 
       firstIndexBlockOfTreeData
         = ospNewData(multiSum->rootGridDims.product(),OSP_INT,

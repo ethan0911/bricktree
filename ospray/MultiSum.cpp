@@ -54,6 +54,7 @@ namespace ospray {
       blockInfoData  = getParamData("blockInfoData");
       rootGridDims   = getParam3i("rootGridDims",vec3i(-1));
       validFractionOfRootGrid = getParam3f("validFractionOfRootGrid",vec3f(0.f));
+      float samplingRate = getParam1f("samplingRate",1.f);
 
       PRINT(rootGridDims);
       PRINT(validFractionOfRootGrid);
@@ -116,7 +117,8 @@ namespace ospray {
                                   indexBlockData->data,
                                   blockInfoData->data,
                                   firstDataBlockOfTreeData->data,
-                                  firstIndexBlockOfTreeData->data
+                                  firstIndexBlockOfTreeData->data,
+                                  samplingRate
                                   );
     }
 

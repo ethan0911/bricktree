@@ -329,6 +329,8 @@ namespace ospray {
 
       vec3f clipBoxSize = vec3f(input->size()) / vec3f(encodedSize);
       
+      builder->samplingRate = reduce_max(input->size()) / (float)reduce_max(builder->rootGrid->size());
+
       builder->save(outFileName,clipBoxSize);
       cout << "done writing multi-sum tree" << endl;
       return 0;

@@ -189,6 +189,7 @@ namespace ospray {
       fprintf(osp,"<MultiSumAMR\n");
       fprintf(osp,"   rootGrid=\"%i %i %i\"\n",rootGrid->size().x,rootGrid->size().y,rootGrid->size().z);
       fprintf(osp,"   voxelType=\"float\"\n");
+      fprintf(osp,"   samplingRate=\"%f\"\n",samplingRate);
       fprintf(osp,"   clipBoxSize=\"%f %f %f\"\n",clipBoxSize.x,clipBoxSize.y,clipBoxSize.z);
       fprintf(osp,"   >\n");
 
@@ -336,7 +337,7 @@ namespace ospray {
     }
 
     MultiSumBuilder::MultiSumBuilder() 
-      : rootGrid(NULL)
+      : rootGrid(NULL), samplingRate(1.f)
     {}
     
     void MultiSumBuilder::allocateAtLeast(const vec3i &_neededSize)

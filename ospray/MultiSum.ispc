@@ -35,7 +35,6 @@ struct TentAlgoStackEntry {
 inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
                                       const varying vec3f &worldCoordinates)
 {
-
   // print("wc\n %\n %\n-> %\n",worldCoordinates.x,worldCoordinates.y,worldCoordinates.z);
 
   // "packet" variant
@@ -136,6 +135,7 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
                               stackPtr->blockWidth = childCellWidth;
                               stackPtr->nodeID = indexBlock->child[iiz][iiy][iix];
                               ++stackPtr;
+                              // print("pushing % stackptr %\n",indexBlock->child[iiz][iiy][iix],stackPtr-stackBase);
                             } else {
                               const vec3f weight = max(make_vec3f(0.f),
                                                        make_vec3f(1.f) - delta * rcp(childCellWidth));
@@ -191,7 +191,6 @@ static void MultiSumAMRVolume_intersect(void *uniform _self,
   // variable step size...
   const uniform float step
     = self->super.samplingStep / self->super.samplingRate;
-  
   ray.t0 += step;
 }
 
@@ -211,7 +210,8 @@ export void MultiSumAMRVolume_set(void *uniform _self,
                                   void *uniform indexBlock,
                                   void *uniform blockInfo,
                                   void *uniform firstDataBlockOfTreeData,
-                                  void *uniform firstIndexBlockOfTreeData)
+                                  void *uniform firstIndexBlockOfTreeData,
+                                  uniform float samplingRate)
 {
   MultiSumAMRVolume *uniform self = (MultiSumAMRVolume *uniform)_self;
   assert(self);
@@ -226,8 +226,8 @@ export void MultiSumAMRVolume_set(void *uniform _self,
   self->super.computeSample = &MultiSumAMRVolume_sample;
   self->super.computeGradient = &MultiSumAMRVolume_gradient;
 
-  self->super.samplingRate = 1.f;
-  self->super.samplingStep = .1f;
+  self->super.samplingRate = 1.f;//samplingRate;
+  self->super.samplingStep = 1.f/(samplingRate*samplingRate); //1.f;
 
   self->super.gradientShadingEnabled = 0;
 
@@ -236,15 +236,15 @@ export void MultiSumAMRVolume_set(void *uniform _self,
   self->dataBlock  = (SumDataBlock  *)dataBlock;
   self->indexBlock = (SumIndexBlock *)indexBlock;
   self->blockInfo  = (SumBlockInfo  *)blockInfo;
-  self->firstIndexBlockOfTree = (uint32*)firstIndexBlockOfTreeData;
-  self->firstDataBlockOfTree  = (uint32*)firstDataBlockOfTreeData;
+  self->firstIndexBlockOfTree = (int32*)firstIndexBlockOfTreeData;
+  self->firstDataBlockOfTree  = (int32*)firstDataBlockOfTreeData;
   // root grid dimensions
   self->rootGridDims = rootGridDims;
   self->validFractionOfRootGrid = validFractionOfRootGrid;
 
-  print("SET\n");
-  for (uniform int i=0;i<rootGridDims.x*rootGridDims.y*rootGridDims.z;i++)
-    print("blockinfo[%][0] = %\n",i,self->blockInfo[self->firstDataBlockOfTree[i]].indexBlockID);
+  // print("SET\n");
+  // for (uniform int i=0;i<rootGridDims.x*rootGridDims.y*rootGridDims.z;i++)
+  //   print("blockinfo[%][0] = %\n",i,self->blockInfo[self->firstDataBlockOfTree[i]].indexBlockID);
 }
 
 

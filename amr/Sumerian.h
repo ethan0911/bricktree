@@ -167,6 +167,9 @@ namespace ospray {
       /*! be done with the build, and save all data to the xml/bin
         file of 'fileName' and 'filename+"bin"' */
       virtual void save(const std::string &ospFileName, const vec3f &clipBoxSize);
+
+      /*! sampling rate, relative to root grid size */
+      float samplingRate;
     };
 
   } // ::ospray::amr
