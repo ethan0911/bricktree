@@ -51,6 +51,8 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
   OSPRAY_ADD_LIBRARY(ospray_module_amr SHARED
     ospray/AMRVolume.ispc
     ospray/AMRVolume.cpp
+		ospray/MultiSum.ispc
+		ospray/MultiSum.cpp
     )
   
   OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_module_amr
