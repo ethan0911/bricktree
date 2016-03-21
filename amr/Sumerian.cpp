@@ -249,7 +249,7 @@ namespace ospray {
       // PRINT(level);
 
       // start with the root block
-      int blockSize = blockSizeOf(level);
+      int blockSize = blockSizeOf(level-1);
 
       // PRINT(blockSize);
 
@@ -291,11 +291,20 @@ namespace ospray {
     
     void MemorySumBuilder::set(const vec3i &coord, int level, float v)
     {
+      
       // PING;
       assert(reduce_max(coord) < blockSizeOf(level));
       Sumerian::DataBlock *db = findDataBlock(coord, level);
       assert(db);
       db->value[coord.z % 4][coord.y % 4][coord.x % 4] = v;
+
+      // if (coord == vec3i(255)) {
+      //   PING;
+      //   PRINT(coord);
+      //   PRINT(level);
+      //   PRINT(v);
+      //   exit(0);
+      // }
     }
 
     void MultiSumBuilder::set(const vec3i &coord, int level, float v)

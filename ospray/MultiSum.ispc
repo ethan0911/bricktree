@@ -130,6 +130,7 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
                               const float w = reduce_mul(weight);
                               den += w;
                               num += w * dataBlock->value[iz][iy][ix];
+                              print("adding % %\n",w,dataBlock->value[iz][iy][ix]);
                             }
                           }
                         }

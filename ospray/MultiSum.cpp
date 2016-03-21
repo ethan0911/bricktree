@@ -58,6 +58,12 @@ namespace ospray {
 
       Ref<TransferFunction> xf = (TransferFunction*)getParamObject("transferFunction");
 
+
+      PRINT(*(Sumerian::IndexBlock *)indexBlockData->data);
+      PRINT(*(Sumerian::DataBlock *)dataBlockData->data);
+      PRINT(*(int*)blockInfoData->data);
+      PRINT(*(int*)rootCellData->data);
+
       ispc::MultiSumAMRVolume_set(getIE(),
                                   xf->getIE(),
                                   (ispc::vec3i &)rootGridDims,
