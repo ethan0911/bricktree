@@ -129,7 +129,7 @@ namespace ospray {
     {
       vec3i lo = min(input->size(),begin*blockSize);
       vec3i hi = min(input->size(),lo + vec3i(blockSize));
-      bool output = (blockSize == 256);
+      bool output = (blockSize == 1024);
       if (output) 
         cout << "building block " << lo << " - " << hi << " bs " << blockSize << endl;
 
@@ -156,13 +156,13 @@ namespace ospray {
               range.extend(db.value[iz][iy][ix]);
             }
 
-        if (begin == vec3i(0)) {
-          cout << "leaf  " << (4*begin) << " bs " << blockSize << " rg " << range << endl;
+        // if (begin == vec3i(0)) {
+        //   cout << "leaf  " << (4*begin) << " bs " << blockSize << " rg " << range << endl;
           // for (int iz=0;iz<4;iz++)
           //   for (int iy=0;iy<4;iy++)
           //     for (int ix=0;ix<4;ix++) 
           //       cout << "leaf: db[" << vec3i(ix,iy,iz) << "] = " << db.value[iz][iy][ix] << endl;
-        }
+        // }
       // if (range.lo < range.hi)
       //   cout << "NON EMPTY RANGE" << endl;
       }
@@ -180,8 +180,8 @@ namespace ospray {
                                     ));
             }
       }
-      if (begin == vec3i(0))
-        cout << "inner  " << (4*begin) << " bs " << blockSize << " rg " << range << endl;
+      // if (begin == vec3i(0))
+      //   cout << "inner  " << (4*begin) << " bs " << blockSize << " rg " << range << endl;
 
       // now, compute average of this node - we need this even if the node gets killed...
       avg = db.computeWeightedAverage(begin,blockSize,input->size());        
@@ -189,11 +189,13 @@ namespace ospray {
       if (((range.hi - range.lo) <= threshold)
           && 
           level > skipLevels
-          ) {
-        // do not set any fields - kill that block
-        if (begin == vec3i(0))
-          cout << "killing " << begin << " level " << level << endl;
-      } else {
+          ) 
+        {
+          // do not set any fields - kill that block
+          // if (begin == vec3i(0))
+          //   cout << "killing " << begin << " level " << level << endl;
+        } 
+      else {
         // need to actually create this block:
         for (int iz=0;iz<4;iz++)
           for (int iy=0;iy<4;iy++)
@@ -329,8 +331,6 @@ namespace ospray {
 
       vec3f clipBoxSize = vec3f(input->size()) / vec3f(encodedSize);
       
-      builder->samplingRate = reduce_max(input->size()) / (float)reduce_max(builder->rootGrid->size());
-
       builder->save(outFileName,clipBoxSize);
       cout << "done writing multi-sum tree" << endl;
       return 0;

@@ -156,7 +156,7 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
     }
   }
 
-  const float result = num / (den + 1e-8f);
+  const float result = num / (255.f*den + 1e-8f);
   // print("returning %\n",result);
   return result;
 }
@@ -210,8 +210,7 @@ export void MultiSumAMRVolume_set(void *uniform _self,
                                   void *uniform indexBlock,
                                   void *uniform blockInfo,
                                   void *uniform firstDataBlockOfTreeData,
-                                  void *uniform firstIndexBlockOfTreeData,
-                                  uniform float samplingRate)
+                                  void *uniform firstIndexBlockOfTreeData)
 {
   MultiSumAMRVolume *uniform self = (MultiSumAMRVolume *uniform)_self;
   assert(self);
@@ -227,7 +226,7 @@ export void MultiSumAMRVolume_set(void *uniform _self,
   self->super.computeGradient = &MultiSumAMRVolume_gradient;
 
   self->super.samplingRate = 1.f;//samplingRate;
-  self->super.samplingStep = 1.f/(samplingRate*samplingRate); //1.f;
+  self->super.samplingStep = .1f;
 
   self->super.gradientShadingEnabled = 0;
 

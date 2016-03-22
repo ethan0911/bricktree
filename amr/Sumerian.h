@@ -169,7 +169,7 @@ namespace ospray {
       virtual void save(const std::string &ospFileName, const vec3f &clipBoxSize);
 
       /*! sampling rate, relative to root grid size */
-      float samplingRate;
+      // float samplingRate;
     };
 
   } // ::ospray::amr

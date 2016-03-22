@@ -189,7 +189,7 @@ namespace ospray {
       fprintf(osp,"<MultiSumAMR\n");
       fprintf(osp,"   rootGrid=\"%i %i %i\"\n",rootGrid->size().x,rootGrid->size().y,rootGrid->size().z);
       fprintf(osp,"   voxelType=\"float\"\n");
-      fprintf(osp,"   samplingRate=\"%f\"\n",samplingRate);
+      // fprintf(osp,"   samplingRate=\"%f\"\n",samplingRate);
       fprintf(osp,"   clipBoxSize=\"%f %f %f\"\n",clipBoxSize.x,clipBoxSize.y,clipBoxSize.z);
       fprintf(osp,"   >\n");
 
@@ -260,23 +260,13 @@ namespace ospray {
 
     Sumerian::DataBlock *MemorySumBuilder::findDataBlock(const vec3i &coord, int level)
     {
-      // cout << "." << flush;
-      // PING;
-      // PRINT(coord);
-      // PRINT(level);
-
       // start with the root block
       int blockSize = blockSizeOf(level);
-
-      // PRINT(blockSize);
 
       assert(reduce_max(coord) < blockSize);
       uint32 blockID = 0; 
       while (blockSize > 4) {
         int cellSize = blockSize / 4;
-        // PRINT(blockSize);
-        // PRINT(cellSize);
-        // PRINT(blockID);
 
         assert(blockID < dataBlock.size());
         Sumerian::IndexBlock *ib = getIndexBlockFor(blockID);
@@ -337,7 +327,7 @@ namespace ospray {
     }
 
     MultiSumBuilder::MultiSumBuilder() 
-      : rootGrid(NULL), samplingRate(1.f)
+      : rootGrid(NULL)//, samplingRate(1.f)
     {}
     
     void MultiSumBuilder::allocateAtLeast(const vec3i &_neededSize)
@@ -352,8 +342,6 @@ namespace ospray {
           rootGrid->size().y >= newSize.y && 
           rootGrid->size().z >= newSize.z)
         return;
-
-      PRINT(newSize);
 
       ActualArray3D<MemorySumBuilder *> *newGrid
         = new ActualArray3D<MemorySumBuilder *>(newSize);
