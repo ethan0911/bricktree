@@ -58,22 +58,22 @@ namespace ospray {
       double pctgDone = 100.f * numDone / double(input->numElements());
       cout << "build update (done w/ " << pctgDone << "% of volume)" << endl;
 
-      if (!builder->rootGrid) {
+      if (!builder->getRootGrid()) {
         cout << "(no nodes created, yet)" << endl;
         return;
       }
 
-      for (int iz=0;iz<builder->rootGrid->size().z;iz++)
-        for (int iy=0;iy<builder->rootGrid->size().y;iy++)
-          for (int ix=0;ix<builder->rootGrid->size().x;ix++) {
-            SingleSumBuilder *msb = builder->rootGrid->get(vec3i(ix,iy,iz));
+      for (int iz=0;iz<builder->getRootGrid()->size().z;iz++)
+        for (int iy=0;iy<builder->getRootGrid()->size().y;iy++)
+          for (int ix=0;ix<builder->getRootGrid()->size().x;ix++) {
+            SingleSumBuilder *msb = builder->getRootGrid()->get(vec3i(ix,iy,iz));
             if (msb) {
               numIndexBlocks += msb->indexBlock.size();
               numDataBlocks += msb->dataBlock.size();
             }
           }
 
-      cout << "- root grid size " << builder->rootGrid->size() << endl;
+      cout << "- root grid size " << builder->getRootGrid()->size() << endl;
       cout << "- total num index blocks " << prettyNumber(numIndexBlocks)
            << " (estd " << prettyNumber(long(numIndexBlocks * 100.f / pctgDone)) << ")" << endl;
       cout << "- total num data blocks " << prettyNumber(numDataBlocks)
@@ -298,7 +298,7 @@ namespace ospray {
 
       cout << "saving to output file " << outFileName << endl;
 
-      vec3i encodedSize = builder->rootGrid->size();
+      vec3i encodedSize = builder->getRootGrid()->size();
       while (encodedSize.x < input->size().x) encodedSize.x *= 4;
       while (encodedSize.y < input->size().y) encodedSize.y *= 4;
       while (encodedSize.z < input->size().z) encodedSize.z *= 4;

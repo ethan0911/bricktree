@@ -55,6 +55,13 @@ namespace ospray {
       /*! public interface to writing values into the tree */
       virtual void set(const vec3i &coord, int level, float v) override;
 
+      /*! be done with the build, and save all data to the xml/bin
+        file of 'fileName' and 'filename+"bin"' */
+      virtual void save(const std::string &ospFileName, const vec3f &clipBoxSize);
+
+      const ActualArray3D<SingleSumBuilder *> *getRootGrid() const
+      { return rootGrid; } 
+    private:
       SingleSumBuilder *getRootCell(const vec3i &rootCellID);
       void allocateAtLeast(const vec3i &neededSize);
 
@@ -64,9 +71,6 @@ namespace ospray {
       /* value range of all the values written into this tree ... */
       Range<float> valueRange;
 
-      /*! be done with the build, and save all data to the xml/bin
-        file of 'fileName' and 'filename+"bin"' */
-      virtual void save(const std::string &ospFileName, const vec3f &clipBoxSize);
     };
 
   } // ::ospray::amr
