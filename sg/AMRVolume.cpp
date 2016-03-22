@@ -20,207 +20,102 @@
 // ospray
 // ospray/sg
 #include "AMRVolume.h"
-#include "sg/common/Node.h"
-#include "sg/common/Integrator.h"
-#include "sg/module/Module.h"
+// #include "sg/common/Node.h"
+// #include "sg/common/Integrator.h"
+// #include "sg/module/Module.h"
 
-#include "amr/Sumerian.h"
+// #include "amr/Sumerian.h"
 	 
 namespace ospray {
   namespace sg {
 
     using std::endl;
     using std::cout;
-    using namespace amr;
 
-    AMRVolume::AMRVolume() 
-      : ospVolume(NULL), moa(NULL)
-    {}
+    // AMRVolume::AMRVolume() 
+    //   : ospVolume(NULL), moa(NULL)
+    // {}
       
-    //! return bounding box of all primitives
-    box3f AMRVolume::getBounds()
-    {
-      assert(moa);
-      return box3f(vec3f(0.f), vec3f(moa->dimensions));
-    }
+    // //! return bounding box of all primitives
+    // box3f AMRVolume::getBounds()
+    // {
+    //   assert(moa);
+    //   return box3f(vec3f(0.f), vec3f(moa->dimensions));
+    // }
 
-    void AMRVolume::render(RenderContext &ctx)
-    {
-      if (ospVolume) 
-        return;
+    // void AMRVolume::render(RenderContext &ctx)
+    // {
+    //   if (ospVolume) 
+    //     return;
 
-      ospLoadModule("amr");
-      ospVolume = ospNewVolume("MultiOctreeAMRVolume");
-      if (!ospVolume) 
-        throw std::runtime_error("could not create ospray 'MultiOctreeAMRVolume'");
+    //   ospLoadModule("amr");
+    //   ospVolume = ospNewVolume("MultiOctreeAMRVolume");
+    //   if (!ospVolume) 
+    //     throw std::runtime_error("could not create ospray 'MultiOctreeAMRVolume'");
       
-      assert(moa != NULL);
+    //   assert(moa != NULL);
 
-      std::cout << "#sg:amr: creating root cell data buffer" << std::endl;
-      rootCellData = ospNewData(moa->rootCell.size()*sizeof(moa->rootCell[0]),OSP_UCHAR,
-                                &moa->rootCell[0],OSP_DATA_SHARED_BUFFER);
+    //   std::cout << "#sg:amr: creating root cell data buffer" << std::endl;
+    //   rootCellData = ospNewData(moa->rootCell.size()*sizeof(moa->rootCell[0]),OSP_UCHAR,
+    //                             &moa->rootCell[0],OSP_DATA_SHARED_BUFFER);
 
-      assert(rootCellData);
-      ospSetData(ospVolume, "rootCellData", rootCellData);
+    //   assert(rootCellData);
+    //   ospSetData(ospVolume, "rootCellData", rootCellData);
 
-      std::cout << "#sg:amr: creating oct cell data buffer" << std::endl;
-      octCellData = ospNewData(moa->octCell.size()*sizeof(moa->octCell[0]),OSP_UCHAR,
-                               &moa->octCell[0],OSP_DATA_SHARED_BUFFER);
-      assert(octCellData);
-      ospSetData(ospVolume, "octCellData", octCellData);
+    //   std::cout << "#sg:amr: creating oct cell data buffer" << std::endl;
+    //   octCellData = ospNewData(moa->octCell.size()*sizeof(moa->octCell[0]),OSP_UCHAR,
+    //                            &moa->octCell[0],OSP_DATA_SHARED_BUFFER);
+    //   assert(octCellData);
+    //   ospSetData(ospVolume, "octCellData", octCellData);
 
-      ospSet3iv(ospVolume, "dimensions", &moa->dimensions.x);
+    //   ospSet3iv(ospVolume, "dimensions", &moa->dimensions.x);
 
-      std::cout << "#sg:amr: adding transfer function" << std::endl;
-      if (transferFunction) {
-        transferFunction->render(ctx);
-        ospSetObject(ospVolume,"transferFunction",transferFunction->getOSPHandle());
-      }
+    //   std::cout << "#sg:amr: adding transfer function" << std::endl;
+    //   if (transferFunction) {
+    //     transferFunction->render(ctx);
+    //     ospSetObject(ospVolume,"transferFunction",transferFunction->getOSPHandle());
+    //   }
       
-      std::cout << "#sg:amr: committing Multi-Octree AMR volume" << std::endl;
-      ospCommit(ospVolume);
+    //   std::cout << "#sg:amr: committing Multi-Octree AMR volume" << std::endl;
+    //   ospCommit(ospVolume);
       
-      // and finally, add this volume to the model
-      ospAddVolume(ctx.world->ospModel,ospVolume);
+    //   // and finally, add this volume to the model
+    //   ospAddVolume(ctx.world->ospModel,ospVolume);
 
-    }    
+    // }    
 
-    //! \brief Initialize this node's value from given XML node 
-    void AMRVolume::setFromXML(const xml::Node *const node, 
-                               const unsigned char *binBasePtr)
-    {
-      size_t ofs = node->getPropl("ofs");
-      size_t dataSize = node->getPropl("size");
-      const std::string voxelType = node->getProp("voxelType");
-      if (voxelType != "float")
-        throw std::runtime_error("can only do float AMR right now");
-      this->voxelType = typeForString(voxelType.c_str());
+    // //! \brief Initialize this node's value from given XML node 
+    // void AMRVolume::setFromXML(const xml::Node *const node, 
+    //                            const unsigned char *binBasePtr)
+    // {
+    //   size_t ofs = node->getPropl("ofs");
+    //   size_t dataSize = node->getPropl("size");
+    //   const std::string voxelType = node->getProp("voxelType");
+    //   if (voxelType != "float")
+    //     throw std::runtime_error("can only do float AMR right now");
+    //   this->voxelType = typeForString(voxelType.c_str());
 
-      this->moa = new AMR;
-      this->moa->mmapFrom(binBasePtr);
+    //   this->moa = new AMR;
+    //   this->moa->mmapFrom(binBasePtr);
 
-      std::string xfName = node->getProp("transferFunction");
-      if (xfName != "") {
-        this->transferFunction = dynamic_cast<TransferFunction*>(sg::findNamedNode(xfName));
-        cout << "USING NAMED XF " << this->transferFunction << endl;
-      }
+    //   std::string xfName = node->getProp("transferFunction");
+    //   if (xfName != "") {
+    //     this->transferFunction = dynamic_cast<TransferFunction*>(sg::findNamedNode(xfName));
+    //     cout << "USING NAMED XF " << this->transferFunction << endl;
+    //   }
       
-      if (this->transferFunction.ptr == NULL)
-        this->transferFunction = new TransferFunction;
+    //   if (this->transferFunction.ptr == NULL)
+    //     this->transferFunction = new TransferFunction;
 
-      cout << "AMRVolume has xf: " << this->transferFunction << endl;
-    }
-
-    void parseVecInt(std::vector<int> &vec, const std::string &s)
-    {
-      char *ss = strdup(s.c_str());
-      char *tok = strtok(ss," \t\n");
-      while (tok) {
-        vec.push_back(atoi(tok));
-        tok = strtok(NULL," \n\t");
-      }
-      free(ss);
-    }
-
-    //! \brief Initialize this node's value from given XML node 
-    void MultiSumAMR::setFromXML(const xml::Node *const node, 
-                                 const unsigned char *binBasePtr)
-    {
-      size_t ofs = node->getPropl("ofs");
-      size_t dataSize = node->getPropl("size");
-      const std::string voxelType = node->getProp("voxelType");
-      if (voxelType != "float")
-        throw std::runtime_error("can only do float MultiSumAMR right now");
-      this->voxelType = typeForString(voxelType.c_str());
-      
-      this->samplingRate = node->getPropf("samplingRate",1.f);
-
-      std::string xfName = node->getProp("transferFunction");
-      if (xfName != "") {
-        this->transferFunction = dynamic_cast<TransferFunction*>(sg::findNamedNode(xfName));
-        cout << "USING NAMED XF " << this->transferFunction << endl;
-      }
-      if (this->transferFunction.ptr == NULL)
-        this->transferFunction = new TransferFunction;
-      
-      rootGridSize = toVec3i(node->getProp("rootGrid").c_str());
-      clipBoxSize = toVec3f(node->getProp("clipBoxSize").c_str());
-
-      std::vector<int> dataBlockCount;
-      std::vector<int> indexBlockCount;
-      for (int childID=0;childID<node->child.size();childID++) {
-        const xml::Node *child = node->child[childID];
-        if (child->name == "dataBlocks")
-          parseVecInt(dataBlockCount,child->content.c_str());
-        if (child->name == "indexBlocks")
-          parseVecInt(indexBlockCount,child->content.c_str());
-      }
-
-      multiSum = new Sumerian;
-      multiSum->mapFrom(binBasePtr,rootGridSize,clipBoxSize,dataBlockCount,indexBlockCount);
-      cout << "-------------------------------------------------------" << endl;
-    }
-
-    void MultiSumAMR::render(RenderContext &ctx)
-    {
-      if (ospVolume) 
-        return;
-
-      ospLoadModule("amr");
-      ospVolume = ospNewVolume("MultiSumAMRVolume");
-      if (!ospVolume) 
-        throw std::runtime_error("could not create ospray 'MultiSumAMRVolume'");
-      
-      // -------------------------------------------------------
-      dataBlockData = ospNewData(multiSum->numDataBlocks*sizeof(multiSum->dataBlock[0]),OSP_UCHAR,
-                                 multiSum->dataBlock,OSP_DATA_SHARED_BUFFER);
-      ospSetData(ospVolume,"dataBlockData",dataBlockData);
-      indexBlockData = ospNewData(multiSum->numIndexBlocks*sizeof(multiSum->indexBlock[0]),OSP_UCHAR,
-                                   multiSum->indexBlock,OSP_DATA_SHARED_BUFFER);
-      ospSetData(ospVolume,"indexBlockData",indexBlockData);
-      blockInfoData = ospNewData(multiSum->numIndexBlocks*sizeof(multiSum->blockInfo[0]),OSP_UCHAR,
-                                  multiSum->blockInfo,OSP_DATA_SHARED_BUFFER);
-      ospSetData(ospVolume,"blockInfoData",blockInfoData);
-
-      ospSet1f(ospVolume,"samplingRate",samplingRate);
-
-      firstIndexBlockOfTreeData
-        = ospNewData(multiSum->rootGridDims.product(),OSP_INT,
-                     multiSum->firstIndexBlockOfTree,OSP_DATA_SHARED_BUFFER);
-      ospSetData(ospVolume,"firstIndexBlockOfTree",firstIndexBlockOfTreeData);
-
-      firstDataBlockOfTreeData
-        = ospNewData(multiSum->rootGridDims.product(),OSP_INT,
-                     multiSum->firstDataBlockOfTree,OSP_DATA_SHARED_BUFFER);
-      ospSetData(ospVolume,"firstDataBlockOfTree",firstDataBlockOfTreeData);
-
-      ospSetVec3i(ospVolume,"rootGridDims",(osp::vec3i&)multiSum->rootGridDims);
-      ospSetVec3f(ospVolume,"validFractionOfRootGrid",multiSum->validFractionOfRootGrid);
-
-      // -------------------------------------------------------
-      std::cout << "#sg:amr: adding transfer function" << std::endl;
-      if (transferFunction) {
-        transferFunction->render(ctx);
-        ospSetObject(ospVolume,"transferFunction",transferFunction->getOSPHandle());
-      }
-      
-      // -------------------------------------------------------
-      std::cout << "#sg:amr: committing Multi-Octree AMR volume" << std::endl;
-      ospCommit(ospVolume);
-      
-      // and finally, add this volume to the model
-      cout << "adding volume " << ospVolume << endl;
-      ospAddVolume(ctx.world->ospModel,ospVolume);
-
-    }    
+    //   cout << "AMRVolume has xf: " << this->transferFunction << endl;
+    // }
 
 
 
-    typedef AMRVolume MultiOctreeAMR;
+    // typedef AMRVolume MultiOctreeAMR;
 
-    OSP_REGISTER_SG_NODE(MultiOctreeAMR);
-    OSP_REGISTER_SG_NODE(MultiSumAMR);
-    OSP_REGISTER_SG_NODE(AMRVolume);
+    // OSP_REGISTER_SG_NODE(MultiOctreeAMR);
+    // OSP_REGISTER_SG_NODE(AMRVolume);
 
     OSPRAY_SG_DECLARE_MODULE(amr)
     {

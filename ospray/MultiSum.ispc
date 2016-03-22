@@ -27,10 +27,76 @@
 #include "embree2/rtcore.isph"
 
 struct TentAlgoStackEntry {
-  int32 nodeID;
+  int32 blockID;
   vec3f blockPos;
   float blockWidth;
 };
+
+/*! descriptor for a cell. rather than elaborate cell and level
+    indices we instead use the global base position (the lower left
+    front corner) and width, which are equivalent) */
+struct CellDesc {
+  /*! integer coordinates of cell - ie, the int coordinates of the
+      root cell */
+  vec3i rootCellCoords;
+  /*! and the linear ID of that root cell */
+  int   rootCellID;
+  /*! base coordinates of that block, in that tree (in [0,1]^3) */
+  vec3f blockPos;
+  /*! fractional component in that block */
+  vec3f frac;
+  float blockWidth;
+  int blockID;
+};
+
+inline CellDesc findLeafCell(const MultiSumAMRVolume *uniform self, 
+                             const varying vec3f pos)
+{
+  CellDesc cell;
+  cell.rootCellCoords = make_vec3i(pos);
+  cell.rootCellID
+    = (cell.rootCellCoords.x + 
+       self->rootGridDims.x*(cell.rootCellCoords.y +
+                             self->rootGridDims.y*(cell.rootCellCoords.z)));
+  
+  foreach_unique (rootCellID in cell.rootCellID) {
+    uniform SumDataBlock *uniform dataBlockArray
+      = self->dataBlock+self->firstDataBlockOfTree[rootCellID];
+    uniform SumIndexBlock *uniform indexBlockArray
+      = self->indexBlock+self->firstIndexBlockOfTree[rootCellID];
+    uniform int32 *uniform offsetOfArray 
+      = (uniform int32*)self->blockInfo + self->firstDataBlockOfTree[rootCellID];
+    
+    int blockID = 0;
+    cell.blockPos = make_vec3f(0.f);
+    cell.blockWidth = 1.f;
+    cell.frac = pos - make_vec3f(cell.rootCellCoords);
+
+    while (1) {
+      const SumDataBlock  *dataBlock  = dataBlockArray + blockID;
+      const SumIndexBlock *indexBlock = NULL;
+      const int indexBlockID = offsetOfArray[blockID];
+      const float cellWidth = cell.blockWidth * 0.25f;
+      if (indexBlockID >= 0)
+        indexBlock = indexBlockArray+indexBlockID;
+      
+      const vec3i cID = make_vec3i(4.f * cell.frac);
+      int childID;
+      if (indexBlock && ((childID = indexBlock->child[cID.z][cID.y][cID.x]) >= 0)) {
+        // cell we hit is a leaf cell...
+        const vec3f childPos = make_vec3f(cID)*cellWidth;
+        cell.blockPos = cell.blockPos + childPos;
+        cell.frac   = 4.f * (cell.frac - childPos);
+        cell.blockWidth = cellWidth;
+        blockID = childID;
+        continue;
+      } else {
+        break;
+      }
+    }
+  }
+  return cell;
+}
 
 inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
                                       const varying vec3f &worldCoordinates)
@@ -75,7 +141,7 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
                 = (uniform int32*)self->blockInfo + self->firstDataBlockOfTree[rootCellID];
               stackPtr->blockPos = make_vec3f(tree_ix,tree_iy,tree_iz);
               stackPtr->blockWidth = 1.f;
-              stackPtr->nodeID = 0; //rootCellID;
+              stackPtr->blockID = 0; //rootCellID;
               stackPtr++;
               
               // -------------------------------------------------------
@@ -91,11 +157,11 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
                 const float blockWidth  = cur.blockWidth;
                 // const vec3f cellCenter = base+0.5f*blockWidth;
                 // const vec3f delta = absf(cellCenter - gridPos);
-                uniform int nodeID = cur.nodeID;
-                SumDataBlock *uniform dataBlock = dataBlockArray + nodeID;
+                uniform int blockID = cur.blockID;
+                SumDataBlock *uniform dataBlock = dataBlockArray + blockID;
 
                 SumIndexBlock *uniform indexBlock = NULL;
-                const uniform int indexBlockID = offsetOfArray[nodeID];
+                const uniform int indexBlockID = offsetOfArray[blockID];
                 if (indexBlockID >= 0)
                   indexBlock = indexBlockArray+indexBlockID;
                 //   // leaf node ...
@@ -109,7 +175,7 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
                   // if (reduce_max(delta) >= blockWidth) 
                   //   continue;
 
-                // print("nodeID % indexblock %\n",nodeID,indexBlock);
+                // print("blockID % indexblock %\n",blockID,indexBlock);
 
                 const uniform float childCellWidth = 0.25f * cur.blockWidth;
                 uniform vec3f childCellPos;
@@ -133,7 +199,7 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
                             if (indexBlock && (indexBlock->child[iiz][iiy][iix] >= 0)) {
                               stackPtr->blockPos = childCellPos;
                               stackPtr->blockWidth = childCellWidth;
-                              stackPtr->nodeID = indexBlock->child[iiz][iiy][iix];
+                              stackPtr->blockID = indexBlock->child[iiz][iiy][iix];
                               ++stackPtr;
                               // print("pushing % stackptr %\n",indexBlock->child[iiz][iiy][iix],stackPtr-stackBase);
                             } else {
