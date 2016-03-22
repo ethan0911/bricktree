@@ -156,7 +156,8 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
     }
   }
 
-  const float result = num / (255.f*den + 1e-8f);
+  const float result = num / (den + 1e-8f);
+  // const float result = num / (255.f*den + 1e-8f);
   // print("returning %\n",result);
   return result;
 }

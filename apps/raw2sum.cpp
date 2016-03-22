@@ -34,7 +34,7 @@ namespace ospray {
       cout << "  ./ospRaw2Octree <inFile.raw> <args>" << endl;
       cout << "with args:" << endl;
       cout << " -dims <nx> <ny> <nz>   : input dimensions" << endl;
-      cout << " --format <uint8|float> : input voxel format" << endl;
+      cout << " --format <uint8|float|double> : input voxel format" << endl;
       cout << " --depth <maxlevels>    : use maxlevels octree refinement levels" << endl;
       cout << " -o <outfilename.xml>   : output file name" << endl;
       cout << " -t <threshold>         : threshold of which nodes to split or not (ABSOLUTE float val)" << endl;
@@ -275,6 +275,9 @@ namespace ospray {
       } else if (format == "uint8") {
         const Array3D<uint8> *input_uint8 = mmapRAW<uint8>(inFileName,dims);
         input = new Array3DAccessor<uint8,float>(input_uint8);
+      } else if (format == "double") {
+        const Array3D<double> *input_double = mmapRAW<double>(inFileName,dims);
+        input = new Array3DAccessor<double,float>(input_double);
       } else
         throw std::runtime_error("unsupported format '"+format+"'");
 
