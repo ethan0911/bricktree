@@ -40,6 +40,12 @@ namespace ospray {
     /*! find properly with given name, and return as long ('l')
       int. return undefined if prop does not exist */
     static Range<T> fromString(const std::string &string, const Range<T> &defaultValue=empty);
+
+    /*! this is actually unclean - a range is a range, not a 'vector'
+        that 'happens' to have two coordinates - but since much of the
+        existing ospray volume code uses a vec2f for ranges we'll use
+        this function to convert to it until that code gets changed */
+    inline vec2f toVec2f() const { return vec2f(lo,hi); }
   };
   
   template<typename T>

@@ -48,16 +48,16 @@ namespace ospray {
         childID is valid, the block shouldn't exist in the first place
         ... (see BlockInfo description) */
       struct IndexBlock {
-        void clear();
-        /*! when we write multiple sumerians into the same file we can
-            use this function to offset all child IDs */
-        void addOffset(uint32 offset) {
-          for (int iz=0;iz<4;iz++)
-            for (int iy=0;iy<4;iy++)
-              for (int ix=0;ix<4;ix++) 
-                if (childID[iz][iy][ix] >= 0)
-                  childID[iz][iy][ix] += offset;
-        };
+        void clear(); 
+       //  /*! when we write multiple sumerians into the same file we can
+       //      use this function to offset all child IDs */
+       //  void addOffset(uint32 offset) {
+       //    for (int iz=0;iz<4;iz++)
+       //      for (int iy=0;iy<4;iy++)
+       //        for (int ix=0;ix<4;ix++) 
+       //          if (childID[iz][iy][ix] >= 0)
+       //            childID[iz][iy][ix] += offset;
+       // };
 
         int32 childID[4][4][4];
       };
@@ -72,6 +72,7 @@ namespace ospray {
 
       struct Builder {
         virtual void set(const vec3i &coord, int level, float v) = 0;
+
         /*! be done with the build, and save all data to the xml/bin
             file of 'fileName' and 'filename+"bin"'. clipboxsize
             specifies which fraction of the encoded domain si actually
@@ -100,10 +101,20 @@ namespace ospray {
       vec3i rootGridDims;
       vec3f validFractionOfRootGrid;
 
+      /* gives, for each root cell / tree in the root grid, the ID of
+         the first index block in the (shared) data block array */
       const uint32_t *firstIndexBlockOfTree;
+      /* gives, for each root cell / tree in the root grid, the ID of
+         the first data block in the (shared) data block array */
       const uint32_t *firstDataBlockOfTree;
     };
+
+
+    // =======================================================
+    // INLINE IMPLEMENTATION SECTION 
+    // =======================================================
     
+    /*! print a data block */
     inline std::ostream &operator<<(std::ostream &o, const Sumerian::DataBlock &db)
     {      
       for (int iz=0;iz<4;iz++) {
@@ -118,6 +129,8 @@ namespace ospray {
         
       return o;
     }
+    
+    /*! print an index block */
     inline std::ostream &operator<<(std::ostream &o, const Sumerian::IndexBlock &db)
     {      
       for (int iz=0;iz<4;iz++) {
@@ -132,45 +145,6 @@ namespace ospray {
         
       return o;
     }
-
-
-
-    struct MemorySumBuilder : public Sumerian::Builder {
-      MemorySumBuilder();
-      virtual void set(const vec3i &coord, int level, float v);
-
-      Sumerian::DataBlock *findDataBlock(const vec3i &coord, int level);
-
-      uint32 newDataBlock();
-      
-      Sumerian::IndexBlock *getIndexBlockFor(uint32 dataBlockID);
-
-      std::vector<uint32> indexBlockOf;
-      std::vector<Sumerian::DataBlock *>  dataBlock;
-      std::vector<Sumerian::IndexBlock *> indexBlock;
-
-      /*! be done with the build, and save all data to the xml/bin
-        file of 'fileName' and 'filename+"bin"' */
-      virtual void save(const std::string &ospFileName, const vec3f &clipBoxSize);
-    };
-
-    /*! multi-sumerian - a root grid of cell, with one sumerian per
-        cell */
-    struct MultiSumBuilder : public Sumerian::Builder {
-      MultiSumBuilder();
-      MemorySumBuilder *getRootCell(const vec3i &rootCellID);
-      void set(const vec3i &coord, int level, float v);
-      void allocateAtLeast(const vec3i &neededSize);
-
-      ActualArray3D<MemorySumBuilder *> *rootGrid;
-
-      /*! be done with the build, and save all data to the xml/bin
-        file of 'fileName' and 'filename+"bin"' */
-      virtual void save(const std::string &ospFileName, const vec3f &clipBoxSize);
-
-      /*! sampling rate, relative to root grid size */
-      // float samplingRate;
-    };
 
   } // ::ospray::amr
 } // ::ospray

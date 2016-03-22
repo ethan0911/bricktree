@@ -51,7 +51,7 @@ namespace ospray {
         throw std::runtime_error("can only do float MultiSumAMR right now");
       this->voxelType = typeForString(voxelType.c_str());
       this->samplingRate = node->getPropf("samplingRate",1.f);
-      this->valueRange = Range<float>::fromString(node->getProp("voxelRange"),
+      this->valueRange = Range<float>::fromString(node->getProp("valueRange"),
                                                   Range<float>(0.f,1.f));
 
       rootGridSize = toVec3i(node->getProp("rootGrid").c_str());
@@ -81,7 +81,9 @@ namespace ospray {
       }
       if (this->transferFunction.ptr == NULL)
         this->transferFunction = new TransferFunction;
-      
+
+      cout << "setting xf value range " << this->valueRange << endl;
+      this->transferFunction->setValueRange(this->valueRange.toVec2f());
       cout << "-------------------------------------------------------" << endl;
     }
 

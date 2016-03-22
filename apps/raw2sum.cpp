@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 // own
-#include "../amr/Sumerian.h"
+#include "../amr/MultiSumBuilder.h"
 
 namespace ospray {
   namespace amr {
@@ -66,7 +66,7 @@ namespace ospray {
       for (int iz=0;iz<builder->rootGrid->size().z;iz++)
         for (int iy=0;iy<builder->rootGrid->size().y;iy++)
           for (int ix=0;ix<builder->rootGrid->size().x;ix++) {
-            MemorySumBuilder *msb = builder->rootGrid->get(vec3i(ix,iy,iz));
+            SingleSumBuilder *msb = builder->rootGrid->get(vec3i(ix,iy,iz));
             if (msb) {
               numIndexBlocks += msb->indexBlock.size();
               numDataBlocks += msb->dataBlock.size();
@@ -133,11 +133,6 @@ namespace ospray {
       if (output) 
         cout << "building block " << lo << " - " << hi << " bs " << blockSize << endl;
 
-      // if (level < 2) {
-      //   PRINT(begin);
-      //   PRINT(blockSize);
-      // }
-
       Range<float> range = empty;
       Sumerian::DataBlock db;
       db.clear();
@@ -152,19 +147,8 @@ namespace ospray {
           for (int iy=0;iy<4;iy++)
             for (int ix=0;ix<4;ix++) {
               db.value[iz][iy][ix] = input->get(4*begin+vec3i(ix,iy,iz));
-              // PRINT(db.value[iz][iy][ix]);
               range.extend(db.value[iz][iy][ix]);
             }
-
-        // if (begin == vec3i(0)) {
-        //   cout << "leaf  " << (4*begin) << " bs " << blockSize << " rg " << range << endl;
-          // for (int iz=0;iz<4;iz++)
-          //   for (int iy=0;iy<4;iy++)
-          //     for (int ix=0;ix<4;ix++) 
-          //       cout << "leaf: db[" << vec3i(ix,iy,iz) << "] = " << db.value[iz][iy][ix] << endl;
-        // }
-      // if (range.lo < range.hi)
-      //   cout << "NON EMPTY RANGE" << endl;
       }
       else {
         // -------------------------------------------------------
@@ -180,20 +164,14 @@ namespace ospray {
                                     ));
             }
       }
-      // if (begin == vec3i(0))
-      //   cout << "inner  " << (4*begin) << " bs " << blockSize << " rg " << range << endl;
-
       // now, compute average of this node - we need this even if the node gets killed...
       avg = db.computeWeightedAverage(begin,blockSize,input->size());        
 
       if (((range.hi - range.lo) <= threshold)
           && 
-          level > skipLevels
-          ) 
+          level > skipLevels) 
         {
           // do not set any fields - kill that block
-          // if (begin == vec3i(0))
-          //   cout << "killing " << begin << " level " << level << endl;
         } 
       else {
         // need to actually create this block:
@@ -206,14 +184,11 @@ namespace ospray {
                   cellID.z*cellSize < input->size().z) {
                 if (level >= skipLevels) {
                   builder->set(cellID,level-skipLevels,db.value[iz][iy][ix]);
-                  // if (begin == vec3i(0))
-                  //   cout << "setting " << cellID << ":" << (level-skipLevels) << " val " << db.value[iz][iy][ix] << endl;
                 }
               }
             }
       }
       if (output) {
-        // PRINT(range);
         progress(builder,input,lo,hi);
       }
 
@@ -316,10 +291,6 @@ namespace ospray {
       }
       cout << "building tree with " << skipLevels << " skip levels" << endl;
 
-      // Sumerian::Builder *builder 
-      //   = skipLevels
-      //   ? (Sumerian::Builder *)new MultiSumBuilder
-      //   : (Sumerian::Builder *)new MemorySumBuilder;
       MultiSumBuilder *builder = new MultiSumBuilder;
       SumFromArrayBuilder(input,builder,threshold,skipLevels);
       cout << "done building!" << endl;

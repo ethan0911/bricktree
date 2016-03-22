@@ -11,7 +11,7 @@ Converting a RAW file to OSPRay AMR format
 Assuming you have properly built the AMR module, you should have a
 tool called 'ospRawToAmr' that you can use as follows:
 
-    ./ospRawToAmr myRawVolume.raw [options]
+    ./ospRaw2Sum myRawVolume.raw [options]
 
 with the following options:
 
@@ -19,7 +19,7 @@ with the following options:
 
 specifies the dimensions of the input volume (required)
 
-    --format {float|int8}
+    --format {float|int8|double}
 
 specifies the data format of the input raw file (required)
 
@@ -55,7 +55,7 @@ As an example, consider the 'magnetic' data set, which is
 512^3. Here's how to convert it to a 15^5 root grid with up to 5
 levels, and a refinement threshold of 5%:
 
-  ./ospRaw2OctAMR ~/models/magnetic-512-volume/magnetic-512-volume.raw -dims 512 512 512 --format float -o /tmp/magnetic.osp -t .05 --depth 5
+  ./ospRaw2Sum ~/models/magnetic-512-volume/magnetic-512-volume.raw -dims 512 512 512 --format float -o /tmp/magnetic.osp -t .05 --depth 5
 
 
 Rendering an AMR Data Set

@@ -39,6 +39,7 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
     amr/AMR.cpp
     amr/Octree.cpp
     amr/Sumerian.cpp
+    amr/MultiSumBuilder.cpp
     )
   
   OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_amr
