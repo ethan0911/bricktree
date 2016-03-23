@@ -73,9 +73,17 @@ namespace ospray {
     template<typename T>
     Array3D<T> *mmapRAW(const std::string &fileName, const vec3i &dims)
     {
+      FILE *file = fopen(fileName.c_str(),"rb");
+      fseek(file,0,SEEK_END);
+      size_t actualFileSize = ftell(file);
+      fclose(file);
+
+
       ssize_t fileSize = size_t(dims.x)*size_t(dims.y)*size_t(dims.z)*sizeof(T);
       std::cout << "mapping file " << fileName
-                << " size " << prettyNumber(fileSize) << std::endl;
+                << " exptd size " << prettyNumber(fileSize) << " actual size " << prettyNumber(actualFileSize) << std::endl;
+      if (fileSize != actualFileSize)
+        throw std::runtime_error("incomplete file!");
       int fd = ::open(fileName.c_str(), O_LARGEFILE | O_RDONLY);
       assert(fd >= 0);
 

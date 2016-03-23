@@ -24,7 +24,7 @@ namespace ospray {
     using std::endl;
     using std::flush;
 
-    const uint32 Sumerian::invalidID;
+    const int32 Sumerian::invalidID;
 
     void Sumerian::DataBlock::clear()
     {
@@ -62,12 +62,15 @@ namespace ospray {
       PRINT(rootGridDims);
       this->validFractionOfRootGrid = fracOfRootGrid;
 
-      const size_t numRootCells = rootGridDims.product();
-      uint32_t *firstIndexBlockOfTree = new uint32_t[numRootCells];
-      uint32_t *firstDataBlockOfTree = new uint32_t[numRootCells];
+      const size_t numRootCells
+        = (size_t)rootGridDims.x 
+        * (size_t)rootGridDims.y
+        * (size_t)rootGridDims.z; 
+      int32_t *firstIndexBlockOfTree = new int32_t[numRootCells];
+      int32_t *firstDataBlockOfTree = new int32_t[numRootCells];
       size_t sumIndex = 0;
       size_t sumData = 0;
-      for (int i=0;i<numRootCells;i++) {
+      for (size_t i=0;i<numRootCells;i++) {
         firstIndexBlockOfTree[i] = sumIndex;
         firstDataBlockOfTree[i] = sumData;
         sumData += numDataBlocksPerTree[i];
@@ -103,18 +106,19 @@ namespace ospray {
       for (int iz=0;iz<4;iz++)
         for (int iy=0;iy<4;iy++)
           for (int ix=0;ix<4;ix++) {
-            vec3i cellBegin = brickCoord*vec3i(blockSize)+vec3i(ix,iy,iz)*vec3i(cellSize);
+            vec3i cellBegin = min(brickCoord*vec3i(blockSize)+vec3i(ix,iy,iz)*vec3i(cellSize),maxSize);
             vec3i cellEnd = min(cellBegin + vec3i(cellSize),maxSize);
 
-            float weight = reduce_mul(cellEnd-cellBegin);
+            float weight = reduce_mul(vec3f(cellEnd-cellBegin));
             if (weight > 0.f) {
               den += weight;
               num += weight * value[iz][iy][ix];
             }
           }
 
+      den += 1e-8f;
       assert(den != 0.f);
-      return num / (den+1e-8f);
+      return num / den;
     }
 
   } // ::ospray::amr

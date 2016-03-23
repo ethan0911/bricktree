@@ -107,7 +107,9 @@ namespace ospray {
       void clear(const value_t &t) {};
 
       /*! returns number of elements (as 64-bit int) across all dimensions */
-      virtual size_t numElements() const override { return dims.product(); };
+      virtual size_t numElements() const override { 
+        return size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
+      };
 
       const vec3i dims;
     };

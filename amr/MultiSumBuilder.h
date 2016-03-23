@@ -33,12 +33,12 @@ namespace ospray {
         have this node */
       Sumerian::DataBlock *findDataBlock(const vec3i &coord, int level);
 
-      uint32 newDataBlock();
+      int32 newDataBlock();
 
       /*! get index block for given data block ID - create if required */
-      Sumerian::IndexBlock *getIndexBlockFor(uint32 dataBlockID);
+      Sumerian::IndexBlock *getIndexBlockFor(int32 dataBlockID);
 
-      std::vector<uint32> indexBlockOf;
+      std::vector<int32> indexBlockOf;
       std::vector<Sumerian::DataBlock *>  dataBlock;
       std::vector<Sumerian::IndexBlock *> indexBlock;
 

@@ -26,7 +26,7 @@ namespace ospray {
 
     /* octree of cell-centered nodes */
     struct Sumerian {
-      static const uint32 invalidID = (uint32)-1;
+      static const int32 invalidID = (int32)-1;
 
       /*! 4x4x4 brick/block of data. */
       struct DataBlock {
@@ -51,7 +51,7 @@ namespace ospray {
         void clear(); 
        //  /*! when we write multiple sumerians into the same file we can
        //      use this function to offset all child IDs */
-       //  void addOffset(uint32 offset) {
+       //  void addOffset(int32 offset) {
        //    for (int iz=0;iz<4;iz++)
        //      for (int iy=0;iy<4;iy++)
        //        for (int ix=0;ix<4;ix++) 
@@ -62,12 +62,12 @@ namespace ospray {
         int32 childID[4][4][4];
       };
       struct BlockInfo {
-        BlockInfo(uint32 ID=invalidID) : indexBlockID(ID) {};
+        BlockInfo(int32 ID=invalidID) : indexBlockID(ID) {};
         
         /*! gives the ID of the index block that encodes the children
           for the current block. if the current block doesn't HAVE any
-          children, this will be (uint32)-1 */
-        uint32 indexBlockID; 
+          children, this will be (int32)-1 */
+        int32 indexBlockID; 
       }; 
 
       struct Builder {
@@ -103,10 +103,10 @@ namespace ospray {
 
       /* gives, for each root cell / tree in the root grid, the ID of
          the first index block in the (shared) data block array */
-      const uint32_t *firstIndexBlockOfTree;
+      const int32_t *firstIndexBlockOfTree;
       /* gives, for each root cell / tree in the root grid, the ID of
          the first data block in the (shared) data block array */
-      const uint32_t *firstDataBlockOfTree;
+      const int32_t *firstDataBlockOfTree;
     };
 
 

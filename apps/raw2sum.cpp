@@ -96,12 +96,17 @@ namespace ospray {
                           MultiSumBuilder *builder,
                           float threshold = 0.f,
                           int skipLevels = 0)
-        : input(input), threshold(threshold), valueRange(empty), builder(builder),
+        : input(input), 
+          threshold(threshold), 
+          valueRange(empty), 
+          builder(builder),
           skipLevels(skipLevels)
       {
         int rootSize = 4;
         while (rootSize < reduce_max(input->size())) 
           rootSize *= 4;
+        PING;
+        PRINT(rootSize);
         float avg;
         valueRange = buildRec(avg,vec3i(0),0,rootSize);
       }
@@ -129,7 +134,7 @@ namespace ospray {
     {
       vec3i lo = min(input->size(),begin*blockSize);
       vec3i hi = min(input->size(),lo + vec3i(blockSize));
-      bool output = (blockSize == 1024);
+      bool output = (blockSize == 256);
       if (output) 
         cout << "building block " << lo << " - " << hi << " bs " << blockSize << endl;
 
@@ -175,6 +180,7 @@ namespace ospray {
         } 
       else {
         // need to actually create this block:
+        cout << "writing block " << begin << ":" << level << endl;
         for (int iz=0;iz<4;iz++)
           for (int iy=0;iy<4;iy++)
             for (int ix=0;ix<4;ix++) {

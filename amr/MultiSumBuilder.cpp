@@ -40,9 +40,9 @@ namespace ospray {
       newDataBlock();
     }
 
-    uint32 SingleSumBuilder::newDataBlock()
+    int32 SingleSumBuilder::newDataBlock()
     {
-      uint32 ID = dataBlock.size();
+      int32 ID = dataBlock.size();
       dataBlock.push_back(new Sumerian::DataBlock);
       dataBlock.back()->clear();
       indexBlockOf.push_back(Sumerian::invalidID);
@@ -50,10 +50,10 @@ namespace ospray {
     }
 
     /*! get index block for given data block ID - create if required */
-    Sumerian::IndexBlock *SingleSumBuilder::getIndexBlockFor(uint32 dataBlockID)
+    Sumerian::IndexBlock *SingleSumBuilder::getIndexBlockFor(int32 dataBlockID)
     {
       assert(dataBlockID < indexBlockOf.size());
-      uint32 indexBlockID = indexBlockOf[dataBlockID];
+      int32 indexBlockID = indexBlockOf[dataBlockID];
       if (indexBlockID == Sumerian::invalidID) {
         indexBlockID = indexBlockOf[dataBlockID] = indexBlock.size();
         indexBlock.push_back(new Sumerian::IndexBlock);
@@ -85,7 +85,7 @@ namespace ospray {
       int blockSize = blockSizeOf(level);
 
       assert(reduce_max(coord) < blockSize);
-      uint32 blockID = 0; 
+      int32 blockID = 0; 
       while (blockSize > 4) {
         int cellSize = blockSize / 4;
 
