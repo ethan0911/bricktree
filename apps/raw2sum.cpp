@@ -180,7 +180,7 @@ namespace ospray {
         } 
       else {
         // need to actually create this block:
-        cout << "writing block " << begin << ":" << level << endl;
+        cout << "inserting block " << begin << ":" << level << endl;
         for (int iz=0;iz<4;iz++)
           for (int iy=0;iy<4;iy++)
             for (int ix=0;ix<4;ix++) {
