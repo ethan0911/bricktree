@@ -144,7 +144,7 @@ namespace ospray {
 
       vec3i lo = min(input->size(),begin*blockSize);
       vec3i hi = min(input->size(),lo + vec3i(blockSize));
-      if (lo == hi) { avg = 0.f; return Range<float>(0.f,0.f); }
+      if ((hi-lo).product() == 0) { avg = 0.f; return Range<float>(0.f,0.f); }
 
       bool output = (blockSize == 64)
         // || 
