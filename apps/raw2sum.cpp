@@ -132,9 +132,24 @@ namespace ospray {
                                                int level,
                                                int blockSize)
     {
+      // static bool alive = 0;
+      // static bool debug = 0;
+      // if (blockSize == 256 && (begin * blockSize) == vec3i(1024,2560,2816)) 
+      //   debug = alive = true; 
+
+      // if (!alive && blockSize <= 256) {
+      //   avg = 0.f;
+      //   return Range<float>(0.f,0.f);
+      // }
+
       vec3i lo = min(input->size(),begin*blockSize);
       vec3i hi = min(input->size(),lo + vec3i(blockSize));
-      bool output = (blockSize == 256);
+      if (lo == hi) { avg = 0.f; return Range<float>(0.f,0.f); }
+
+      bool output = (blockSize == 64)
+        // || 
+        // (blockSize == 256)
+        ;
       if (output) 
         cout << "building block " << lo << " - " << hi << " bs " << blockSize << endl;
 
@@ -180,7 +195,7 @@ namespace ospray {
         } 
       else {
         // need to actually create this block:
-        cout << "inserting block " << begin << ":" << level << endl;
+        // cout << "inserting block " << begin << ":" << level << endl;
         for (int iz=0;iz<4;iz++)
           for (int iy=0;iy<4;iy++)
             for (int ix=0;ix<4;ix++) {
@@ -211,6 +226,7 @@ namespace ospray {
       float       threshold   = 0.f; //.01f;
       vec3i       dims        = vec3i(0);
       vec3i       repeat      = vec3i(0);
+      vec3i       shift       = vec3i(0);
 
       for (int i=1;i<ac;i++) {
         const std::string arg = av[i];
@@ -231,6 +247,11 @@ namespace ospray {
           dims.x = atoi(av[++i]);
           dims.y = atoi(av[++i]);
           dims.z = atoi(av[++i]);
+        }
+        else if (arg == "-shift" || arg == "--shift") {
+          shift.x = atoi(av[++i]);
+          shift.y = atoi(av[++i]);
+          shift.z = atoi(av[++i]);
         }
         else if (arg[0] != '-')
           inFileName = av[i];
@@ -265,21 +286,25 @@ namespace ospray {
 
       // input = new DummyArray3D<float>(dims);
 
-      for (int i=0;i<302;i++) {
-        // PRINT(i);
-        Range<float> vr = input->getValueRange(vec3i(0),vec3i(i));
-        // PRINT(vr);
-        if (vr.lo < vr.hi) {
-          cout << "first non-empty region at " << vec3i(0) << " - " << vec3i(i) << endl;
-          break;
-        }
-      }
+      // for (int i=0;i<302;i++) {
+      //   // PRINT(i);
+      //   Range<float> vr = input->getValueRange(vec3i(0),vec3i(i));
+      //   // PRINT(vr);
+      //   if (vr.lo < vr.hi) {
+      //     cout << "first non-empty region at " << vec3i(0) << " - " << vec3i(i) << endl;
+      //     break;
+      //   }
+      // }
       // Range<float> vr = input->getValueRange();
       // PRINT(vr);
       // exit(0);
 
       cout << "loading complete." << endl;
 
+      if (shift != vec3i(0)) {
+        cout << "artifically shifting array by " << shift << endl;
+        input = new IndexShiftedArray3D<float>(input,shift);
+      }
       if (repeat.x != 0) {
         cout << "artificially blowing up to size " << repeat << endl;
         input = new Array3DRepeater<float>(input,repeat);

@@ -79,16 +79,31 @@ namespace ospray {
       fclose(file);
 
 
-      ssize_t fileSize = size_t(dims.x)*size_t(dims.y)*size_t(dims.z)*sizeof(T);
+      size_t fileSize = size_t(dims.x)*size_t(dims.y)*size_t(dims.z)*sizeof(T);
       std::cout << "mapping file " << fileName
                 << " exptd size " << prettyNumber(fileSize) << " actual size " << prettyNumber(actualFileSize) << std::endl;
-      if (fileSize != actualFileSize)
+      if (actualFileSize < fileSize)
         throw std::runtime_error("incomplete file!");
       int fd = ::open(fileName.c_str(), O_LARGEFILE | O_RDONLY);
       assert(fd >= 0);
 
-      void *mem = mmap(NULL,fileSize,PROT_READ,MAP_SHARED,fd,0);
+      void *mem = mmap(NULL,fileSize,PROT_READ,MAP_PRIVATE//MAP_SHARED// |MAP_HUGETLB
+                       ,fd,0);
       assert(mem);
+
+      // double *test = (double *)mem;
+      // PRINT(test[0]);
+      // size_t ofs = 35240025088LL;
+
+      // for (size_t i=0;i<fileSize;i+=(1024LL)*(1024LL)*(1024LL)) {
+      //   PRINT(i);
+      //   PRINT(prettyNumber(i));
+      //   PRINT(prettyNumber(i*sizeof(double)));
+      //   PRINT(test[i]);
+      // }
+      // PRINT(ofs);
+      // PRINT(fileSize);
+      // PRINT(test[ofs]);
 
       ActualArray3D<T> *volume = new ActualArray3D<T>(dims,mem);
 

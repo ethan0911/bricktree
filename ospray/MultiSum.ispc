@@ -222,7 +222,7 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
     }
   }
 
-  const float result = num / (den + 1e-8f);
+  const float result = num / (den + 1e-20f);
   // const float result = num / (255.f*den + 1e-8f);
   // print("returning %\n",result);
   return result;
@@ -236,7 +236,9 @@ static varying float MultiSumAMRVolume_sample(void *uniform _self,
   MultiSumAMRVolume *uniform self = (MultiSumAMRVolume *uniform)_self;
   assert(self);
   
-  float f =  tentApproximation_packet(self,worldCoordinates);
+  // print("%\n",self->validFractionOfRootGrid.z);
+  vec3f scaledWC = worldCoordinates * (self->validFractionOfRootGrid);
+  float f =  tentApproximation_packet(self,scaledWC);
   // if (reduce_max(worldCoordinates) > .9f)
   return f;
 }

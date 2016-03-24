@@ -114,6 +114,36 @@ namespace ospray {
       const vec3i dims;
     };
 
+    /*! shifts another array3d by a given amount */
+    template<typename value_t>
+    struct IndexShiftedArray3D : public Array3D<value_t> {
+
+      IndexShiftedArray3D(const Array3D<value_t> *actual, const vec3i &shift) 
+        : actual(actual), shift(shift) 
+      {};
+
+      /*! return size (ie, "dimensions") of volume */
+      virtual vec3i size() const override { return actual->size(); };
+
+      /*! get cell value at location
+
+        \warning 'where' MUST be a valid cell location */
+      virtual value_t get(const vec3i &where) const override 
+      { return actual->get((where+size()+shift)%size()); }
+      
+      /*! set cell value at location to given value
+
+        \warning 'where' MUST be a valid cell location */
+      virtual void set(const vec3i &where, const value_t &t) { throw std::runtime_error("cannot 'set' in a IndexShiftArray3D"); };
+
+      /*! returns number of elements (as 64-bit int) across all dimensions */
+      virtual size_t numElements() const override 
+      { return actual->numElements(); }
+
+      const vec3i shift;
+      const Array3D<value_t> *actual;
+    };
+
 
 
     /*! implemnetaiton of a wrapper class that makes an actual array3d
@@ -195,6 +225,7 @@ namespace ospray {
       size_t index = where.x+size_t(dims.x)*(where.y+size_t(dims.y)*(where.z));
       // PRINT(where);
       // PRINT(index);
+      assert(index < numElements());
       const T v = value[index];
       // PRINT(v);
       return v;
