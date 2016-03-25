@@ -225,6 +225,7 @@ namespace ospray {
       size_t index = where.x+size_t(dims.x)*(where.y+size_t(dims.y)*(where.z));
       // PRINT(where);
       // PRINT(index);
+      assert(value);
       assert(index < numElements());
       const T v = value[index];
       // PRINT(v);

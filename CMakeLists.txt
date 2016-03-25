@@ -30,22 +30,8 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
   INCLUDE_DIRECTORIES(${OSPRAY_SG_SOURCE_DIR}/)
   INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
-  # -------------------------------------------------------
-  # data format loaders etc
-  # -------------------------------------------------------
-  OSPRAY_ADD_LIBRARY(ospray_amr SHARED
-    amr/Array3D.cpp
-    amr/FromArray3DBuilder.cpp
-    amr/AMR.cpp
-    amr/Octree.cpp
-    amr/Sumerian.cpp
-    amr/MultiSumBuilder.cpp
-    )
-  
-  OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_amr
-    ospray
-    )
-  
+  ADD_SUBDIRECTORY(amr)
+
   # -------------------------------------------------------
   # ospray plugin
   # -------------------------------------------------------

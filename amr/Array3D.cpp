@@ -199,11 +199,16 @@ namespace ospray {
     template struct ActualArray3D<uint8>;
     template struct ActualArray3D<float>;
     template struct ActualArray3D<double>;
+
     template struct Array3DAccessor<uint8,uint8>;
     template struct Array3DAccessor<float,uint8>;
+    template struct Array3DAccessor<double,uint8>;
     template struct Array3DAccessor<uint8,float>;
     template struct Array3DAccessor<float,float>;
     template struct Array3DAccessor<double,float>;
+    template struct Array3DAccessor<uint8,double>;
+    template struct Array3DAccessor<float,double>;
+    template struct Array3DAccessor<double,double>;
 
     template struct Array3DRepeater<uint8>;
     template struct Array3DRepeater<float>;
