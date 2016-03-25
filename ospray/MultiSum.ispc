@@ -230,15 +230,25 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
                                
 
 //! The value at the given sample location in world coordinates.
-static varying float MultiSumAMRVolume_sample(void *uniform _self, 
-                                              const varying vec3f &worldCoordinates)
+static varying float MultiSumAMR_tentApprox(void *uniform _self, 
+                                            const varying vec3f &worldCoordinates)
 {
   MultiSumAMRVolume *uniform self = (MultiSumAMRVolume *uniform)_self;
-  assert(self);
-  
-  // print("%\n",self->validFractionOfRootGrid.z);
   vec3f scaledWC = worldCoordinates * (self->validFractionOfRootGrid);
-  float f =  tentApproximation_packet(self,scaledWC);
+  float f =  reconstructOnFinestLevel(self,scaledWC);
+  return f;
+}
+
+//! The value at the given sample location in world coordinates.
+static varying float MultiSumAMR_nearestNeighbor(void *uniform _self, 
+                                                 const varying vec3f &worldCoordinates)
+{
+  MultiSumAMRVolume *uniform self = (MultiSumAMRVolume *uniform)_self;
+  vec3f scaledWC = worldCoordinates * (self->validFractionOfRootGrid);
+  CellRef cell = findLeafCell(self,scaledWC);
+  return cell.value;
+  // float f =  reconstructOnFinestLevel(self,scaledWC);
+  // float f =  tentApproximation_packet(self,scaledWC);
   // if (reduce_max(worldCoordinates) > .9f)
   return f;
 }
@@ -291,7 +301,8 @@ export void MultiSumAMRVolume_set(void *uniform _self,
   self->super.volumeClippingBox.upper = make_vec3f(rootGridDims)*validFractionOfRootGrid; 
   
   self->super.intersect = &MultiSumAMRVolume_intersect;
-  self->super.computeSample = &MultiSumAMRVolume_sample;
+  self->super.computeSample = &MultiSumAMR_nearestNeighbor;
+  // self->super.computeSample = &MultiSumAMR_tentApprox;
   self->super.computeGradient = &MultiSumAMRVolume_gradient;
 
   self->super.samplingRate = 1.f;//samplingRate;
