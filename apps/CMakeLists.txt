@@ -28,3 +28,13 @@ ADD_EXECUTABLE(ospRaw2Sum
 TARGET_LINK_LIBRARIES(ospRaw2Sum
   ospray_amr
   )
+
+# -----------------------------------------------------
+# raw to bricktree converter tool
+# -----------------------------------------------------
+ADD_EXECUTABLE(ospRaw2Bricks
+  raw2bricks.cpp
+  )
+TARGET_LINK_LIBRARIES(ospRaw2Bricks
+  ospray_amr
+  )
