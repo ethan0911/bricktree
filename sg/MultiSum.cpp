@@ -56,6 +56,7 @@ namespace ospray {
 
       rootGridSize = toVec3i(node->getProp("rootGrid").c_str());
       clipBoxSize = toVec3f(node->getProp("clipBoxSize").c_str());
+      maxLevel = node->getPropl("maxLevel",0);
 
       // -------------------------------------------------------
       // data and index blocks
@@ -113,6 +114,7 @@ namespace ospray {
       ospSetData(ospVolume,"blockInfoData",blockInfoData);
 
       ospSet1f(ospVolume,"samplingRate",samplingRate);
+      ospSet1i(ospVolume,"maxLevel",maxLevel);
 
       firstIndexBlockOfTreeData
         = ospNewData(multiSum->rootGridDims.product(),OSP_INT,

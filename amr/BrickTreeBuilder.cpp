@@ -38,6 +38,7 @@ namespace ospray {
 
     template<int N, typename T>
     BrickTreeBuilder<N,T>::BrickTreeBuilder()
+      : maxLevel(0)
     {
       newDataBrick();
     }
@@ -134,6 +135,7 @@ namespace ospray {
 #ifdef PARALLEL_MULTI_TREE_BUILD
       std::lock_guard<std::mutex> lock(mutex);
 #endif
+      maxLevel = max(maxLevel,level);
       assert(reduce_max(coord) < brickSizeOf<N>(level));
       typename BrickTree<N,T>::DataBrick *db = this->findDataBrick(coord, level);
       assert(db);
@@ -172,6 +174,17 @@ namespace ospray {
       // fprintf(osp,"   samplingRate=\"%f\"\n",samplingRate);
       fprintf(osp,"   clipBoxSize=\"%f %f %f\"\n",
               clipBoxSize.x,clipBoxSize.y,clipBoxSize.z);
+
+
+      int maxLevel = 0;
+      for (int iz=0;iz<rootGrid->size().z;iz++)
+        for (int iy=0;iy<rootGrid->size().y;iy++)
+          for (int ix=0;ix<rootGrid->size().x;ix++) {
+            BrickTreeBuilder<N,T> *msb = getRootCell(vec3i(ix,iy,iz));
+            if (msb)
+              maxLevel = max(maxLevel,msb->maxLevel);
+          }
+      fprintf(osp,"   maxLevel=\"%i\"\n",maxLevel);
       fprintf(osp,"   >\n");
 
       fprintf(osp,"\t<dataBricks>\n");

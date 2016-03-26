@@ -55,6 +55,8 @@ namespace ospray {
       /*! be done with the build, and save all data to the xml/bin
         file of 'fileName' and 'filename+"bin"' */
       virtual void save(const std::string &ospFileName, const vec3f &clipBoxSize);
+
+      int maxLevel;
     };
 
     /*! multi-sumerian - a root grid of cell, with one sumerian per

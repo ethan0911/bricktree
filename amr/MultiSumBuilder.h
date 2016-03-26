@@ -71,6 +71,7 @@ namespace ospray {
       /* value range of all the values written into this tree ... */
       Range<float> valueRange;
 
+      int maxLevel;
     };
 
   } // ::ospray::amr

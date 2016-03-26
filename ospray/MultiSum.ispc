@@ -22,7 +22,8 @@
 #include "ospray/common/Model.ih"
 #include "ospray/transferFunction/LinearTransferFunction.ih"
 // this module
-#include "GridPos.ih"
+#include "CellDesc.ih"
+#include "CellQuery.ih"
 // embree
 #include "embree2/rtcore.isph"
 
@@ -34,80 +35,11 @@ struct TentAlgoStackEntry {
   float blockWidth;
 };
 
-/*! descriptor for a cell. rather than elaborate cell and level
-    indices we instead use the global base position (the lower left
-    front corner) and width, which are equivalent) */
-struct CellDesc {
-  GridPos gp;
-  /*! base coordinates of that block, in that tree (in [0,1]^3) */
-  vec3f blockPos;
-  /*! fractional component in that block */
-  vec3f frac;
-  float value;
-  float blockWidth;
-  int blockID;
-};
-
-inline CellDesc findLeafCell(const MultiSumAMRVolume *uniform self, 
-                             const varying vec3f worldSpacePos)
-{
-  CellDesc cell;
-  cell.gp = makeGridPos(self,worldSpacePos);
-  foreach_unique (rootCellID in cell.gp.rootCellID) {
-    // print("rootID %\n",rootCellID);
-    // print("self->dataBlock %\n",self->dataBlock);
-    uniform SumDataBlock *uniform dataBlockArray
-      = self->dataBlock+self->firstDataBlockOfTree[rootCellID];
-    uniform SumIndexBlock *uniform indexBlockArray
-      = self->indexBlock+self->firstIndexBlockOfTree[rootCellID];
-    uniform int32 *uniform offsetOfArray 
-      = (uniform int32*)self->blockInfo + self->firstDataBlockOfTree[rootCellID];
-    
-    int blockID = 0;
-    cell.blockPos = make_vec3f(0.f);
-    cell.blockWidth = 1.f;
-    
-    // cell.value = (13*rootCellID % 128) / 127.f; //dataBlock->value[cID.z][cID.y][cID.x];
-    // if (0)
-    while (1) {
-      // print("blockID %\n",blockID);
-      const float cellWidth = cell.blockWidth * 0.25f;
-
-      const SumDataBlock  *dataBlock  = dataBlockArray + blockID;
-      const SumIndexBlock *indexBlock = NULL;
-      const vec3i cID = make_vec3i(4.f * cell.frac);
-      cell.frac = 4.f*cell.frac - make_vec3f(cID);
-
-      // determine ID of child, if available
-      int childBlockID = -1;
-      const int indexBlockID = offsetOfArray[blockID];
-      if (indexBlockID >= 0) {
-        indexBlock   = indexBlockArray+indexBlockID;
-        childBlockID = indexBlock->child[cID.z][cID.y][cID.x];
-      }
-      
-      if (childBlockID >= 0) {
-        // cell we hit is a leaf cell...
-        cell.blockPos   = cell.blockPos + make_vec3f(cID)*cellWidth;
-        cell.blockWidth = cellWidth;
-        blockID         = childBlockID;
-        continue;
-      } else {
-        cell.blockID = blockID;
-        cell.value = dataBlock->value[cID.z][cID.y][cID.x];
-        break;
-      }
-    }
-  }
-  return cell;
-}
-
-inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
+inline float tentApproximation_packet(MSAMRVolume *uniform self,
                                       const varying vec3f &worldSpacePos)
 {
-  GridPos gp = makeGridPos(self,worldSpacePos);
+  GridPos gp = makeGridPos(self,toGridSpace(self,worldSpacePos));
   
-  // print("gp.pos % % %\n",gp.pos.x,gp.pos.y,gp.pos.z);
   // "packet" variant
   uniform TentAlgoStackEntry stackBase[100];
   uniform TentAlgoStackEntry *uniform stackPtr = stackBase;
@@ -134,17 +66,16 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
             foreach_unique (tree_ix in _ix) {
               const uniform int rootCellID
                 = tree_ix + self->rootGridDims.x*(tree_iy+self->rootGridDims.y*(tree_iz));
-              // stackPtr->cell = self->rootCell+rootCellID;
 
               uniform SumDataBlock *uniform dataBlockArray
                 = self->dataBlock+self->firstDataBlockOfTree[rootCellID];
               uniform SumIndexBlock *uniform indexBlockArray
                 = self->indexBlock+self->firstIndexBlockOfTree[rootCellID];
-              uniform int32 *uniform offsetOfArray 
+              uniform int32 *uniform indexBlockOfArray 
                 = (uniform int32*)self->blockInfo + self->firstDataBlockOfTree[rootCellID];
               stackPtr->blockPos = make_vec3f(tree_ix,tree_iy,tree_iz);
               stackPtr->blockWidth = 1.f;
-              stackPtr->blockID = 0; //rootCellID;
+              stackPtr->blockID = 0; 
               stackPtr++;
               
               // -------------------------------------------------------
@@ -158,13 +89,11 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
                 
                 const vec3f base = make_vec3f(cur.blockPos);
                 const float blockWidth  = cur.blockWidth;
-                // const vec3f cellCenter = base+0.5f*blockWidth;
-                // const vec3f delta = absf(cellCenter - gridPos);
                 uniform int blockID = cur.blockID;
                 SumDataBlock *uniform dataBlock = dataBlockArray + blockID;
 
                 SumIndexBlock *uniform indexBlock = NULL;
-                const uniform int indexBlockID = offsetOfArray[blockID];
+                const uniform int indexBlockID = indexBlockOfArray[blockID];
                 if (indexBlockID >= 0)
                   indexBlock = indexBlockArray+indexBlockID;
 
@@ -184,7 +113,6 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
                           delta.x = abs(childCellPos.x + 0.5f * childCellWidth - gp.pos.x);
                           
                           if (delta.x < childCellWidth) {
-                             // print("child % % %\n",iix,iiy,iiz);
                             // -------------------------------------------------------
                             // OK, this is a cell that at least one ray overlaps!
                             // -------------------------------------------------------
@@ -193,14 +121,12 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
                               stackPtr->blockWidth = childCellWidth;
                               stackPtr->blockID = indexBlock->child[iiz][iiy][iix];
                               ++stackPtr;
-                              // print("pushing % stackptr %\n",indexBlock->child[iiz][iiy][iix],stackPtr-stackBase);
                             } else {
                               const vec3f weight = max(make_vec3f(0.f),
                                                        make_vec3f(1.f) - delta * rcp(childCellWidth));
                               const float w = reduce_mul(weight);
                               den += w;
                               num += w * dataBlock->value[iiz][iiy][iix];
-                              // print("adding % %\n",w,dataBlock->value[iz][iy][ix]);
                             }
                           }
                         }
@@ -215,42 +141,50 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
   }
 
   const float result = num / (den + 1e-20f);
-  // const float result = num / (255.f*den + 1e-8f);
-  // print("returning %\n",result);
   return result;
 }
                                
 
 //! The value at the given sample location in world coordinates.
-static varying float MultiSumAMR_tentApprox(void *uniform _self, 
+static varying float MSAMR_tentApprox(void *uniform _self, 
                                             const varying vec3f &worldSpacePos)
 {
-  MultiSumAMRVolume *uniform self = (MultiSumAMRVolume *uniform)_self;
+  MSAMRVolume *uniform self = (MSAMRVolume *uniform)_self;
   float f =  tentApproximation_packet(self,worldSpacePos);
   return f;
 }
 
-//! The value at the given sample location in world coordinates.
-static varying float MultiSumAMR_nearestNeighbor(void *uniform _self, 
-                                                 const varying vec3f &worldSpacePos)
-{
-  MultiSumAMRVolume *uniform self = (MultiSumAMRVolume *uniform)_self;
-  CellDesc cell = findLeafCell(self,worldSpacePos);
-  return cell.value;
-}
+/*! plainest, dumbest way of reconstructing: find the given leaf cell,
+    and return the value */
+extern varying float MSAMR_nearestNeighbor(void *uniform _self, 
+                                           const varying vec3f &worldSpacePos);
+
+/*! perform tri-linear interpolation on the finest cell grid level -
+  ie, coarse regions will be entirely flat inside the coarse region, 
+  and have a linar fine-cell blend where they abut */
+extern varying float MSAMR_interpolateOnFinestLevel(void *uniform _self, 
+                                                    const varying vec3f &worldSpacePos);
+
+/*! perform tri-linear interpolation on the level of the leaf cell
+  that the sample is in.  note that THIS IS NOT CORRECT across level
+  boundaries, as a sample may be in a corse cell, but its neighbor
+  might be subdivided, which this one ignores */
+extern varying float 
+MSAMR_interpolateOnCurrentCellLevel(void *uniform _self, 
+                                    const varying vec3f &worldSpacePos);
 
 //! The gradient at the given sample location in world coordinates.
-static varying vec3f MultiSumAMRVolume_gradient(void *uniform _self, 
+static varying vec3f MSAMRVolume_gradient(void *uniform _self, 
                                         const varying vec3f &worldCoordinates)
 {
   return make_vec3f(1,0,0);
 }
 
 //! Find the next hit point in the volume for ray casting based renderers.
-static void MultiSumAMRVolume_intersect(void *uniform _self, 
+static void MSAMRVolume_intersect(void *uniform _self, 
                                 varying Ray &ray)
 {
-  MultiSumAMRVolume *uniform self = (MultiSumAMRVolume *uniform) _self;
+  MSAMRVolume *uniform self = (MSAMRVolume *uniform) _self;
   
   // TODO: clean this up, properly implemnt an integrator with
   // variable step size...
@@ -259,25 +193,26 @@ static void MultiSumAMRVolume_intersect(void *uniform _self,
   ray.t0 += step;
 }
 
-export void *uniform MultiSumAMRVolume_create(void *uniform cppEquivalent) 
+export void *uniform MSAMRVolume_create(void *uniform cppEquivalent) 
 {
-  MultiSumAMRVolume *uniform self = uniform new uniform MultiSumAMRVolume;
+  MSAMRVolume *uniform self = uniform new uniform MSAMRVolume;
   Volume_Constructor(&self->super,cppEquivalent);
 
   return self;
 };
 
-export void MultiSumAMRVolume_set(void *uniform _self,
-                                  void *uniform _xf,
-                                  const uniform vec3i &rootGridDims,
-                                  const uniform vec3f &validFractionOfRootGrid,
-                                  void *uniform dataBlock,
-                                  void *uniform indexBlock,
-                                  void *uniform blockInfo,
-                                  void *uniform firstDataBlockOfTreeData,
-                                  void *uniform firstIndexBlockOfTreeData)
+export void MSAMRVolume_set(void *uniform _self,
+                            void *uniform _xf,
+                            const uniform vec3i &rootGridDims,
+                            const uniform vec3f &validFractionOfRootGrid,
+                            void *uniform dataBlock,
+                            void *uniform indexBlock,
+                            void *uniform blockInfo,
+                            void *uniform firstDataBlockOfTreeData,
+                            void *uniform firstIndexBlockOfTreeData,
+                            uniform float finestCellWidth)
 {
-  MultiSumAMRVolume *uniform self = (MultiSumAMRVolume *uniform)_self;
+  MSAMRVolume *uniform self = (MSAMRVolume *uniform)_self;
   assert(self);
   
   self->super.boundingBox.lower = make_vec3f(0.f);
@@ -286,10 +221,7 @@ export void MultiSumAMRVolume_set(void *uniform _self,
   self->super.volumeClippingBox.lower = make_vec3f(0.f);
   self->super.volumeClippingBox.upper = make_vec3f(rootGridDims)*validFractionOfRootGrid; 
   
-  self->super.intersect = &MultiSumAMRVolume_intersect;
-  self->super.computeSample = &MultiSumAMR_nearestNeighbor;
-  // self->super.computeSample = &MultiSumAMR_tentApprox;
-  self->super.computeGradient = &MultiSumAMRVolume_gradient;
+  self->super.computeGradient = &MSAMRVolume_gradient;
 
   self->super.samplingRate = 1.f;//samplingRate;
   self->super.samplingStep = .1f;
@@ -306,10 +238,12 @@ export void MultiSumAMRVolume_set(void *uniform _self,
   // root grid dimensions
   self->rootGridDims = rootGridDims;
   self->validFractionOfRootGrid = validFractionOfRootGrid;
+  self->finestCellWidth = finestCellWidth;
 
-  // print("SET\n");
-  // for (uniform int i=0;i<rootGridDims.x*rootGridDims.y*rootGridDims.z;i++)
-  //   print("blockinfo[%][0] = %\n",i,self->blockInfo[self->firstDataBlockOfTree[i]].indexBlockID);
+  self->super.intersect = &MSAMRVolume_intersect;
+  // self->super.computeSample = &MSAMR_nearestNeighbor;
+  // self->super.computeSample = &MSAMR_tentApprox;
+  self->super.computeSample = &MSAMR_interpolateOnCurrentCellLevel;
 }
 
 

@@ -34,19 +34,19 @@ namespace ospray {
     using std::ostream;
     using std::flush;
 
-    MultiSumAMRVolume::MultiSumAMRVolume()
+    MSAMRVolume::MSAMRVolume()
       : Volume(), rootGridDims(-1), voxelType(OSP_FLOAT)
     {
-      ispcEquivalent = ispc::MultiSumAMRVolume_create(this);
+      ispcEquivalent = ispc::MSAMRVolume_create(this);
     }
     
     //! Allocate storage and populate the volume.
-    void MultiSumAMRVolume::commit()
+    void MSAMRVolume::commit()
     {
       // right now we only support floats ...
       this->voxelType = OSP_FLOAT;
 
-      cout << "#osp:amr: MultiSumAMRVolume::commit()" << endl;
+      cout << "#osp:amr: MSAMRVolume::commit()" << endl;
       firstIndexBlockOfTreeData   = getParamData("firstIndexBlockOfTree");
       firstDataBlockOfTreeData   = getParamData("firstDataBlockOfTree");
       dataBlockData  = getParamData("dataBlockData");
@@ -54,73 +54,30 @@ namespace ospray {
       blockInfoData  = getParamData("blockInfoData");
       rootGridDims   = getParam3i("rootGridDims",vec3i(-1));
       validFractionOfRootGrid = getParam3f("validFractionOfRootGrid",vec3f(0.f));
-
-      // PRINT(rootGridDims);
-      // PRINT(validFractionOfRootGrid);
-
+      int maxLevel = getParam1i("maxLevel",0);
+      if (maxLevel < 1)
+        throw std::runtime_error("MSAMRVolume: maxLevel not specified");
+      float finestCellWidth = 1.f;
+      for (int i=0;i<maxLevel;i++)
+        finestCellWidth *= .25f;
 
       Ref<TransferFunction> xf = (TransferFunction*)getParamObject("transferFunction");
 
-      // PRINT(*(Sumerian::IndexBlock *)indexBlockData->data);
-      // PRINT(*(Sumerian::DataBlock *)dataBlockData->data);
-      // PRINT(*(int*)blockInfoData->data);
-      // PRINT(*(int*)rootCellData->data);
-
-
-#if 0
-      for (int iz=0;iz<rootGridDims.z;iz++)
-        for (int iy=0;iy<rootGridDims.y;iy++)
-          for (int ix=0;ix<rootGridDims.x;ix++) {
-            cout << "=======================================================" << endl;
-            int rootCellID = ix+rootGridDims.x*(iy+rootGridDims.y*iz);
-            const Sumerian::IndexBlock *indexBlockArray 
-              = (const Sumerian::IndexBlock *)indexBlockData->data
-              + ((int*)firstIndexBlockOfTreeData->data)[rootCellID];
-            const Sumerian::DataBlock *dataBlockArray 
-              = (const Sumerian::DataBlock *)dataBlockData->data
-              + ((int*)firstDataBlockOfTreeData->data)[rootCellID];
-            const Sumerian::BlockInfo *blockInfoArray 
-              = (const Sumerian::BlockInfo *)blockInfoData->data
-              + ((int*)firstDataBlockOfTreeData->data)[rootCellID];
-            
-            cout << "ROOT " << ix << " " << iy << " " << iz << endl;
-            std::stack<int> nodeStack;
-            nodeStack.push(0);
-
-            while (!nodeStack.empty()) {
-              int nodeID = nodeStack.top(); nodeStack.pop();
-              int childID = blockInfoArray[nodeID].indexBlockID;
-              cout << "-------------------------------------------------------" << endl;
-              cout << "NODE " << nodeID << " child " << childID << endl;
-              PRINT(dataBlockArray[nodeID]);
-              if (childID >= 0) {
-                PRINT(indexBlockArray[childID]);
-                for (int i=0;i<64;i++) {
-                  int c = (&indexBlockArray[childID].childID[0][0][0])[i];
-                  if (c >= 0) nodeStack.push(c);
-                }
-              }
-            }
-          }
-
-
-      // exit(0);
-#endif
-
-
-      ispc::MultiSumAMRVolume_set(getIE(),
-                                  xf->getIE(),
-                                  (ispc::vec3i &)rootGridDims,
-                                  (ispc::vec3f &)validFractionOfRootGrid,
-                                  dataBlockData->data,
-                                  indexBlockData->data,
-                                  blockInfoData->data,
-                                  firstDataBlockOfTreeData->data,
-                                  firstIndexBlockOfTreeData->data
-                                  );
+      ispc::MSAMRVolume_set(getIE(),
+                            xf->getIE(),
+                            (ispc::vec3i &)rootGridDims,
+                            (ispc::vec3f &)validFractionOfRootGrid,
+                            dataBlockData->data,
+                            indexBlockData->data,
+                            blockInfoData->data,
+                            firstDataBlockOfTreeData->data,
+                            firstIndexBlockOfTreeData->data,
+                            finestCellWidth
+                            );
     }
 
-    OSP_REGISTER_VOLUME(MultiSumAMRVolume,MultiSumAMRVolume);
+    OSP_REGISTER_VOLUME(MSAMRVolume,MSAMRVolume);
+    OSP_REGISTER_VOLUME(MSAMRVolume,MultiSumAMRVolume);
 
   }
 } // ::ospray

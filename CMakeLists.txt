@@ -35,17 +35,7 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
   # -------------------------------------------------------
   # ospray plugin
   # -------------------------------------------------------
-  OSPRAY_ADD_LIBRARY(ospray_module_amr SHARED
-    ospray/AMRVolume.ispc
-    ospray/AMRVolume.cpp
-		ospray/MultiSum.ispc
-		ospray/MultiSum.cpp
-    )
-  
-  OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_module_amr
-    ospray_amr
-    ospray
-    )
+  ADD_SUBDIRECTORY(ospray)
   
   IF(NOT THIS_IS_MIC)
     # -----------------------------------------------------

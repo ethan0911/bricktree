@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "ospray/common/Model.ih"
 // ospray
 #include "ospray/math/AffineSpace.ih"
 #include "ospray/geometry/Geometry.ih"
@@ -36,16 +37,18 @@ struct SumBlockInfo {
   int32 indexBlockID;
 };
 
-struct MultiSumAMRVolume {
+struct MSAMRVolume {
   Volume    super; //!< inherited from superclass
 
   SumIndexBlock *indexBlock;
   SumDataBlock  *dataBlock;
   SumBlockInfo  *blockInfo;
-  int32        *firstIndexBlockOfTree;
-  int32        *firstDataBlockOfTree;
+  int32         *firstIndexBlockOfTree;
+  int32         *firstDataBlockOfTree;
   // root grid dimensions
   vec3i rootGridDims;
   vec3f validFractionOfRootGrid;
+  float finestCellWidth;
 };
+
 

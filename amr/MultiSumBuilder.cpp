@@ -126,7 +126,7 @@ namespace ospray {
     // -------------------------------------------------------
 
     MultiSumBuilder::MultiSumBuilder() 
-      : rootGrid(NULL), valueRange(empty)
+      : rootGrid(NULL), valueRange(empty), maxLevel(0)
     {}
 
 
@@ -150,6 +150,7 @@ namespace ospray {
       // fprintf(osp,"   samplingRate=\"%f\"\n",samplingRate);
       fprintf(osp,"   clipBoxSize=\"%f %f %f\"\n",
               clipBoxSize.x,clipBoxSize.y,clipBoxSize.z);
+      fprintf(osp,"   maxLevel=\"%i\"\n",maxLevel);
       fprintf(osp,"   >\n");
 
       fprintf(osp,"\t<dataBlocks>\n");
@@ -219,6 +220,7 @@ namespace ospray {
       assert(msb);
       msb->set(coord % vec3i(blockSize), level, v);
       valueRange.extend(v);
+      maxLevel = std::max(maxLevel,level);
     }
 
     void MultiSumBuilder::allocateAtLeast(const vec3i &_neededSize)

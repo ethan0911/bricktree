@@ -59,6 +59,7 @@ namespace ospray {
       OSPData firstIndexBlockOfTreeData;
       OSPData firstDataBlockOfTreeData;
       float samplingRate;
+      int maxLevel;
 
       amr::Sumerian *multiSum;
       

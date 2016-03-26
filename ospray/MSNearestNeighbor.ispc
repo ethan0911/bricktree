@@ -14,41 +14,14 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#include "CellQuery.ih"
 
-// ospray
-#include "ospray/volume/Volume.h"
-// amr base
-#include "../amr/Sumerian.h"
-
-namespace ospray {
-  namespace amr {
-
-    struct MSAMRVolume : public ospray::Volume {
-      MSAMRVolume();
-
-      //! \brief common function to help printf-debugging 
-      virtual std::string toString() const { return "ospray::amr::MSAMRVolume"; }
-
-      //! Allocate storage and populate the volume.
-      virtual void commit();
-
-      //! Copy voxels into the volume at the given index (non-zero return value indicates success).
-      virtual int setRegion(const void *source, const vec3i &index, const vec3i &count)
-      {
-        FATAL("'setRegion()' doesn't make sense for AMR volumes; they can only be set from existing data");
-      }
-
-      Ref<Data>   firstIndexBlockOfTreeData;
-      Ref<Data>   firstDataBlockOfTreeData;
-      Ref<Data>   dataBlockData;
-      Ref<Data>   indexBlockData;
-      Ref<Data>   blockInfoData;
-      vec3i       rootGridDims;
-      vec3f       validFractionOfRootGrid;
-      OSPDataType voxelType;
-    };
-    
-  }
+/*! plainest, dumbest way of reconstructing: find the given leaf cell,
+  and return the value */
+varying float MSAMR_nearestNeighbor(void *uniform _self, 
+                                    const varying vec3f &worldSpacePos)
+{
+  const MSAMRVolume *uniform self = (MSAMRVolume *uniform)_self;
+  const CellQuery cq = cellQuery(self,toGridSpace(self,worldSpacePos));
+  return cq.value;
 }
-
