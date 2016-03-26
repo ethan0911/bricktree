@@ -76,20 +76,22 @@ namespace ospray {
       FILE *file = fopen(fileName.c_str(),"rb");
       fseek(file,0,SEEK_END);
       size_t actualFileSize = ftell(file);
+      PRINT(actualFileSize);
       fclose(file);
-
 
       size_t fileSize = size_t(dims.x)*size_t(dims.y)*size_t(dims.z)*sizeof(T);
       std::cout << "mapping file " << fileName
                 << " exptd size " << prettyNumber(fileSize) << " actual size " << prettyNumber(actualFileSize) << std::endl;
       if (actualFileSize < fileSize)
         throw std::runtime_error("incomplete file!");
+      if (actualFileSize > fileSize)
+        throw std::runtime_error("mapping PARTIAL (or incorrect!?) file...");
       int fd = ::open(fileName.c_str(), O_LARGEFILE | O_RDONLY);
       assert(fd >= 0);
 
-      void *mem = mmap(NULL,fileSize,PROT_READ,MAP_PRIVATE//MAP_SHARED// |MAP_HUGETLB
+      void *mem = mmap(NULL,fileSize,PROT_READ,MAP_SHARED// |MAP_HUGETLB
                        ,fd,0);
-      assert(mem);
+      assert(mem != NULL && (long long)mem != -1LL);
 
       // double *test = (double *)mem;
       // PRINT(test[0]);

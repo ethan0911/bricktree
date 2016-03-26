@@ -66,7 +66,11 @@ namespace ospray {
         const xml::Node *child = node->child[childID];
         if (child->name == "dataBlocks")
           parseVecInt(dataBlockCount,child->content.c_str());
-        if (child->name == "indexBlocks")
+        else if (child->name == "dataBricks")
+          parseVecInt(dataBlockCount,child->content.c_str());
+        else if (child->name == "indexBlocks")
+          parseVecInt(indexBlockCount,child->content.c_str());
+        else if (child->name == "indexBricks")
           parseVecInt(indexBlockCount,child->content.c_str());
       }
       multiSum = new Sumerian;

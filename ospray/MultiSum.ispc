@@ -22,9 +22,11 @@
 #include "ospray/common/Model.ih"
 #include "ospray/transferFunction/LinearTransferFunction.ih"
 // this module
-#include "MultiSum.ih"
+#include "GridPos.ih"
 // embree
 #include "embree2/rtcore.isph"
+
+
 
 struct TentAlgoStackEntry {
   int32 blockID;
@@ -36,30 +38,24 @@ struct TentAlgoStackEntry {
     indices we instead use the global base position (the lower left
     front corner) and width, which are equivalent) */
 struct CellDesc {
-  /*! integer coordinates of cell - ie, the int coordinates of the
-      root cell */
-  vec3i rootCellCoords;
-  /*! and the linear ID of that root cell */
-  int   rootCellID;
+  GridPos gp;
   /*! base coordinates of that block, in that tree (in [0,1]^3) */
   vec3f blockPos;
   /*! fractional component in that block */
   vec3f frac;
+  float value;
   float blockWidth;
   int blockID;
 };
 
 inline CellDesc findLeafCell(const MultiSumAMRVolume *uniform self, 
-                             const varying vec3f pos)
+                             const varying vec3f worldSpacePos)
 {
   CellDesc cell;
-  cell.rootCellCoords = make_vec3i(pos);
-  cell.rootCellID
-    = (cell.rootCellCoords.x + 
-       self->rootGridDims.x*(cell.rootCellCoords.y +
-                             self->rootGridDims.y*(cell.rootCellCoords.z)));
-  
-  foreach_unique (rootCellID in cell.rootCellID) {
+  cell.gp = makeGridPos(self,worldSpacePos);
+  foreach_unique (rootCellID in cell.gp.rootCellID) {
+    // print("rootID %\n",rootCellID);
+    // print("self->dataBlock %\n",self->dataBlock);
     uniform SumDataBlock *uniform dataBlockArray
       = self->dataBlock+self->firstDataBlockOfTree[rootCellID];
     uniform SumIndexBlock *uniform indexBlockArray
@@ -70,27 +66,35 @@ inline CellDesc findLeafCell(const MultiSumAMRVolume *uniform self,
     int blockID = 0;
     cell.blockPos = make_vec3f(0.f);
     cell.blockWidth = 1.f;
-    cell.frac = pos - make_vec3f(cell.rootCellCoords);
-
+    
+    // cell.value = (13*rootCellID % 128) / 127.f; //dataBlock->value[cID.z][cID.y][cID.x];
+    // if (0)
     while (1) {
+      // print("blockID %\n",blockID);
+      const float cellWidth = cell.blockWidth * 0.25f;
+
       const SumDataBlock  *dataBlock  = dataBlockArray + blockID;
       const SumIndexBlock *indexBlock = NULL;
-      const int indexBlockID = offsetOfArray[blockID];
-      const float cellWidth = cell.blockWidth * 0.25f;
-      if (indexBlockID >= 0)
-        indexBlock = indexBlockArray+indexBlockID;
-      
       const vec3i cID = make_vec3i(4.f * cell.frac);
-      int childID;
-      if (indexBlock && ((childID = indexBlock->child[cID.z][cID.y][cID.x]) >= 0)) {
+      cell.frac = 4.f*cell.frac - make_vec3f(cID);
+
+      // determine ID of child, if available
+      int childBlockID = -1;
+      const int indexBlockID = offsetOfArray[blockID];
+      if (indexBlockID >= 0) {
+        indexBlock   = indexBlockArray+indexBlockID;
+        childBlockID = indexBlock->child[cID.z][cID.y][cID.x];
+      }
+      
+      if (childBlockID >= 0) {
         // cell we hit is a leaf cell...
-        const vec3f childPos = make_vec3f(cID)*cellWidth;
-        cell.blockPos = cell.blockPos + childPos;
-        cell.frac   = 4.f * (cell.frac - childPos);
+        cell.blockPos   = cell.blockPos + make_vec3f(cID)*cellWidth;
         cell.blockWidth = cellWidth;
-        blockID = childID;
+        blockID         = childBlockID;
         continue;
       } else {
+        cell.blockID = blockID;
+        cell.value = dataBlock->value[cID.z][cID.y][cID.x];
         break;
       }
     }
@@ -99,15 +103,14 @@ inline CellDesc findLeafCell(const MultiSumAMRVolume *uniform self,
 }
 
 inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
-                                      const varying vec3f &worldCoordinates)
+                                      const varying vec3f &worldSpacePos)
 {
-  // print("wc\n %\n %\n-> %\n",worldCoordinates.x,worldCoordinates.y,worldCoordinates.z);
-
+  GridPos gp = makeGridPos(self,worldSpacePos);
+  
+  // print("gp.pos % % %\n",gp.pos.x,gp.pos.y,gp.pos.z);
   // "packet" variant
   uniform TentAlgoStackEntry stackBase[100];
   uniform TentAlgoStackEntry *uniform stackPtr = stackBase;
-  
-  const vec3f gridPos = worldCoordinates;
   
   // init numerator and denominator
   float num = 0.f;
@@ -117,7 +120,7 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
   // do initial stack fill
   // ------------------------------------------------------- 
   // - compute region of cells in root grid
-  vec3i root_beg = make_vec3i(floor(gridPos - make_vec3f(.5f)));
+  vec3i root_beg = make_vec3i(floor(gp.pos - make_vec3f(.5f)));
   vec3i root_end = make_vec3i(root_beg+make_vec3i(2));
   root_beg = max(root_beg,make_vec3i(0));
   root_end = min(root_end,self->rootGridDims);
@@ -164,35 +167,24 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
                 const uniform int indexBlockID = offsetOfArray[blockID];
                 if (indexBlockID >= 0)
                   indexBlock = indexBlockArray+indexBlockID;
-                //   // leaf node ...
-                //   const vec3f weight = max(make_vec3f(0.f),
-                //                            make_vec3f(1.f) - delta * rcp(blockWidth));
-                //   const float w = reduce_mul(weight);
-                //   den += w;
-                //   num += w * cur.cell->ccValue;
-                // } else {
-                  
-                  // if (reduce_max(delta) >= blockWidth) 
-                  //   continue;
-
-                // print("blockID % indexblock %\n",blockID,indexBlock);
 
                 const uniform float childCellWidth = 0.25f * cur.blockWidth;
                 uniform vec3f childCellPos;
                 vec3f delta;
                 for (uniform int iiz=0;iiz<4;iiz++) {
                   childCellPos.z = cur.blockPos.z + iiz * childCellWidth;
-                  delta.z = abs(childCellPos.z + 0.5f * childCellWidth - gridPos.z);
+                  delta.z = abs(childCellPos.z + 0.5f * childCellWidth - gp.pos.z);
                   if (delta.z < childCellWidth)
                     for (uniform int iiy=0;iiy<4;iiy++) {
                       childCellPos.y = cur.blockPos.y + iiy * childCellWidth;
-                      delta.y = abs(childCellPos.y + 0.5f * childCellWidth - gridPos.y);
+                      delta.y = abs(childCellPos.y + 0.5f * childCellWidth - gp.pos.y);
                       if (delta.y < childCellWidth)
                         for (uniform int iix=0;iix<4;iix++) {
                           childCellPos.x = cur.blockPos.x + iix * childCellWidth;
-                          delta.x = abs(childCellPos.x + 0.5f * childCellWidth - gridPos.x);
+                          delta.x = abs(childCellPos.x + 0.5f * childCellWidth - gp.pos.x);
+                          
                           if (delta.x < childCellWidth) {
-                            // print("child % % %\n",iix,iiy,iiz);
+                             // print("child % % %\n",iix,iiy,iiz);
                             // -------------------------------------------------------
                             // OK, this is a cell that at least one ray overlaps!
                             // -------------------------------------------------------
@@ -231,26 +223,20 @@ inline float tentApproximation_packet(MultiSumAMRVolume *uniform self,
 
 //! The value at the given sample location in world coordinates.
 static varying float MultiSumAMR_tentApprox(void *uniform _self, 
-                                            const varying vec3f &worldCoordinates)
+                                            const varying vec3f &worldSpacePos)
 {
   MultiSumAMRVolume *uniform self = (MultiSumAMRVolume *uniform)_self;
-  vec3f scaledWC = worldCoordinates * (self->validFractionOfRootGrid);
-  float f =  reconstructOnFinestLevel(self,scaledWC);
+  float f =  tentApproximation_packet(self,worldSpacePos);
   return f;
 }
 
 //! The value at the given sample location in world coordinates.
 static varying float MultiSumAMR_nearestNeighbor(void *uniform _self, 
-                                                 const varying vec3f &worldCoordinates)
+                                                 const varying vec3f &worldSpacePos)
 {
   MultiSumAMRVolume *uniform self = (MultiSumAMRVolume *uniform)_self;
-  vec3f scaledWC = worldCoordinates * (self->validFractionOfRootGrid);
-  CellRef cell = findLeafCell(self,scaledWC);
+  CellDesc cell = findLeafCell(self,worldSpacePos);
   return cell.value;
-  // float f =  reconstructOnFinestLevel(self,scaledWC);
-  // float f =  tentApproximation_packet(self,scaledWC);
-  // if (reduce_max(worldCoordinates) > .9f)
-  return f;
 }
 
 //! The gradient at the given sample location in world coordinates.
