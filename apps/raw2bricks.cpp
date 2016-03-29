@@ -87,8 +87,8 @@ namespace ospray {
            << " (estd " << prettyNumber(long(numDataBricks * 100.f / pctgDone)) << ")" << endl;
 
       size_t totalSize
-        = numIndexBricks * sizeof(BrickTree<N,T>::IndexBrick)
-        + numDataBricks * (sizeof(BrickTree<N,T>::DataBrick) + sizeof(int));
+        = numIndexBricks * sizeof(typename BrickTree<N,T>::IndexBrick)
+        + numDataBricks * (sizeof(typename BrickTree<N,T>::DataBrick) + sizeof(int));
       
       cout << "- total size (bytes) " << prettyNumber(totalSize)
            << " (estd " << prettyNumber(long(totalSize * 100.f / pctgDone)) << ")" << endl;
