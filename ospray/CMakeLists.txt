@@ -4,6 +4,9 @@ OSPRAY_ADD_LIBRARY(ospray_module_amr SHARED
   MultiSum.ispc
   MultiSum.cpp
 
+  ChomboVolume.cpp
+  ChomboVolume.ispc
+
   MSNearestNeighbor.ispc
   MSCurrentLevel.ispc
   MSFinestLevel.ispc

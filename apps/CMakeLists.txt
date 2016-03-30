@@ -48,3 +48,29 @@ ADD_EXECUTABLE(ospChombo2Raw
 TARGET_LINK_LIBRARIES(ospChombo2Raw
   ospray_sg_amr
   )
+
+# -----------------------------------------------------
+# experimental chombo reader (hack)
+# -----------------------------------------------------
+option(OSPRAY_MODULE_AMR_CHOMBO "AMR Chombo file reader" OFF)
+if (OSPRAY_MODULE_AMR_CHOMBO)
+  set(CHOMBO_BOXTOOLS_LIBRARY "CHOMBO_BOXTOOLS_LIBRARY_NOTFOUND" CACHE FILEPATH "chombo boxtools library")
+  set(CHOMBO_BASETOOLS_LIBRARY "CHOMBO_BASETOOLS_LIBRARY_NOTFOUND" CACHE FILEPATH "chombo basetools library")
+  set(CHOMBO_AMRTOOLS_LIBRARY "CHOMBO_AMRTOOLS_LIBRARY_NOTFOUND" CACHE FILEPATH "chombo amr library")
+  set(CHOMBO_INCLUDE "CHOMBO_INCLUDE_NOTFOUND" CACHE PATH "chombo include")
+
+  if(${CHOMBO_INCLUDE} STREQUAL "CHOMBO_INCLUDE_NOTFOUND")
+    message(ERROR "Please set CHOMBO_* to built 3D chombo library")
+  endif()
+
+  find_package(HDF5 REQUIRED)
+
+  include_directories(${CHOMBO_INCLUDE} ${HDF5_INCLUDE_DIRS})
+
+  add_executable(chombo2oamr chombo2oamr.cpp)
+  target_link_libraries(chombo2oamr
+    ${CHOMBO_BOXTOOLS_LIBRARY}
+    ${CHOMBO_BASETOOLS_LIBRARY}
+    ${CHOMBO_AMRTOOLS_LIBRARY}
+	${HDF5_LIBRARIES})
+endif()
