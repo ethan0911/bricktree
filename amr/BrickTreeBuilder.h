@@ -29,6 +29,7 @@ namespace ospray {
     template<int N, typename T>
     struct BrickTreeBuilder : public BrickTree<N,T>::Builder {
       BrickTreeBuilder();
+      ~BrickTreeBuilder();
 
 #ifdef PARALLEL_MULTI_TREE_BUILD
       std::mutex mutex;
