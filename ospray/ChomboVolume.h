@@ -94,8 +94,8 @@ namespace ospray {
           exactly one brick per level, in sorted order */
         struct Node {
           // first dword
-          uint32 dim:2;  // upper two bits: split dimension. '3' means 'leaf
           uint32 ofs:30; // offset in node[] array (if inner), or brick ID (if leaf)
+          uint32 dim:2;  // upper two bits: split dimension. '3' means 'leaf
           // second dword
           union {
             float pos;

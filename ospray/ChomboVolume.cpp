@@ -40,8 +40,14 @@ namespace ospray {
       node[nodeID].dim = 3; 
       node[nodeID].ofs = item.size(); 
       node[nodeID].numItems = brick.size();
+#if 1
+      // push bricks in reverse order, so the finest level comes first
+      for (int i=0;i<brick.size();i++)
+        item.push_back(brick[brick.size()-1-i]);
+#else
       for (int i=0;i<brick.size();i++)
         item.push_back(brick[i]);
+#endif
     }
     
     void Chombo::KDTree::makeInner(index_t nodeID, int dim, float pos, int childID) 
@@ -201,18 +207,20 @@ namespace ospray {
       assert(brickInfoData);
       numBricks = brickInfoData->numBytes / sizeof(BrickInfo);
       cout << "#osp:chom: making bricks - found " << numBricks << " brick infos" << endl;
-
       brickArray = new Brick[numBricks];
+
+      Data **allBricksData = (Data **)brickDataData->data;
+
       for (int i=0;i<numBricks;i++) {
         Brick *brick = brickArray+i;
         BrickInfo *info = (BrickInfo*)brickInfoData->data + i;
-
+        Data      *thisBrickData = allBricksData[i];
         // copy values
         brick->box = info->box;
         brick->level = info->level;
         brick->cellWidth = info->cellWidth;
 
-        brick->value = (float*)((Ref<Data> *)brickDataData->data)[i].ptr;
+        brick->value = (float*)thisBrickData->data;
         brick->dims  = brick->box.size() + vec3i(1);
         brick->gridToWorldScale = 1.f/brick->cellWidth;
         brick->bounds = box3f(vec3f(brick->box.lower) * brick->cellWidth, 

@@ -84,6 +84,8 @@ namespace ospray {
             = &level->data[0]
             + level->offsets[brickID]
             + componentID * bi.size().product();
+
+          //          cout << "sg side: double[0] of brick " << brickID << " is " << *inPtr << endl;
           
           amr::ActualArray3D<float> brickData(bi.size());
 

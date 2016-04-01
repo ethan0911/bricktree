@@ -26,6 +26,15 @@
 // embree
 #include "embree2/rtcore.isph"
 
+struct CellRef{
+  //! lower left front position, in unit grid space
+  vec3f pos;
+  // width of cell, also doubles as level indicator 
+  float cellWidth; 
+  // ID of the kd-tree's leaf node that we hit
+  int leafID;
+};
+
 /*! plainest, dumbest way of reconstructing: find the given leaf cell,
     and return the value */
 extern varying float Chombo_nearestNeighbor(void *uniform _self, 
@@ -34,15 +43,62 @@ extern varying float Chombo_nearestNeighbor(void *uniform _self,
   Chombo *uniform self = (Chombo *)_self;
   // for now, let's assume the world-space position already IS in grid space
   const vec3f gridPos = worldSpacePos;
-  float pos[3];
-  pos[0] = gridPos.x;
-  pos[1] = gridPos.y;
-  pos[2] = gridPos.z;
-  
-  if (getPos(self->node[0]) > pos[getDim(self->node[0])])
-    return .3f;
-  else
-    return .7f;
+  float samplePos[3];
+  samplePos[0] = gridPos.x;
+  samplePos[1] = gridPos.y;
+  samplePos[2] = gridPos.z;
+
+#if 1
+  uniform uint32 nodeStack[64];
+  varying bool activeStack[64];
+  nodeStack[0] = 0;
+  unmasked { activeStack[0] = false; }
+  activeStack[0] = true;
+  uniform uint32 stackPtr = 1;
+  while (stackPtr > 0) {
+    --stackPtr;
+    if (!activeStack[stackPtr]) continue;
+    const uniform nodeID = nodeStack[stackPtr];
+    const uniform KDTreeNode &node = self->node[nodeID];
+    if (isLeaf(node)) {
+      const ChomboBrick *uniform brick = self->item[getOfs(node)];
+      const vec3f relBrickPos
+        = (worldSpacePos - brick->bounds.lower)
+        * rcp(brick->bounds.upper - brick->bounds.lower);
+      // brick coords: integer cell coordinates inside brick
+      const vec3i bc = make_vec3i(relBrickPos * make_vec3f(brick->dims));
+      // clamped brick coordinates
+      const vec3i cbc = max(make_vec3i(0),min(bc,brick->dims-make_vec3i(1)));
+      return brick->value[cbc.x + brick->dims.x*(cbc.y+brick->dims.y*(cbc.z))];
+    } else {
+      const uniform uint32 childID = getOfs(node);
+      if (samplePos[getDim(node)] >= getPos(node)) {
+        unmasked { activeStack[stackPtr] = 0; }
+        nodeStack[stackPtr] = childID+1;
+        activeStack[stackPtr] = 1;
+        stackPtr++;
+      } else {
+        unmasked { activeStack[stackPtr] = 0; }
+        nodeStack[stackPtr] = childID;
+        activeStack[stackPtr] = 1;
+        stackPtr++;
+      }
+    }
+  }
+#else
+  uint32 nodeID=0;
+  while (1) {
+    const KDTreeNode node = self->node[nodeID];
+    if (isLeaf(node)) {
+      return ((getOfs(node) * 13 * 17 * 23) % 128) / 127.f;
+      break;
+    } else {
+      nodeID = getOfs(node);
+      if (samplePos[getDim(node)] >= getPos(node))
+        nodeID++;
+    }
+  }
+#endif
 }
 
 //! The gradient at the given sample location in world coordinates.
