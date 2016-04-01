@@ -43,14 +43,14 @@ namespace ospray {
 
     void ChomboVolume::parseChomboFile(const FileName &fileName)
     {
-      assert(level.empty());
-      level = ospray::chombo::parseChombo(fileName);
-      assert(!level.empty());
+      assert(chombo == NULL);
+      chombo = ospray::chombo::Chombo::parse(fileName);
+      assert(!chombo->level.empty());
 
-      cout << "parsed chombo hdf5 file, found " << level.size() << " levels" << endl;
+      cout << "parsed chombo hdf5 file, found " << chombo->level.size() << " levels" << endl;
       box3i rootLevelBounds = empty;
-      for (int i=0;i<level[0]->boxes.size();i++)
-        rootLevelBounds.extend(level[0]->boxes[i]);
+      for (int i=0;i<chombo->level[0]->boxes.size();i++)
+        rootLevelBounds.extend(chombo->level[0]->boxes[i]);
       cout << "root level has bounds of " << rootLevelBounds << endl;
       assert(rootLevelBounds.lower == vec3i(0));
       rootGridSize = rootLevelBounds.upper;
@@ -69,8 +69,8 @@ namespace ospray {
       cout << "-------------------------------------------------------" << endl;
       cout << "#sg:chom: rendering chombo data ..." << endl;
       Range<float> valueRange = empty;
-      for (int levelID=0;levelID<level.size();levelID++) {
-        const chombo::Level *level = this->level[levelID];
+      for (int levelID=0;levelID<chombo->level.size();levelID++) {
+        const chombo::Level *level = this->chombo->level[levelID];
         cout << " - level: " << levelID << " : " << level->boxes.size() << " boxes" << endl;
         for (int brickID=0;brickID<level->boxes.size();brickID++) {
           BrickInfo bi;
@@ -85,8 +85,6 @@ namespace ospray {
             + level->offsets[brickID]
             + componentID * bi.size().product();
 
-          //          cout << "sg side: double[0] of brick " << brickID << " is " << *inPtr << endl;
-          
           amr::ActualArray3D<float> brickData(bi.size());
 
           for (int iz=0;iz<brickData.size().z;iz++)

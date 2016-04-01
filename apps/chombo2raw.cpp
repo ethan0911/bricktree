@@ -27,7 +27,7 @@ namespace ospray {
     using std::endl;
     using std::cout;
 
-    std::vector<chombo::Level *> chombo;
+    chombo::Chombo *chombo = NULL;
     vec3i rootGridDims;
     Range<float> range = empty;
 
@@ -48,8 +48,8 @@ namespace ospray {
     float resample(const vec3f unitPos)
     {
       float f = 0.f;
-      for (int levelID=0;levelID<chombo.size();levelID++) {
-        chombo::Level *l = chombo[levelID];
+      for (int levelID=0;levelID<chombo->level.size();levelID++) {
+        chombo::Level *l = chombo->level[levelID];
         vec3i localPos = vec3i(unitPos * vec3f(rootGridDims) / (float)l->dt);
         for (int i=0;i<l->boxes.size();i++) {
           if (l->boxes[i].contains(localPos)) {
@@ -99,19 +99,16 @@ namespace ospray {
       if (fileName == "")
         error("no input file specified");
       
-      chombo = chombo::parseChombo(fileName);
-      PRINT(fileName);
+      chombo = chombo::Chombo::parse(fileName);
       rootGridDims = vec3i(0);
-      for (int i=0;i<chombo[0]->boxes.size();i++)
-        rootGridDims = max(rootGridDims,chombo[0]->boxes[i].upper);
+      for (int i=0;i<chombo->level[0]->boxes.size();i++)
+        rootGridDims = max(rootGridDims,chombo->level[0]->boxes[i].upper);
       rootGridDims = rootGridDims;
       rootGridDims += vec3i(1);
-      PRINT(rootGridDims);
 
-      for (int l=0;l<chombo.size();l++)
-        for (int i=0;i<chombo[l]->data.size();i++)
-          range.extend(chombo[l]->data[i]);
-      PRINT(range);
+      for (int l=0;l<chombo->level.size();l++)
+        for (int i=0;i<chombo->level[l]->data.size();i++)
+          range.extend(chombo->level[l]->data[i]);
 
       amr::ActualArray3D<float> raw(dims);
       for (int iz=0;iz<dims.z;iz++)

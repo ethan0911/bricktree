@@ -25,7 +25,7 @@ namespace ospray {
   namespace sg {
 
     struct ChomboVolume : public Volume {
-      ChomboVolume() : ospVolume(NULL), componentID(0) {}
+      ChomboVolume() : ospVolume(NULL), chombo(NULL), componentID(0) {}
 
       /*! \brief returns a std::string with the c++ name of this class */
       virtual    std::string toString() const
@@ -49,7 +49,8 @@ namespace ospray {
       // this is the data we're parsing from the chombo file
       // ------------------------------------------------------------------
       vec3i rootGridSize;
-      std::vector<chombo::Level *> level;
+      // std::vector<chombo::Level *> level;
+      chombo::Chombo *chombo;
 
       // ------------------------------------------------------------------
       // this is the way we're passing over the data. for each input

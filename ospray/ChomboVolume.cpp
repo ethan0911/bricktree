@@ -257,6 +257,7 @@ namespace ospray {
                              (ispc::vec3i&)rootGridDims,
                              brickArray,
                              &kdTree.node[0],
+                             kdTree.node.size(),
                              &kdTree.item[0]);
       cout << "#osp:chom: done building chombo volume" << endl;
     }

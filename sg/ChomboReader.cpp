@@ -98,7 +98,7 @@ namespace ospray {
       H5Dclose(data);
     }
 
-    void parse(hid_t file, Level *level)
+    void parseLevel(hid_t file, Level *level)
     {
       parseBoxes(file, level);
       parseData(file, level);
@@ -111,18 +111,48 @@ namespace ospray {
       H5Aclose(attr_dt);
     }
 
-    std::vector<Level *> parseChombo(const std::string fileName)
+    Chombo *Chombo::parse(const std::string &fileName)
     {
+      Chombo *cd = new Chombo;
+
       hid_t file = H5Fopen(fileName.c_str(),H5F_ACC_RDONLY,H5P_DEFAULT);
       if (!file) 
         throw std::runtime_error("could not open Chombo HDF file '"+fileName+"'");
 
+      // read components ...
+      int numComponents = -1;
+      {
+        hid_t attr_num_components
+          = H5Aopen_by_name(file, "/", "num_components", H5P_DEFAULT,H5P_DEFAULT);
+        H5Aread(attr_num_components, H5T_NATIVE_INT, &numComponents);
+        H5Aclose(attr_num_components);
+      }
+      for (int i=0;i<numComponents;i++) {
+        {
+          char compName[10000];
+          sprintf(compName,"component_%i",i);
+
+          hid_t att = H5Aopen_name(file, compName);
+          hid_t ftype = H5Aget_type(att);
+          hid_t type_class = H5Tget_class (ftype);   
+          assert (type_class == H5T_STRING);
+
+          size_t len = H5Tget_size(ftype);
+          char comp[len+1];
+          comp[len] = 0;
+          
+          hid_t type = H5Tget_native_type(ftype, H5T_DIR_ASCEND);
+          H5Aread(att, type, comp);
+          H5Aclose(att);
+
+          cout << "found component '" << comp << "'" << endl;
+          cd->component.push_back(comp);
+        }
+      }
       
       unsigned long long numObjectsInFile;
       H5Gget_num_objs(file, &numObjectsInFile);
       // PRINT(numObjectsInFile);
-
-      std::vector<Level *> result;
 
       for (int objID=0;objID<numObjectsInFile;objID++) {
         const int MAX_NAME_SIZE=1000;
@@ -140,12 +170,12 @@ namespace ospray {
           throw std::runtime_error("could not parse level ID");
         
         Level *level = new Level(levelID);
-        parse(file, level);
-        result.push_back(level);
+        parseLevel(file, level);
+        cd->level.push_back(level);
       }
 
       H5Fclose(file);
-      return result;
+      return cd;
     }
 
   }

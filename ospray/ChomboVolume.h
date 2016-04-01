@@ -117,6 +117,7 @@ namespace ospray {
       size_t numBricks;
       Brick *brickArray;
       KDTree kdTree;
+      Range<float> *rangeOfKDTreeNode;
     };
     
   }

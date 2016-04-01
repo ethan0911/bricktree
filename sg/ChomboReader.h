@@ -37,7 +37,14 @@ namespace ospray {
       std::vector<int>    offsets;
       std::vector<double> data;
     };
-    
-    std::vector<Level *> parseChombo(const std::string fileName);
+
+    struct Chombo {
+      std::vector<Level *>     level;
+      //! array of component names
+      std::vector<std::string> component;
+
+      static Chombo *parse(const std::string &fileName);
+    };
+
   }
 }

@@ -108,7 +108,16 @@ struct Chombo {
     are the bricks stored at this leaf */
   ChomboBrick *uniform *uniform item;
   KDTreeNode           *uniform node;
+  uniform uint32 numNodes;
 
   vec3i rootGridDims;
+  
+  //! bounding box in unit grid space
+  box3f bounds;
   // float finestCellWidth;
+
+  /*! nodeValueRange[i] is the complete value range for any possible
+    sample that might fall into the bounding box of the kd tree node
+    node[i] */
+  box1f *nodeRange;
 };
