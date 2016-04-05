@@ -30,10 +30,6 @@ namespace ospray {
     struct BrickTreeBuilder : public BrickTree<N,T>::Builder {
       BrickTreeBuilder();
       ~BrickTreeBuilder();
-<<<<<<< HEAD
-=======
-
->>>>>>> c4aebbc8532b4a6427adc95840bd8fb2af760a9c
 #ifdef PARALLEL_MULTI_TREE_BUILD
       std::mutex mutex;
 #endif
