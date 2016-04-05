@@ -29,7 +29,7 @@ namespace ospray {
     template<int N, typename T>
     struct BrickTreeBuilder : public BrickTree<N,T>::Builder {
       BrickTreeBuilder();
-
+      ~BrickTreeBuilder();
 #ifdef PARALLEL_MULTI_TREE_BUILD
       std::mutex mutex;
 #endif
@@ -54,7 +54,7 @@ namespace ospray {
 
       /*! be done with the build, and save all data to the xml/bin
         file of 'fileName' and 'filename+"bin"' */
-      virtual void save(const std::string &ospFileName, const vec3f &clipBoxSize);
+      virtual void save(const std::string &ospFileName, const vec3f &clipBoxSize) override;
 
       int maxLevel;
     };
@@ -71,7 +71,7 @@ namespace ospray {
 
       /*! be done with the build, and save all data to the xml/bin
         file of 'fileName' and 'filename+"bin"' */
-      virtual void save(const std::string &ospFileName, const vec3f &clipBoxSize);
+      virtual void save(const std::string &ospFileName, const vec3f &clipBoxSize) override;
 
       // const ActualArray3D<BrickTreeBuilder<N,T> *> *getRootGrid() const
       // { return rootGrid; } 
