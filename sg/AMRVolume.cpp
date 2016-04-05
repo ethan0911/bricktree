@@ -17,14 +17,11 @@
 /*! \file sg/volume/Tumes.cpp Scene Graph Importer Plugin for Neuromorpho SWC files */
 
 #undef NDEBUG
-// ospray
-// ospray/sg
-#include "AMRVolume.h"
-// #include "sg/common/Node.h"
-// #include "sg/common/Integrator.h"
-// #include "sg/module/Module.h"
 
-// #include "amr/Sumerian.h"
+// ours
+#include "AMRVolume.h"
+// ospray/sg
+#include "sg/importer/Importer.h"
 	 
 namespace ospray {
   namespace sg {
@@ -117,9 +114,16 @@ namespace ospray {
     // OSP_REGISTER_SG_NODE(MultiOctreeAMR);
     // OSP_REGISTER_SG_NODE(AMRVolume);
 
+    /*! prototype for any scene graph importer function */
+    void ChomboHDFImporter(const FileName &fileName,
+                           sg::ImportState &importerState);
+    
     OSPRAY_SG_DECLARE_MODULE(amr)
     {
       cout << "#osp:sg: loading 'mrbvolume' module (defines sg::MRBVolume type)" << endl;
+
+      /*! declare an importer function for a given file extension */
+      declareImporterForFileExtension("hdf5", ChomboHDFImporter);
     }
 
   }
