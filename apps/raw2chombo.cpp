@@ -68,6 +68,7 @@ namespace ospray {
       std::mutex progressMutex;
       std::atomic<size_t> numDone;
       int lastPercentagePinged;
+      double startTime;
       
       void progress() 
       {
@@ -78,7 +79,11 @@ namespace ospray {
           std::unique_lock<std::mutex> lock(progressMutex);
           if (myPercentage > lastPercentagePinged) {
             lastPercentagePinged = myPercentage;
-            printf("progress: %03d%%\n",myPercentage);
+            double myTime = getSysTime();
+            double timeElapsed = myTime - startTime;
+            double timeExpected = timeElapsed / (myPercentage * .01f);
+            double timeRemaining = timeExpected - timeElapsed;
+            printf("progress: %03d%% (time remaining %.2lfsec)\n",myPercentage,timeRemaining);
           }
         }
       }
@@ -166,6 +171,7 @@ namespace ospray {
     
     void Raw2Chombo::buildAll()
     {
+      startTime = getSysTime();
       size_t rootBS = blockSizeOf(0);
       vec3i rootDims = divRoundUp(input->size(),vec3i(rootBS));
       size_t numRootBlocks = rootDims.product();
@@ -232,11 +238,12 @@ namespace ospray {
       cout << "Usage" << endl;
       cout << "  ./ospRaw2Octree <inFile.raw> <args>" << endl;
       cout << "with args:" << endl;
-      cout << " -dims <nx> <ny> <nz>   : input dimensions" << endl;
+      cout << " -dims <nx> <ny> <nz>        : input dimensions" << endl;
       cout << " --format <uint8|float|double> : input voxel format" << endl;
-      cout << " --depth <maxlevels>    : use maxlevels octree refinement levels" << endl;
-      cout << " -o <outfilename.xml>   : output file name" << endl;
-      cout << " -t <threshold>         : threshold of which nodes to split or not (ABSOLUTE float val)" << endl;
+      cout << " --depth|-ml <maxlevels>     : use maxlevels octree refinement levels" << endl;
+      cout << " --blockSize|-bs <blockSize> : specify 'refinement' blocksize" << endl;
+      cout << " -o <outfilename.xml>        : output file name" << endl;
+      cout << " --threshold|-t <threshold>  : threshold of which nodes to split or not (ABSOLUTE float val)" << endl;
       exit(msg != "");
     }
 
