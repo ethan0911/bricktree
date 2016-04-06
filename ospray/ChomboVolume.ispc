@@ -30,7 +30,9 @@
 extern varying float Chombo_nearestNeighbor(void *uniform _self, 
                                             const varying vec3f &worldSpacePos)
 {
-  Chombo *uniform self = (Chombo *)_self;
+  ChomboVolume *uniform self = (ChomboVolume *)_self;
+  Chombo *uniform chom = &self->chombo;
+  
   // for now, let's assume the world-space position already IS in grid space
   const vec3f gridPos = worldSpacePos;
   float samplePos[3];
@@ -49,9 +51,10 @@ extern varying float Chombo_nearestNeighbor(void *uniform _self,
     --stackPtr;
     if (!activeStack[stackPtr]) continue;
     const uniform nodeID = nodeStack[stackPtr];
-    const uniform KDTreeNode &node = self->node[nodeID];
+    
+    const uniform KDTreeNode &node = chom->node[nodeID];
     if (isLeaf(node)) {
-      const ChomboBrick *uniform brick = self->item[getOfs(node)];
+      const ChomboBrick *uniform brick = chom->item[getOfs(node)];
       const vec3f relBrickPos
         = (worldSpacePos - brick->bounds.lower)
         * rcp(brick->bounds.upper - brick->bounds.lower);
@@ -78,7 +81,7 @@ extern varying float Chombo_nearestNeighbor(void *uniform _self,
 #else
   uint32 nodeID=0;
   while (1) {
-    const KDTreeNode node = self->node[nodeID];
+    const KDTreeNode node = chom->node[nodeID];
     if (isLeaf(node)) {
       return ((getOfs(node) * 13 * 17 * 23) % 128) / 127.f;
       break;
@@ -91,31 +94,31 @@ extern varying float Chombo_nearestNeighbor(void *uniform _self,
 #endif
 }
 
-void buildNodeRanges(Chombo *uniform self, 
-                     uniform int nodeID,
-                     const uniform box3f &bounds)
-{
-  const uniform KDTreeNode node = self->node[nodeID];
-  if (isLeaf(node)) {
-    self->nodeRange[nodeID] = make_box1f(0.f);
-  } else {
-    uniform box3f lBounds = bounds;
-    uniform box3f rBounds = bounds;
-    set(lBounds.upper,getDim(node),getPos(node));
-    set(rBounds.lower,getDim(node),getPos(node));
-    uniform uint32 childID = getOfs(node);
-    buildNodeRanges(self,childID+0,lBounds);
-    buildNodeRanges(self,childID+1,rBounds);
-    self->nodeRange[nodeID] = box_union(self->nodeRange[childID+0],
-                                        self->nodeRange[childID+1]);
-  }
-}
+// void buildNodeRanges(Chombo *uniform self, 
+//                      uniform int nodeID,
+//                      const uniform box3f &bounds)
+// {
+//   const uniform KDTreeNode node = self->node[nodeID];
+//   if (isLeaf(node)) {
+//     self->nodeRange[nodeID] = make_box1f(0.f);
+//   } else {
+//     uniform box3f lBounds = bounds;
+//     uniform box3f rBounds = bounds;
+//     set(lBounds.upper,getDim(node),getPos(node));
+//     set(rBounds.lower,getDim(node),getPos(node));
+//     uniform uint32 childID = getOfs(node);
+//     buildNodeRanges(self,childID+0,lBounds);
+//     buildNodeRanges(self,childID+1,rBounds);
+//     self->nodeRange[nodeID] = box_union(self->nodeRange[childID+0],
+//                                         self->nodeRange[childID+1]);
+//   }
+// }
 
-void buildNodeRanges(Chombo *uniform self)
-{
-  self->nodeRange = uniform new uniform box1f[self->numNodes];
-  buildNodeRanges(self,0,self->bounds);
-}
+// void buildNodeRanges(Chombo *uniform self)
+// {
+//   self->nodeRange = uniform new uniform box1f[self->numNodes];
+//   buildNodeRanges(self,0,self->bounds);
+// }
 
 
 //! The gradient at the given sample location in world coordinates.
@@ -176,7 +179,7 @@ export void ChomboVolume_set(void *uniform _self,
   self->super.computeSample    = &Chombo_nearestNeighbor;
 
 
-  self->chombo.brick           = (ChomboBrick  *)_brick_array;
+  // self->chombo.brick           = (ChomboBrick  *)_brick_array;
   self->chombo.node            = (KDTreeNode   *)_tree_node;
   self->chombo.numNodes        = numTreeNodes;
   self->chombo.item            = (ChomboBrick **)_tree_item;
@@ -184,6 +187,8 @@ export void ChomboVolume_set(void *uniform _self,
 
   self->chombo.bounds.lower    = make_vec3f(0);
   self->chombo.bounds.upper    = make_vec3f(rootGridDims);
+  print("#osp:amr: chombo volume set\n");
+  
   //  buildNodeRanges(self);
 }
 

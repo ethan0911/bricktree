@@ -20,12 +20,14 @@
 #include "sg/module/Module.h"
 // chombo
 #include "ChomboReader.h"
+// amr
+#include "amr/Array3D.h"
 	 
 namespace ospray {
   namespace sg {
 
     struct ChomboVolume : public Volume {
-      ChomboVolume() : ospVolume(NULL), chombo(NULL), componentID(0) {}
+      ChomboVolume() : ospVolume(NULL), chombo(NULL), componentID(0),valueRange(empty) {}
 
       /*! \brief returns a std::string with the c++ name of this class */
       virtual    std::string toString() const
@@ -70,11 +72,14 @@ namespace ospray {
         vec3i size() const { return box.size() + vec3i(1); }
       };
 
+
       // ID of the data component we want to render (each brick can
       // contain multiple components)
       int componentID;
+      Range<float> valueRange;
       std::vector<OSPData>   brickData;
       std::vector<BrickInfo> brickInfo;
+      std::vector<float *>   brickPtrs;
       OSPData brickInfoData;
       OSPData brickDataData;
       OSPVolume ospVolume;

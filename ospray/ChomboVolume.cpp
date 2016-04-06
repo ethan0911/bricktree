@@ -250,6 +250,8 @@ namespace ospray {
       }
       vec3i rootGridDims = rootLevelBox.size()+vec3i(1);
       cout << "#osp:chom: found root level dimensions of " << rootGridDims << endl;
+      PRINT(kdTree.node.size());
+      PRINT(kdTree.item.size());
       ispc::ChomboVolume_set(getIE(),
                              xf->getIE(),
                              (ispc::vec3i&)rootGridDims,
