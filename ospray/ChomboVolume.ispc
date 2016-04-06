@@ -140,8 +140,6 @@ extern varying float Chombo_octantMethodSimple(void *uniform _self,
   cell[1][1][0] = findLeafCell(chom,make_vec3f(pos.x,loc.y,loc.z));
   cell[1][1][1] = findLeafCell(chom,make_vec3f(loc.x,loc.y,loc.z));
 
-  return cell[1][1][1].value;
-
   const float dx = 2.f*abs(pos.x-leafCenter.x)/leaf.cellWidth;
   const float dy = 2.f*abs(pos.y-leafCenter.y)/leaf.cellWidth;
   const float dz = 2.f*abs(pos.z-leafCenter.z)/leaf.cellWidth;
@@ -164,7 +162,7 @@ extern varying float Chombo_octantMethodSimple(void *uniform _self,
   const float f1 = (1.f-dy)*f10+dy*f11;
 
   const float f = (1.f-dz)*f0+dz*f1;
-  return f00;
+  return f;
 }
 
 
