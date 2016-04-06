@@ -94,18 +94,18 @@ namespace ospray {
       return bs;
     }
 
-#if 1
+#if 0
     template<typename TASK_T>
-    inline void my_for(int begin, int end, int step, const TASK_T &t)
+    inline void for_all(int num, const TASK_T &t)
     {
-      for (int i=begin;i<end;i+=step)
+      for (int i=0;i<num;i++)
         t(i);
     }
 #else
     template<typename TASK_T>
-    inline void my_for(int begin, int end, int step, const TASK_T &t)
+    inline void for_all(int num, const TASK_T &t)
     {
-      tbb::parallel_for(begin,end,step,t);
+      tbb::parallel_for(0,num,1,t);
     }
 #endif
 
@@ -130,7 +130,7 @@ namespace ospray {
 
         SafeRange blockRange;
         // for (int cellID=0;cellID<bs*bs*bs;cellID++) {
-        my_for(0, bs*bs*bs, 1, [&](const int cellID) {
+        for_all(bs*bs*bs, [&](const int cellID) {
         // tbb::parallel_for(0, bs*bs*bs, 1, [&](const int cellID) {
             const vec3i cellIdx(cellID % bs, (cellID/bs)%bs, cellID/(bs*bs));
             brick[cellID] = buildBlock(bs * coord + cellIdx, level+1, blockRange);
@@ -170,13 +170,7 @@ namespace ospray {
       vec3i rootDims = divRoundUp(input->size(),vec3i(rootBS));
       size_t numRootBlocks = rootDims.product();
 
-      PING;
-      PRINT(maxLevel);
-      PRINT(rootBS);
-      PRINT(rootDims);
-      PRINT(numRootBlocks);
-
-      my_for(0, (int)numRootBlocks, 1, [&](int brickID) {
+      for_all((int)numRootBlocks, [&](int brickID) {
           vec3i rootID;
           rootID.x = brickID % rootDims.x;
           rootID.y = (brickID / rootDims.x) % rootDims.y;

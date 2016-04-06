@@ -38,7 +38,7 @@ namespace ospray {
       node[nodeID].dim = 3; 
       node[nodeID].ofs = item.size(); 
       node[nodeID].numItems = brick.size();
-#if 1
+#if 0
       // push bricks in reverse order, so the finest level comes first
       for (int i=0;i<brick.size();i++)
         item.push_back(brick[brick.size()-1-i]);
@@ -243,10 +243,12 @@ namespace ospray {
       makeBricks();
       kdTree.build(brickArray,numBricks);
 
+      float finestLevelCellWidth = brickArray[0].cellWidth;
       box3i rootLevelBox = empty;
       for (int i=0;i<numBricks;i++) {
         if (brickArray[i].level == 0)
           rootLevelBox.extend(brickArray[i].box);
+        finestLevelCellWidth = min(finestLevelCellWidth,brickArray[i].cellWidth);
       }
       vec3i rootGridDims = rootLevelBox.size()+vec3i(1);
       cout << "#osp:chom: found root level dimensions of " << rootGridDims << endl;
@@ -258,7 +260,8 @@ namespace ospray {
                              brickArray,
                              &kdTree.node[0],
                              kdTree.node.size(),
-                             &kdTree.item[0]);
+                             &kdTree.item[0],
+                             finestLevelCellWidth);
       cout << "#osp:chom: done building chombo volume" << endl;
     }
 

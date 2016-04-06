@@ -48,11 +48,13 @@ inline CellRef findLeafCell(Chombo *uniform self,
   CellRef ret;
   while (stackPtr > 0) {
     --stackPtr;
-    if (!activeStack[stackPtr]) continue;
+    if (!activeStack[stackPtr]) 
+      continue;
+
     const uniform nodeID = nodeStack[stackPtr];
     const uniform KDTreeNode &node = self->node[nodeID];
     if (isLeaf(node)) {
-      const ChomboBrick *uniform brick = self->item[getOfs(node)];
+      const ChomboBrick *uniform brick = self->item[getOfs(node)+getNumItems(node)-1];
       const vec3f relBrickPos
         = (worldSpacePos - brick->bounds.lower)
         * rcp(brick->bounds.upper - brick->bounds.lower);
@@ -61,7 +63,8 @@ inline CellRef findLeafCell(Chombo *uniform self,
       // clamped brick coordinates
       const vec3i cbc = max(make_vec3i(0),min(bc,brick->dims-make_vec3i(1)));
       ret.nodeID = nodeID;
-      ret.value = brick->value[cbc.x + brick->dims.x*(cbc.y+brick->dims.y*(cbc.z))];
+      int idx = cbc.x + brick->dims.x*(cbc.y+brick->dims.y*(cbc.z));
+      ret.value = brick->value[idx];
       return ret;
     } else {
       const uniform uint32 childID = getOfs(node);

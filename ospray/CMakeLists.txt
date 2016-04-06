@@ -3,8 +3,8 @@
 
 
 OSPRAY_ADD_LIBRARY(ospray_module_amr SHARED
-	ModuleInit.cpp
-
+  ModuleInit.cpp
+  
   ChomboVolume.cpp
   ChomboVolume.ispc
   )

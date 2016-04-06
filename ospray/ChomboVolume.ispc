@@ -35,90 +35,65 @@ extern varying float Chombo_nearestNeighbor(void *uniform _self,
   
   // for now, let's assume the world-space position already IS in grid space
   const vec3f gridPos = worldSpacePos;
-  float samplePos[3];
-  samplePos[0] = gridPos.x;
-  samplePos[1] = gridPos.y;
-  samplePos[2] = gridPos.z;
-
-#if 1
-  uniform uint32 nodeStack[64];
-  varying bool activeStack[64];
-  nodeStack[0] = 0;
-  unmasked { activeStack[0] = false; }
-  activeStack[0] = true;
-  uniform uint32 stackPtr = 1;
-  while (stackPtr > 0) {
-    --stackPtr;
-    if (!activeStack[stackPtr]) continue;
-    const uniform nodeID = nodeStack[stackPtr];
-    
-    const uniform KDTreeNode &node = chom->node[nodeID];
-    if (isLeaf(node)) {
-      const ChomboBrick *uniform brick = chom->item[getOfs(node)];
-      const vec3f relBrickPos
-        = (worldSpacePos - brick->bounds.lower)
-        * rcp(brick->bounds.upper - brick->bounds.lower);
-      // brick coords: integer cell coordinates inside brick
-      const vec3i bc = make_vec3i(relBrickPos * make_vec3f(brick->dims));
-      // clamped brick coordinates
-      const vec3i cbc = max(make_vec3i(0),min(bc,brick->dims-make_vec3i(1)));
-      return brick->value[cbc.x + brick->dims.x*(cbc.y+brick->dims.y*(cbc.z))];
-    } else {
-      const uniform uint32 childID = getOfs(node);
-      if (samplePos[getDim(node)] >= getPos(node)) {
-        unmasked { activeStack[stackPtr] = 0; }
-        nodeStack[stackPtr] = childID+1;
-        activeStack[stackPtr] = 1;
-        stackPtr++;
-      } else {
-        unmasked { activeStack[stackPtr] = 0; }
-        nodeStack[stackPtr] = childID;
-        activeStack[stackPtr] = 1;
-        stackPtr++;
-      }
-    }
-  }
-#else
-  uint32 nodeID=0;
-  while (1) {
-    const KDTreeNode node = chom->node[nodeID];
-    if (isLeaf(node)) {
-      return ((getOfs(node) * 13 * 17 * 23) % 128) / 127.f;
-      break;
-    } else {
-      nodeID = getOfs(node);
-      if (samplePos[getDim(node)] >= getPos(node))
-        nodeID++;
-    }
-  }
-#endif
+  CellRef leaf = findLeafCell(chom,gridPos);
+  return leaf.value;
 }
 
-// void buildNodeRanges(Chombo *uniform self, 
-//                      uniform int nodeID,
-//                      const uniform box3f &bounds)
-// {
-//   const uniform KDTreeNode node = self->node[nodeID];
-//   if (isLeaf(node)) {
-//     self->nodeRange[nodeID] = make_box1f(0.f);
-//   } else {
-//     uniform box3f lBounds = bounds;
-//     uniform box3f rBounds = bounds;
-//     set(lBounds.upper,getDim(node),getPos(node));
-//     set(rBounds.lower,getDim(node),getPos(node));
-//     uniform uint32 childID = getOfs(node);
-//     buildNodeRanges(self,childID+0,lBounds);
-//     buildNodeRanges(self,childID+1,rBounds);
-//     self->nodeRange[nodeID] = box_union(self->nodeRange[childID+0],
-//                                         self->nodeRange[childID+1]);
-//   }
-// }
+/*! interpolate on the finest level */
+extern varying float Chombo_lerpOnFinestLevel(void *uniform _self, 
+                                              const varying vec3f &worldSpacePos)
+{
+  ChomboVolume *uniform self = (ChomboVolume *)_self;
+  Chombo *uniform chom = &self->chombo;
+  
+  // for now, let's assume the world-space position already IS in grid space
+  const vec3f pos = worldSpacePos;
 
-// void buildNodeRanges(Chombo *uniform self)
-// {
-//   self->nodeRange = uniform new uniform box1f[self->numNodes];
-//   buildNodeRanges(self,0,self->bounds);
-// }
+  const float cw = chom->finestLevelCellWidth;
+  const float hcw = 0.5f * cw;
+
+  // translate to grid space on finest grid level
+  const float fx = (pos.x-hcw)/cw;
+  const float fy = (pos.y-hcw)/cw;
+  const float fz = (pos.z-hcw)/cw;
+
+  const float x0 = (pos.x <= hcw) ? -1.f : (float)(int)(fx);
+  const float y0 = (pos.y <= hcw) ? -1.f : (float)(int)(fy);
+  const float z0 = (pos.z <= hcw) ? -1.f : (float)(int)(fz);
+
+  const CellRef c000 = findLeafCell(chom,(make_vec3f(x0,y0,z0)+make_vec3f(0.5f,0.5f,0.5f))*cw);
+  const CellRef c001 = findLeafCell(chom,(make_vec3f(x0,y0,z0)+make_vec3f(1.5f,0.5f,0.5f))*cw);
+  const CellRef c010 = findLeafCell(chom,(make_vec3f(x0,y0,z0)+make_vec3f(0.5f,1.5f,0.5f))*cw);
+  const CellRef c011 = findLeafCell(chom,(make_vec3f(x0,y0,z0)+make_vec3f(1.5f,1.5f,0.5f))*cw);
+  const CellRef c100 = findLeafCell(chom,(make_vec3f(x0,y0,z0)+make_vec3f(0.5f,0.5f,1.5f))*cw);
+  const CellRef c101 = findLeafCell(chom,(make_vec3f(x0,y0,z0)+make_vec3f(1.5f,0.5f,1.5f))*cw);
+  const CellRef c110 = findLeafCell(chom,(make_vec3f(x0,y0,z0)+make_vec3f(0.5f,1.5f,1.5f))*cw);
+  const CellRef c111 = findLeafCell(chom,(make_vec3f(x0,y0,z0)+make_vec3f(1.5f,1.5f,1.5f))*cw);
+
+  const float dx = fx - x0;
+  const float dy = fy - y0;
+  const float dz = fz - z0;
+
+  const float f000 = c000.value;
+  const float f001 = c001.value;
+  const float f010 = c010.value;
+  const float f011 = c011.value;
+  const float f100 = c100.value;
+  const float f101 = c101.value;
+  const float f110 = c110.value;
+  const float f111 = c111.value;
+  
+  const float f00 = (1.f-dx)*f000 + dx*f001;
+  const float f01 = (1.f-dx)*f010 + dx*f011;
+  const float f10 = (1.f-dx)*f100 + dx*f101;
+  const float f11 = (1.f-dx)*f110 + dx*f111;
+
+  const float f0 = (1.f-dy)*f00+dy*f01;
+  const float f1 = (1.f-dy)*f10+dy*f11;
+
+  const float f = (1.f-dz)*f0+dz*f1;
+  return f00;
+}
 
 
 //! The gradient at the given sample location in world coordinates.
@@ -156,7 +131,8 @@ export void ChomboVolume_set(void *uniform _self,
                              void *uniform _brick_array,
                              void *uniform _tree_node,
                              uniform int32 numTreeNodes,
-                             void *uniform _tree_item)
+                             void *uniform _tree_item,
+                             uniform float finestLevelCellWidth)
 {
   ChomboVolume *uniform self = (ChomboVolume *uniform)_self;
   assert(self);
@@ -168,7 +144,7 @@ export void ChomboVolume_set(void *uniform _self,
   self->super.volumeClippingBox.upper = make_vec3f(rootGridDims); 
   
   self->super.samplingRate = 1.f;//samplingRate;
-  self->super.samplingStep = .1f;
+  self->super.samplingStep = 1.f; //.1f;
 
   self->super.gradientShadingEnabled = 0;
 
@@ -176,8 +152,11 @@ export void ChomboVolume_set(void *uniform _self,
 
   self->super.intersect        = &Chombo_intersect;
   self->super.computeGradient  = &Chombo_gradient;
+#if 1
+  self->super.computeSample    = &Chombo_lerpOnFinestLevel;
+#else
   self->super.computeSample    = &Chombo_nearestNeighbor;
-
+#endif
 
   // self->chombo.brick           = (ChomboBrick  *)_brick_array;
   self->chombo.node            = (KDTreeNode   *)_tree_node;
@@ -187,6 +166,7 @@ export void ChomboVolume_set(void *uniform _self,
 
   self->chombo.bounds.lower    = make_vec3f(0);
   self->chombo.bounds.upper    = make_vec3f(rootGridDims);
+  self->chombo.finestLevelCellWidth = finestLevelCellWidth;
   print("#osp:amr: chombo volume set\n");
   
   //  buildNodeRanges(self);

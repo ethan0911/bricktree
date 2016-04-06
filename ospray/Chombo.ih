@@ -56,6 +56,7 @@ struct Chombo {
   ChomboBrick *uniform *uniform item;
   KDTreeNode           *uniform node;
   uniform uint32 numNodes;
+  uniform float finestLevelCellWidth;
 
   vec3i rootGridDims;
   

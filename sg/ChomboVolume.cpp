@@ -216,6 +216,7 @@ namespace ospray {
             BrickInfo bi;
             bi.box.lower = coord;
             bi.box.upper = coord + vec3i(bs-1);
+            bi.level = level;
             bi.dt = dt;
             if (level == 0)
               rootGridSize = max(rootGridSize,bi.box.upper+vec3i(1));
