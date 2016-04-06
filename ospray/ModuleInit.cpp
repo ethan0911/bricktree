@@ -14,17 +14,19 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-// ours
-#include "Chombo.ih"
 // ospray
-#include "ospray/volume/Volume.ih"
+#include "ospray/common/Model.h"
 
-struct ChomboVolume 
-{
-  Volume super; //!< inherited from superclass
-  Chombo chombo;
-};
+namespace ospray {
+  namespace amr {
+    using std::endl;
+    using std::cout;
+    using std::ostream;
+    using std::flush;
 
-
+    extern "C" void ospray_init_module_amr()
+    {
+      std::cout << "#amr: initializing ospray amr plugin" << std::endl;
+    }
+  }
+} // ::ospray

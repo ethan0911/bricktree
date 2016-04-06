@@ -1,0 +1,83 @@
+// ======================================================================== //
+// Copyright 2009-2015 Intel Corporation                                    //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
+// ours
+#include "ChomboVolume.ih"
+
+/*! a reference to a given cell on a given level; this is what a 'node location' kernel will return */
+struct CellRef {
+  //! lower left front position, in unit grid space
+  vec3f pos;
+  //! width of cell, also doubles as level indicator 
+  float cellWidth; 
+  //! ID of the kd-tree's leaf node that we hit
+  int nodeID;
+  //! value at this cell
+  float value;
+};
+
+inline CellRef findLeafCell(Chombo *uniform self,
+                            const varying vec3f &worldSpacePos)
+{
+  const vec3f gridPos = worldSpacePos;
+  float samplePos[3];
+  samplePos[0] = gridPos.x;
+  samplePos[1] = gridPos.y;
+  samplePos[2] = gridPos.z;
+
+  uniform uint32 nodeStack[16];
+  varying bool activeStack[16];
+  nodeStack[0] = 0;
+  unmasked { activeStack[0] = false; }
+  activeStack[0] = true;
+  uniform uint32 stackPtr = 1;
+
+  CellRef ret;
+  while (stackPtr > 0) {
+    --stackPtr;
+    if (!activeStack[stackPtr]) continue;
+    const uniform nodeID = nodeStack[stackPtr];
+    const uniform KDTreeNode &node = self->node[nodeID];
+    if (isLeaf(node)) {
+      const ChomboBrick *uniform brick = self->item[getOfs(node)];
+      const vec3f relBrickPos
+        = (worldSpacePos - brick->bounds.lower)
+        * rcp(brick->bounds.upper - brick->bounds.lower);
+      // brick coords: integer cell coordinates inside brick
+      const vec3i bc = make_vec3i(relBrickPos * make_vec3f(brick->dims));
+      // clamped brick coordinates
+      const vec3i cbc = max(make_vec3i(0),min(bc,brick->dims-make_vec3i(1)));
+      ret.nodeID = nodeID;
+      ret.value = brick->value[cbc.x + brick->dims.x*(cbc.y+brick->dims.y*(cbc.z))];
+      return ret;
+    } else {
+      const uniform uint32 childID = getOfs(node);
+      if (samplePos[getDim(node)] >= getPos(node)) {
+        unmasked { activeStack[stackPtr] = 0; }
+        nodeStack[stackPtr] = childID+1;
+        activeStack[stackPtr] = 1;
+        stackPtr++;
+      } else {
+        unmasked { activeStack[stackPtr] = 0; }
+        nodeStack[stackPtr] = childID;
+        activeStack[stackPtr] = 1;
+        stackPtr++;
+      }
+    }
+  }
+}
+
+
