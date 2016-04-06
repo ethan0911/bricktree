@@ -1,6 +1,6 @@
 
 ADD_LIBRARY(ospray_sg_amr SHARED
-  AMRVolume.cpp
+  Importer.cpp
   ChomboReader.cpp
   ChomboVolume.cpp
   )
