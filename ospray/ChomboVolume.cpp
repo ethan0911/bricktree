@@ -19,8 +19,6 @@
 #include "ospray/common/Model.h"
 #include "ospray/common/Data.h"
 #include "ospray/transferFunction/TransferFunction.h"
-#include "../amr/Octree.h"
-// #include "ospray/common/Core.h"
 // ispc exports
 #include "ChomboVolume_ispc.h"
 // stl

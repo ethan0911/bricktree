@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 // ospray
-#include "AMR.h"
+#include "Array3D.h"
 // stdlib, for mmap
 #include <sys/types.h>
 #include <sys/stat.h>

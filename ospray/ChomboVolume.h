@@ -19,7 +19,7 @@
 // ospray
 #include "ospray/volume/Volume.h"
 // amr base
-#include "../amr/AMR.h"
+#include "../amr/Array3D.h"
 
 namespace ospray {
   namespace amr {

@@ -30,30 +30,26 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
   INCLUDE_DIRECTORIES(${OSPRAY_SG_SOURCE_DIR}/)
   INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
+  # -------------------------------------------------------
+  # common amr module infrastructure
+  # -------------------------------------------------------
   ADD_SUBDIRECTORY(amr)
 
-  # -------------------------------------------------------
-  # ospray plugin
-  # -------------------------------------------------------
-  ADD_SUBDIRECTORY(ospray)
-  
   IF(NOT THIS_IS_MIC)
-    # -----------------------------------------------------
-    # scene graph plugin
-    # -----------------------------------------------------
-    ADD_LIBRARY(ospray_sg_amr SHARED
-      sg/AMRVolume.cpp
-      sg/MultiOctree.cpp
-      sg/MultiSum.cpp
-      sg/ChomboReader.cpp
-      sg/ChomboVolume.cpp
-      )
-    OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_sg_amr
-      ospray_amr
-      ospray_sg
-      hdf5
-      )
-    ADD_SUBDIRECTORY(apps)
-  ENDIF()
+		# -------------------------------------------------------
+		# ospray plugin
+		# -------------------------------------------------------
+		ADD_SUBDIRECTORY(ospray)
+		
+		# -----------------------------------------------------
+		# scene graph plugin
+		# -----------------------------------------------------
+		ADD_SUBDIRECTORY(sg)
 
+		# -----------------------------------------------------
+		# scene graph plugin
+		# -----------------------------------------------------
+    ADD_SUBDIRECTORY(apps)
+	ENDIF()
+	
 ENDIF()
