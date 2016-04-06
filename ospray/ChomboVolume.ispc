@@ -171,19 +171,19 @@ export void ChomboVolume_set(void *uniform _self,
 
   self->super.transferFunction = (TransferFunction *uniform)_xf;
 
-  self->super.intersect       = &Chombo_intersect;
-  self->super.computeGradient = &Chombo_gradient;
-  self->super.computeSample   = &Chombo_nearestNeighbor;
+  self->super.intersect        = &Chombo_intersect;
+  self->super.computeGradient  = &Chombo_gradient;
+  self->super.computeSample    = &Chombo_nearestNeighbor;
 
 
-  self->chombo.brick  = (ChomboBrick  *)_brick_array;
-  self->chombo.node   = (KDTreeNode   *)_tree_node;
-  self->chombo.numNodes = numTreeNodes;
-  self->chombo.item   = (ChomboBrick **)_tree_item;
-  self->chombo.rootGridDims = rootGridDims;
+  self->chombo.brick           = (ChomboBrick  *)_brick_array;
+  self->chombo.node            = (KDTreeNode   *)_tree_node;
+  self->chombo.numNodes        = numTreeNodes;
+  self->chombo.item            = (ChomboBrick **)_tree_item;
+  self->chombo.rootGridDims    = rootGridDims;
 
-  self->chombo.bounds.lower = make_vec3f(0);
-  self->chombo.bounds.upper = make_vec3f(rootGridDims);
+  self->chombo.bounds.lower    = make_vec3f(0);
+  self->chombo.bounds.upper    = make_vec3f(rootGridDims);
   //  buildNodeRanges(self);
 }
 
