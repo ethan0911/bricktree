@@ -29,8 +29,12 @@ struct CellRef {
   float value;
 };
 
-inline CellRef findLeafCell(Chombo *uniform self,
-                            const varying vec3f &worldSpacePos)
+inline vec3f centerOf(const CellRef &cr)
+{ return cr.pos + make_vec3f(0.5f*cr.cellWidth); }
+
+inline CellRef findCell(Chombo *uniform self,
+                        const varying vec3f &worldSpacePos,
+                        const float minWidth)
 {
   const vec3f gridPos = worldSpacePos;
   float samplePos[3];
@@ -54,17 +58,32 @@ inline CellRef findLeafCell(Chombo *uniform self,
     const uniform nodeID = nodeStack[stackPtr];
     const uniform KDTreeNode &node = self->node[nodeID];
     if (isLeaf(node)) {
-      const ChomboBrick *uniform brick = self->item[getOfs(node)+getNumItems(node)-1];
-      const vec3f relBrickPos
-        = (worldSpacePos - brick->bounds.lower)
-        * rcp(brick->bounds.upper - brick->bounds.lower);
-      // brick coords: integer cell coordinates inside brick
-      const vec3i bc = make_vec3i(relBrickPos * make_vec3f(brick->dims));
-      // clamped brick coordinates
-      const vec3i cbc = max(make_vec3i(0),min(bc,brick->dims-make_vec3i(1)));
-      ret.nodeID = nodeID;
-      int idx = cbc.x + brick->dims.x*(cbc.y+brick->dims.y*(cbc.z));
-      ret.value = brick->value[idx];
+      foreach_unique(mw in minWidth) {
+        
+        // find the leaf that has the given brick width...
+        const ChomboBrick *uniform brick = NULL;
+        for (uniform int i=getOfs(node);;i++) {
+          if (i>=getOfs(node)+getNumItems(node))
+            print("LEAF NOT FOUND!");
+          brick = self->item[i];
+          if (brick->cellWidth >= minWidth) 
+            break;
+        }
+        
+        // const ChomboBrick *uniform brick = self->item[getOfs(node)+getNumItems(node)-1];
+        const vec3f relBrickPos
+          = (worldSpacePos - brick->bounds.lower)
+          * rcp(brick->bounds.upper - brick->bounds.lower);
+        // brick coords: integer cell coordinates inside brick
+        const vec3i bc = make_vec3i(relBrickPos * make_vec3f(brick->dims));
+        // clamped brick coordinates
+        const vec3i cbc = max(make_vec3i(0),min(bc,brick->dims-make_vec3i(1)));
+        ret.nodeID = nodeID;
+        int idx = cbc.x + brick->dims.x*(cbc.y+brick->dims.y*(cbc.z));
+        ret.pos = make_vec3f(brick->box.lower+bc)*brick->cellWidth;
+        ret.value = brick->value[idx];
+        ret.cellWidth = brick->cellWidth;
+      }
       return ret;
     } else {
       const uniform uint32 childID = getOfs(node);
@@ -84,3 +103,8 @@ inline CellRef findLeafCell(Chombo *uniform self,
 }
 
 
+inline CellRef findLeafCell(Chombo *uniform self,
+                            const varying vec3f &worldSpacePos)
+{
+  return findCell(self,worldSpacePos,0.f); 
+}
