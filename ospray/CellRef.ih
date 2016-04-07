@@ -22,7 +22,7 @@ struct CellRef {
   //! lower left front position, in unit grid space
   vec3f pos;
   //! width of cell, also doubles as level indicator 
-  float cellWidth; 
+  float width; 
   //! ID of the kd-tree's leaf node that we hit
   int nodeID;
   //! value at this cell
@@ -30,9 +30,9 @@ struct CellRef {
 };
 
 inline vec3f centerOf(const CellRef &cr)
-{ return cr.pos + make_vec3f(0.5f*cr.cellWidth); }
+{ return cr.pos + make_vec3f(0.5f*cr.width); }
 
-inline CellRef findCell(Chombo *uniform self,
+inline CellRef findCell(const Chombo *uniform self,
                         const varying vec3f &worldSpacePos,
                         const float minWidth)
 {
@@ -82,7 +82,7 @@ inline CellRef findCell(Chombo *uniform self,
         int idx = cbc.x + brick->dims.x*(cbc.y+brick->dims.y*(cbc.z));
         ret.pos = make_vec3f(brick->box.lower+bc)*brick->cellWidth;
         ret.value = brick->value[idx];
-        ret.cellWidth = brick->cellWidth;
+        ret.width = brick->cellWidth;
       }
       return ret;
     } else {
