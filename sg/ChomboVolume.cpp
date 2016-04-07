@@ -178,9 +178,12 @@ namespace ospray {
                                   const unsigned char *binBasePtr)
     {
       std::string fileName = node->getProp("fileName");
-      if (fileName != "") 
-        parseChomboFile(fileName);
-      else {
+      if (fileName != "") {
+        PRINT(fileName);
+        std::string realFN = node->doc->fileName.path().str()+"/"+fileName;
+        PRINT(realFN);
+        parseChomboFile(realFN);
+      } else {
         cout << "#osp:sg: setting chombo volume from XML node" << endl;
         // parse directly from XML file
         int numLevels = node->getPropl("numLevels");
@@ -196,8 +199,6 @@ namespace ospray {
         float dt = 1.f;
         const std::string xmlFileName = node->doc->fileName;
         PRINT(xmlFileName);
-        const std::string  baseName = node->doc->fileName.base();
-        PRINT(baseName);
         for (int level=0;level<numLevels;level++) {
           char levelFileName[10000];
           strcpy(levelFileName,xmlFileName.c_str());

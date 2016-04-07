@@ -223,6 +223,8 @@ namespace ospray {
         brick->gridToWorldScale = 1.f/brick->cellWidth;
         brick->bounds = box3f(vec3f(brick->box.lower) * brick->cellWidth, 
                               vec3f(brick->box.upper+vec3i(1)) * brick->cellWidth);
+        brick->bounds_scale = rcp(brick->bounds.size());
+        brick->f_dims = vec3f(brick->dims);
       }
     }
 

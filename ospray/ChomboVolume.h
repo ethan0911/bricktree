@@ -61,6 +61,11 @@ namespace ospray {
         vec3i dims;
         // scale factor from grid space to world space (ie,1.f/cellWidth)
         float gridToWorldScale;
+        
+        // rcp(bounds.upper-bounds.lower);
+        vec3f bounds_scale;
+        // dimensions, in float
+        vec3f f_dims;
       };
 
       Chombo();

@@ -32,71 +32,77 @@ struct CellRef {
 inline vec3f centerOf(const CellRef &cr)
 { return cr.pos + make_vec3f(0.5f*cr.width); }
 
-inline CellRef findCell(const Chombo *uniform self,
-                        const varying vec3f &worldSpacePos,
+struct FindCellStack {
+  varying bool active;
+  uniform int32 nodeID;
+};
+
+inline uniform FindCellStack *uniform pushStack(uniform FindCellStack *uniform stackPtr, 
+                                                uniform int nodeID)
+{
+  unmasked { stackPtr->active = false; }
+  stackPtr->active = true;
+  stackPtr->nodeID = nodeID;
+  return stackPtr+1;
+}
+
+extern CellRef findCell(const Chombo *uniform self,
+                        const varying vec3f &_worldSpacePos,
                         const float minWidth)
 {
-  const vec3f gridPos = worldSpacePos;
-  float samplePos[3];
-  samplePos[0] = gridPos.x;
-  samplePos[1] = gridPos.y;
-  samplePos[2] = gridPos.z;
+  const vec3f worldSpacePos = max(make_vec3f(0.f),
+                                  min(self->bounds.upper,_worldSpacePos));
+  const varying float *const uniform  samplePos = &worldSpacePos.x;
 
-  uniform uint32 nodeStack[16];
-  varying bool activeStack[16];
-  nodeStack[0] = 0;
-  unmasked { activeStack[0] = false; }
-  activeStack[0] = true;
-  uniform uint32 stackPtr = 1;
+  uniform FindCellStack stack[16];
+  uniform FindCellStack *uniform stackPtr = pushStack(&stack[0],0);
 
-  CellRef ret;
-  while (stackPtr > 0) {
+  while (stackPtr > stack) {
     --stackPtr;
-    if (!activeStack[stackPtr]) 
-      continue;
-
-    const uniform nodeID = nodeStack[stackPtr];
-    const uniform KDTreeNode &node = self->node[nodeID];
-    if (isLeaf(node)) {
-      foreach_unique(mw in minWidth) {
-        
-        // find the leaf that has the given brick width...
-        const ChomboBrick *uniform brick = NULL;
-        for (uniform int i=getOfs(node);;i++) {
-          if (i>=getOfs(node)+getNumItems(node))
-            print("LEAF NOT FOUND!");
-          brick = self->item[i];
-          if (brick->cellWidth >= minWidth) 
-            break;
+    if (stackPtr->active) {
+      const uniform uint32 nodeID = stackPtr->nodeID;
+      const uniform KDTreeNode &node = self->node[nodeID];
+      if (isLeaf(node)) {
+        for (uniform int i=getOfs(node);any(true);i++) {
+          const ChomboBrick *uniform brick = self->item[i];
+          if (brick->cellWidth >= minWidth) {
+            const vec3f relBrickPos
+              = (worldSpacePos - brick->bounds.lower) * brick->bounds_scale;
+            // brick coords: integer cell coordinates inside brick
+#if 1
+            // OPT: the same calculations as below, just in
+            // floats. this works as long as all values we calculate
+            // with are fraction-less values (so essentially ints) and
+            // fit into 24 bits mantissa (which they easily should for
+            // any brick
+            const vec3f f_bc = floor(relBrickPos * brick->f_dims);
+            CellRef ret;
+            ret.nodeID = nodeID;
+            const uint32 idx = (int)(f_bc.x + brick->f_dims.x*(f_bc.y+brick->f_dims.y*(f_bc.z)));
+            ret.pos = brick->bounds.lower + f_bc*brick->cellWidth;
+            ret.value = brick->value[idx];
+            ret.width = brick->cellWidth;
+#else
+            const vec3i bc = make_vec3i(relBrickPos * (brick->f_dims));
+            // clamped brick coordinates
+            // const vec3i cbc = max(make_vec3i(0),min(bc,brick->dims-make_vec3i(1)));
+            CellRef ret;
+            ret.nodeID = nodeID;
+            const uint32 idx = bc.x + brick->dims.x*(bc.y+brick->dims.y*(bc.z));
+            ret.pos = make_vec3f(brick->box.lower+bc)*brick->cellWidth;
+            ret.value = brick->value[idx];
+            ret.width = brick->cellWidth;
+#endif
+            return ret;
+          }
         }
-        
-        // const ChomboBrick *uniform brick = self->item[getOfs(node)+getNumItems(node)-1];
-        const vec3f relBrickPos
-          = (worldSpacePos - brick->bounds.lower)
-          * rcp(brick->bounds.upper - brick->bounds.lower);
-        // brick coords: integer cell coordinates inside brick
-        const vec3i bc = make_vec3i(relBrickPos * make_vec3f(brick->dims));
-        // clamped brick coordinates
-        const vec3i cbc = max(make_vec3i(0),min(bc,brick->dims-make_vec3i(1)));
-        ret.nodeID = nodeID;
-        int idx = cbc.x + brick->dims.x*(cbc.y+brick->dims.y*(cbc.z));
-        ret.pos = make_vec3f(brick->box.lower+bc)*brick->cellWidth;
-        ret.value = brick->value[idx];
-        ret.width = brick->cellWidth;
-      }
-      return ret;
-    } else {
-      const uniform uint32 childID = getOfs(node);
-      if (samplePos[getDim(node)] >= getPos(node)) {
-        unmasked { activeStack[stackPtr] = 0; }
-        nodeStack[stackPtr] = childID+1;
-        activeStack[stackPtr] = 1;
-        stackPtr++;
       } else {
-        unmasked { activeStack[stackPtr] = 0; }
-        nodeStack[stackPtr] = childID;
-        activeStack[stackPtr] = 1;
-        stackPtr++;
+        const uniform uint32 childID = getOfs(node);
+        if (samplePos[getDim(node)] >= getPos(node)) {
+          stackPtr = pushStack(stackPtr,childID+1);
+        } else {
+          stackPtr = pushStack(stackPtr,childID);
+        }
       }
     }
   }
