@@ -25,6 +25,43 @@ namespace ospray {
     using std::endl;
     using std::cout;
 
+    std::string toString(long l)
+    {
+      char c[1000];
+      sprintf(c,"%ld",l);
+      return c;
+    }
+
+    std::string prettyTime(double t)
+    {
+      assert(t >= 0.f);
+      std::string ret = "";
+      if (t >= 1.f && t < 1e20f) {
+        ret = toString((long)t % 60)+"s"+ret;
+        t /= 60.f;
+
+        if (t >= 1.f) {
+          ret = toString((long)t % 60)+"m"+ret;
+          t /= 60.f;
+
+          if (t >= 1.f) {
+            ret = toString((long)t % 24)+"h"+ret;
+            t /= 24.f;
+
+            if (t >= 1.f) {
+              ret = toString((long)t % 24)+"d"+ret;
+            } 
+          } 
+        } 
+        return ret;
+      }
+      else {
+        char c[1000];
+        sprintf(c,"%lf",t);
+        return c;
+      }
+    }
+    
     struct SafeRange : public Range<float> {
       std::mutex mutex;
       SafeRange() : Range<float>(empty) {};
@@ -83,7 +120,9 @@ namespace ospray {
             double timeElapsed = myTime - startTime;
             double timeExpected = timeElapsed / (myPercentage * .01f);
             double timeRemaining = timeExpected - timeElapsed;
-            printf("progress: %03d%% (time remaining %.2lfsec)\n",myPercentage,timeRemaining);
+
+            std::string pt = prettyTime(timeRemaining);
+            printf("progress: %03d%% (time remaining %s)\n",myPercentage,pt.c_str());
           }
         }
       }
@@ -99,20 +138,20 @@ namespace ospray {
       return bs;
     }
 
-#if 0
-    template<typename TASK_T>
-    inline void for_all(int num, const TASK_T &t)
+// #if 0
+     template<typename TASK_T>
+    inline void scalar_for_all(int num, const TASK_T &t)
     {
       for (int i=0;i<num;i++)
         t(i);
     }
-#else
+// #else
     template<typename TASK_T>
-    inline void for_all(int num, const TASK_T &t)
+    inline void tbb_for_all(int num, const TASK_T &t)
     {
       tbb::parallel_for(0,num,1,t);
     }
-#endif
+// #endif
 
     vec2f Raw2Chombo::buildBlock(const vec3i &coord, 
                                  const int level,
@@ -135,7 +174,7 @@ namespace ospray {
 
         SafeRange blockRange;
         // for (int cellID=0;cellID<bs*bs*bs;cellID++) {
-        for_all(bs*bs*bs, [&](const int cellID) {
+        scalar_for_all(bs*bs*bs, [&](const int cellID) {
         // tbb::parallel_for(0, bs*bs*bs, 1, [&](const int cellID) {
             const vec3i cellIdx(cellID % bs, (cellID/bs)%bs, cellID/(bs*bs));
             brick[cellID] = buildBlock(bs * coord + cellIdx, level+1, blockRange);
@@ -175,8 +214,8 @@ namespace ospray {
       size_t rootBS = blockSizeOf(0);
       vec3i rootDims = divRoundUp(input->size(),vec3i(rootBS));
       size_t numRootBlocks = rootDims.product();
-
-      for_all((int)numRootBlocks, [&](int brickID) {
+      cout << "building chombo tree, with root grid dims of " << rootDims << endl;
+      tbb_for_all((int)numRootBlocks, [&](int brickID) {
           vec3i rootID;
           rootID.x = brickID % rootDims.x;
           rootID.y = (brickID / rootDims.x) % rootDims.y;
