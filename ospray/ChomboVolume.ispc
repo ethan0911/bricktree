@@ -99,7 +99,11 @@ extern varying float Chombo_lerpOnFinestLevel(void *uniform _self,
 
 
 
-/*! interpolate on the finest level */
+/*! the simplest variant of an octant method - determines the octant
+    of the leaf cell the poitn is in, then finds the 8 neighboring
+    dual octants of same or coarser level. If NOT at a level boundary
+    that is the same as interpolating at the given level; across a
+    cell boundary it is NOT smooth, but close. */
 extern varying float Chombo_octantMethodSimple(void *uniform _self, 
                                                const varying vec3f &worldSpacePos)
 {
@@ -140,9 +144,9 @@ extern varying float Chombo_octantMethodSimple(void *uniform _self,
   cell[1][1][0] = findLeafCell(chom,make_vec3f(pos.x,loc.y,loc.z));
   cell[1][1][1] = findLeafCell(chom,make_vec3f(loc.x,loc.y,loc.z));
 
-  const float dx = 2.f*abs(pos.x-leafCenter.x)/leaf.cellWidth;
-  const float dy = 2.f*abs(pos.y-leafCenter.y)/leaf.cellWidth;
-  const float dz = 2.f*abs(pos.z-leafCenter.z)/leaf.cellWidth;
+  const float dx = abs(pos.x-leafCenter.x)/leaf.cellWidth;
+  const float dy = abs(pos.y-leafCenter.y)/leaf.cellWidth;
+  const float dz = abs(pos.z-leafCenter.z)/leaf.cellWidth;
 
   const float f000 = cell[0][0][0].value;
   const float f001 = cell[0][0][1].value;
