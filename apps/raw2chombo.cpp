@@ -25,6 +25,8 @@ namespace ospray {
     using std::endl;
     using std::cout;
 
+    bool doParallel = false;
+
     std::string toString(long l)
     {
       char c[1000];
@@ -104,6 +106,7 @@ namespace ospray {
 
       std::mutex progressMutex;
       std::atomic<size_t> numDone;
+      std::atomic<size_t> numBytesWritten;
       int lastPercentagePinged;
       double startTime;
       
@@ -115,14 +118,21 @@ namespace ospray {
         if (myPercentage > lastPercentagePinged) {
           std::unique_lock<std::mutex> lock(progressMutex);
           if (myPercentage > lastPercentagePinged) {
+            size_t numWritten = numBytesWritten;
             lastPercentagePinged = myPercentage;
             double myTime = getSysTime();
             double timeElapsed = myTime - startTime;
             double timeExpected = timeElapsed / (myPercentage * .01f);
             double timeRemaining = timeExpected - timeElapsed;
 
+            size_t szExpected = numWritten * 100.f / (myPercentage+1e-20f);
+            size_t szOriginal = input->numElements()*sizeof(float);
             std::string pt = prettyTime(timeRemaining);
-            printf("progress: %03d%% (time remaining %s)\n",myPercentage,pt.c_str());
+            printf("progress: %03d%% (time remaining %s).",myPercentage,pt.c_str());
+            cout << " num written " << prettyNumber(numWritten) << "b";
+            cout << " expt size " << prettyNumber(szExpected) << "b";
+            cout << " (that's " << (100.f*szExpected/szOriginal) << "% of input)";
+            cout << endl;
           }
         }
       }
@@ -150,6 +160,15 @@ namespace ospray {
     inline void tbb_for_all(int num, const TASK_T &t)
     {
       tbb::parallel_for(0,num,1,t);
+    }
+
+    template<typename TASK_T>
+    inline void my_for_all(int num, const TASK_T &t)
+    {
+      if (doParallel)
+        tbb_for_all(num,t);
+      else
+        scalar_for_all(num,t);
     }
 // #endif
 
@@ -198,6 +217,7 @@ namespace ospray {
           std::unique_lock<std::mutex> lock(this->level[level].mutex);
           fwrite(&brickBegin,sizeof(brickBegin),1,this->level[level].file);
           fwrite(block,sizeof(float),bs*bs*bs,this->level[level].file);
+          numBytesWritten += (sizeof(float)*bs*bs*bs+sizeof(brickBegin));
         } else {
           // block isn't important - collapse and don't emit
         }
@@ -215,7 +235,7 @@ namespace ospray {
       vec3i rootDims = divRoundUp(input->size(),vec3i(rootBS));
       size_t numRootBlocks = rootDims.product();
       cout << "building chombo tree, with root grid dims of " << rootDims << endl;
-      tbb_for_all((int)numRootBlocks, [&](int brickID) {
+      my_for_all((int)numRootBlocks, [&](int brickID) {
           vec3i rootID;
           rootID.x = brickID % rootDims.x;
           rootID.y = (brickID / rootDims.x) % rootDims.y;
@@ -235,6 +255,7 @@ namespace ospray {
         maxLevel(numLevels-1),
         cellLevel(numLevels),
         numDone(0),
+        numBytesWritten(0),
         lastPercentagePinged(-1)
     {
       level = new Level[numLevels];
@@ -298,13 +319,15 @@ namespace ospray {
       vec3i       repeat      = vec3i(0);
       vec3i       shift       = vec3i(0);
 
+      tbb::task_scheduler_init tbb_init(2);
+
       for (int i=1;i<ac;i++) {
         const std::string arg = av[i];
         if (arg == "-o")
           outFileName = av[++i];
         else if (arg == "--depth" || arg == "-depth" || 
                  arg == "--levels" || arg == "-levels" ||
-                 arg == "--num-levels" || arg == "-nl")
+                 arg == "--num-levels" || arg == "-n")
           numLevels = atoi(av[++i]);
         else if (arg == "--bs" || arg == "-bs" || 
                  arg == "--brick-size")
@@ -326,6 +349,9 @@ namespace ospray {
           shift.x = atoi(av[++i]);
           shift.y = atoi(av[++i]);
           shift.z = atoi(av[++i]);
+        } 
+        else if (arg == "-p" || arg == "--parallel") {
+          doParallel = true;
         }
         else if (arg[0] != '-')
           inFileName = av[i];
