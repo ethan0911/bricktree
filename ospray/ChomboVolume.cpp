@@ -38,7 +38,7 @@ namespace ospray {
       node[nodeID].dim = 3; 
       node[nodeID].ofs = item.size(); 
       node[nodeID].numItems = brick.size();
-#if 0
+#if 1
       // push bricks in reverse order, so the finest level comes first
       for (int i=0;i<brick.size();i++)
         item.push_back(brick[brick.size()-1-i]);
