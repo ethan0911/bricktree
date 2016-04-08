@@ -280,6 +280,7 @@ inline float octMethodOnLevel(const uniform Chombo *uniform chom,
 }
 
 #include "optOctMethod.ispc"
+#include "compOctMethod.ispc"
 
 /*! the simplest variant of an octant method - determines the octant
     of the leaf cell the poitn is in, then finds the 8 neighboring
@@ -296,7 +297,8 @@ extern varying float Chombo_octantMethodProper(void *uniform _self,
   const vec3f pos = worldSpacePos;
 
 #if 1
-  return opt_octMethodOnLevel(chom,0.f,pos);
+  // return opt_octMethodOnLevel(chom,0.f,pos);
+  return compOctMethodOnLevel(chom,0.f,pos);
 #else
   return octMethodOnLevel(chom,0.f,pos);
 #endif

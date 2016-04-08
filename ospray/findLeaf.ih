@@ -22,11 +22,12 @@
 #include "Chombo.ih"
 
 // return the kdtree's NODE ID that containst he leaf foro given position
-extern int findLeaf(const Chombo *uniform self,
-                    const varying vec3f &_worldSpacePos)
+inline uint32 findLeaf(const Chombo *uniform self,
+                       const varying vec3f &_worldSpacePos)
 {
-  const vec3f worldSpacePos = max(make_vec3f(0.f),
-                                  min(self->bounds.upper,_worldSpacePos));
+  const vec3f worldSpacePos = _worldSpacePos; 
+  // max(make_vec3f(0.f),
+  //                                 min(self->bounds.upper,_worldSpacePos));
   const varying float *const uniform  samplePos = &worldSpacePos.x;
   
   uniform FindStack stack[16];

@@ -36,15 +36,6 @@ inline void clear(Octant &oct)
   oct.cr[1][1][1].width = 0.f;
 }
 
-/*! a octant in which the positions have been compressed into two variables */
-struct SmallOctant {
-  vec3f P0, P1;
-  float width[2][2][2];
-  float value[2][2][2];
-};
-
-
-
 /* packet-based variant of findCell kernel */
 extern void initialFind(const Chombo *uniform self,
                         Octant &oct,
