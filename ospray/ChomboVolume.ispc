@@ -16,6 +16,7 @@
 
 // ours
 #include "CellRef.ih"
+#include "Octant.ih"
 // ospray
 #include "ospray/math/AffineSpace.ih"
 #include "ospray/common/Ray.ih"
@@ -25,8 +26,6 @@
 // embree
 #include "embree2/rtcore.isph"
 
-
-//#define CACHE_OCTANT
 
 
 /*! plainest, dumbest way of reconstructing: find the given leaf cell,
@@ -174,58 +173,9 @@ extern varying float Chombo_octantMethodSimple(void *uniform _self,
 }
 
 
-#ifdef CACHE_OCTANT
-varying vec3f cached_lo, cached_hi, cached_center;
-varying float cached_width = 0.f;
-varying float cached_val[2][2][2];
-
-#endif
-
 inline float octMethodOnLevel(const uniform Chombo *uniform chom,
                               const float desiredLevel, const vec3f &pos)
 {
-#ifdef CACHE_OCTANT
-  if (desiredLevel == 0.f) {
-    if (pos.x >= cached_lo.x && pos.x <= cached_hi.x &&
-        pos.y >= cached_lo.y && pos.y <= cached_hi.y &&
-        pos.z >= cached_lo.z && pos.z <= cached_hi.z) {
-      
-  // -------------------------------------------------------
-  // interpolation
-  // -------------------------------------------------------
-  // interpolation weights inside octant (mind the "*2" for the octant)
-      const vec3f mineCenter = cached_center;
-      const float dx = 2.f*abs(pos.x-mineCenter.x)/cached_width;
-      const float dy = 2.f*abs(pos.y-mineCenter.y)/cached_width;
-      const float dz = 2.f*abs(pos.z-mineCenter.z)/cached_width;
-      
-      // interpolant inputs
-      const float f000 = cached_val[0][0][0];
-      const float f001 = cached_val[0][0][1];
-      const float f010 = cached_val[0][1][0];
-      const float f011 = cached_val[0][1][1];
-      const float f100 = cached_val[1][0][0];
-      const float f101 = cached_val[1][0][1];
-      const float f110 = cached_val[1][1][0];
-      const float f111 = cached_val[1][1][1];
-      
-      // interpolate in x
-      const float f00 = (1.f-dx)*f000 + dx*f001;
-      const float f01 = (1.f-dx)*f010 + dx*f011;
-      const float f10 = (1.f-dx)*f100 + dx*f101;
-      const float f11 = (1.f-dx)*f110 + dx*f111;
-      
-      // interpolate result in y
-      const float f0 = (1.f-dy)*f00+dy*f01;
-      const float f1 = (1.f-dy)*f10+dy*f11;
-      
-      // interpolate result in z
-      const float f = (1.f-dz)*f0+dz*f1;
-      return f;
-    }
-  }
-#endif
-
   const CellRef mine = findCell(chom,pos,desiredLevel);
   const vec3f mineCenter = centerOf(mine);
   // Delta to octant corners
@@ -303,23 +253,6 @@ inline float octMethodOnLevel(const uniform Chombo *uniform chom,
   const float dx = 2.f*abs(pos.x-mineCenter.x)/mine.width;
   const float dy = 2.f*abs(pos.y-mineCenter.y)/mine.width;
   const float dz = 2.f*abs(pos.z-mineCenter.z)/mine.width;
-
-#ifdef CACHE_OCTANT
-  if (desiredLevel == 0.f) {
-    cached_width = mine.width;
-    cached_center = mineCenter;
-    cached_lo = min(mineCenter,mineCenter+make_vec3f(DX,DY,DZ));
-    cached_hi = max(mineCenter,mineCenter+make_vec3f(DX,DY,DZ));
-    cached_val[0][0][0] = oc000;
-    cached_val[0][0][1] = oc001;
-    cached_val[0][1][0] = oc010;
-    cached_val[0][1][1] = oc011;
-    cached_val[1][0][0] = oc100;
-    cached_val[1][0][1] = oc101;
-    cached_val[1][1][0] = oc110;
-    cached_val[1][1][1] = oc111;
-  }
-#endif
   
   // interpolant inputs
   const float f000 = oc000;
@@ -346,6 +279,8 @@ inline float octMethodOnLevel(const uniform Chombo *uniform chom,
   return f;
 }
 
+#include "optOctMethod.ispc"
+
 /*! the simplest variant of an octant method - determines the octant
     of the leaf cell the poitn is in, then finds the 8 neighboring
     dual octants of same or coarser level. If NOT at a level boundary
@@ -360,9 +295,13 @@ extern varying float Chombo_octantMethodProper(void *uniform _self,
   // for now, let's assume the world-space position already IS in grid space
   const vec3f pos = worldSpacePos;
 
+#if 1
+  return opt_octMethodOnLevel(chom,0.f,pos);
+#else
   return octMethodOnLevel(chom,0.f,pos);
+#endif
 }
-
+ 
 
 
 //! The gradient at the given sample location in world coordinates.
