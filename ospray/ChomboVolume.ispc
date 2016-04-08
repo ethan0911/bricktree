@@ -373,9 +373,9 @@ export void ChomboVolume_set(void *uniform _self,
   self->super.computeGradient  = &Chombo_gradient;
 #if 0
   self->super.computeSample    = &Chombo_debug;
-#elif 0
-  self->super.computeSample    = &Chombo_octantMethodProper;
 #elif 1
+  self->super.computeSample    = &Chombo_octantMethodProper;
+#elif 0
   self->super.computeSample    = &Chombo_octantMethodSimple;
 #elif 0
   self->super.computeSample    = &Chombo_lerpOnFinestLevel;
