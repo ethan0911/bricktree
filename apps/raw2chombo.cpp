@@ -296,7 +296,7 @@ namespace ospray {
         cout << "*********************************" << endl << endl;
       }
       cout << "Usage" << endl;
-      cout << "  ./ospRaw2Octree <inFile.raw> <args>" << endl;
+      cout << "  ./ospRaw2Chombo <inFile.raw> <args>" << endl;
       cout << "with args:" << endl;
       cout << " -dims <nx> <ny> <nz>        : input dimensions" << endl;
       cout << " --format <uint8|float|double> : input voxel format" << endl;
@@ -327,7 +327,7 @@ namespace ospray {
           outFileName = av[++i];
         else if (arg == "--depth" || arg == "-depth" || 
                  arg == "--levels" || arg == "-levels" ||
-                 arg == "--num-levels" || arg == "-n")
+                 arg == "--num-levels" || arg == "-ml" || arg == "-nl")
           numLevels = atoi(av[++i]);
         else if (arg == "--bs" || arg == "-bs" || 
                  arg == "--brick-size")

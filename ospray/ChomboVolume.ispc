@@ -30,6 +30,15 @@
 
 /*! plainest, dumbest way of reconstructing: find the given leaf cell,
   and return the value */
+extern varying float Chombo_debug(void *uniform _self, 
+                                  const varying vec3f &worldSpacePos)
+{
+  ChomboVolume *uniform self = (ChomboVolume *)_self;
+  return 0.f;
+}
+
+/*! plainest, dumbest way of reconstructing: find the given leaf cell,
+  and return the value */
 extern varying float Chombo_nearestNeighbor(void *uniform _self, 
                                             const varying vec3f &worldSpacePos)
 {
@@ -362,9 +371,11 @@ export void ChomboVolume_set(void *uniform _self,
 
   self->super.intersect        = &Chombo_intersect;
   self->super.computeGradient  = &Chombo_gradient;
-#if 1
-  self->super.computeSample    = &Chombo_octantMethodProper;
+#if 0
+  self->super.computeSample    = &Chombo_debug;
 #elif 0
+  self->super.computeSample    = &Chombo_octantMethodProper;
+#elif 1
   self->super.computeSample    = &Chombo_octantMethodSimple;
 #elif 0
   self->super.computeSample    = &Chombo_lerpOnFinestLevel;
