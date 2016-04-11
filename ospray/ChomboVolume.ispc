@@ -53,63 +53,16 @@ extern varying float Chombo_nearestNeighbor(void *uniform _self,
 
 /*! interpolate on the finest level */
 extern varying float Chombo_lerpOnFinestLevel(void *uniform _self, 
-                                              const varying vec3f &worldSpacePos)
-{
-  ChomboVolume *uniform self = (ChomboVolume *)_self;
-  Chombo *uniform chom = &self->chombo;
-  
-  // for now, let's assume the world-space position already IS in grid space
-  const vec3f pos = worldSpacePos;
+                                              const varying vec3f &worldSpacePos);
 
-  const float cw = chom->finestLevelCellWidth;
-  const float hcw = 0.5f * cw;
-
-  // translate to grid space on finest grid level
-  const float fx = (pos.x-hcw)/cw;
-  const float fy = (pos.y-hcw)/cw;
-  const float fz = (pos.z-hcw)/cw;
-
-  const float x0 = (pos.x <= hcw) ? -1.f : (float)(int)(fx);
-  const float y0 = (pos.y <= hcw) ? -1.f : (float)(int)(fy);
-  const float z0 = (pos.z <= hcw) ? -1.f : (float)(int)(fz);
-
-  const CellRef c000 = findLeafCell(chom,(make_vec3f(x0,y0,z0)+make_vec3f(0.5f,0.5f,0.5f))*cw);
-  const CellRef c001 = findLeafCell(chom,(make_vec3f(x0,y0,z0)+make_vec3f(1.5f,0.5f,0.5f))*cw);
-  const CellRef c010 = findLeafCell(chom,(make_vec3f(x0,y0,z0)+make_vec3f(0.5f,1.5f,0.5f))*cw);
-  const CellRef c011 = findLeafCell(chom,(make_vec3f(x0,y0,z0)+make_vec3f(1.5f,1.5f,0.5f))*cw);
-  const CellRef c100 = findLeafCell(chom,(make_vec3f(x0,y0,z0)+make_vec3f(0.5f,0.5f,1.5f))*cw);
-  const CellRef c101 = findLeafCell(chom,(make_vec3f(x0,y0,z0)+make_vec3f(1.5f,0.5f,1.5f))*cw);
-  const CellRef c110 = findLeafCell(chom,(make_vec3f(x0,y0,z0)+make_vec3f(0.5f,1.5f,1.5f))*cw);
-  const CellRef c111 = findLeafCell(chom,(make_vec3f(x0,y0,z0)+make_vec3f(1.5f,1.5f,1.5f))*cw);
-
-  const float dx = fx - x0;
-  const float dy = fy - y0;
-  const float dz = fz - z0;
-
-  const float f000 = c000.value;
-  const float f001 = c001.value;
-  const float f010 = c010.value;
-  const float f011 = c011.value;
-  const float f100 = c100.value;
-  const float f101 = c101.value;
-  const float f110 = c110.value;
-  const float f111 = c111.value;
-  
-  const float f00 = (1.f-dx)*f000 + dx*f001;
-  const float f01 = (1.f-dx)*f010 + dx*f011;
-  const float f10 = (1.f-dx)*f100 + dx*f101;
-  const float f11 = (1.f-dx)*f110 + dx*f111;
-
-  const float f0 = (1.f-dy)*f00+dy*f01;
-  const float f1 = (1.f-dy)*f10+dy*f11;
-
-  const float f = (1.f-dz)*f0+dz*f1;
-  return f00;
-}
-
-
-
-
+/*! performs trilinear interpolation on the level that the query point
+is in.  this means that this method _will_ adapt to the level we're
+in, and _will_ perorm proper trilinear interpolation in areas that do
+_not_ contain a boundary.... BUT it definitely _will_ lead to
+inconsistencies across level boundaries, since neighboring cells will
+interpolate from different levels */
+extern float octMethodSimple(const uniform Chombo *uniform self,
+                             const vec3f &pos);
 
 /*! the simplest variant of an octant method - determines the octant
     of the leaf cell the poitn is in, then finds the 8 neighboring
@@ -121,64 +74,65 @@ extern varying float Chombo_octantMethodSimple(void *uniform _self,
 {
   ChomboVolume *uniform self = (ChomboVolume *)_self;
   Chombo *uniform chom = &self->chombo;
+  return octMethodSimple(chom,worldSpacePos);
   
-  // cell width on finest level - we can always offset by this value
-  // to make sure we're in a neighbor cell...
-  const float fcw = chom->finestLevelCellWidth;
-  const float hfcw = 0.5f * fcw;
+  // // cell width on finest level - we can always offset by this value
+  // // to make sure we're in a neighbor cell...
+  // const float fcw = chom->finestLevelCellWidth;
+  // const float hfcw = 0.5f * fcw;
 
-  // for now, let's assume the world-space position already IS in grid space
-  const vec3f pos = worldSpacePos;
+  // // for now, let's assume the world-space position already IS in grid space
+  // const vec3f pos = worldSpacePos;
 
-  CellRef leaf = findLeafCell(chom,pos);
-  const vec3f leafCenter = centerOf(leaf);
+  // CellRef leaf = findLeafCell(chom,pos);
+  // const vec3f leafCenter = centerOf(leaf);
 
-  // neighbor cell _locator_ - ie, a position somewhere _in_ that
-  // cell, but neither the boundary nor the cell center
-  const vec3f loc
-    = make_vec3f(pos.x < leafCenter.x
-                 ? leaf.pos.x - hfcw
-                 : leaf.pos.x + leaf.width + hfcw,
-                 pos.y < leafCenter.y
-                 ? leaf.pos.y - hfcw
-                 : leaf.pos.y + leaf.width + hfcw,
-                 pos.z < leafCenter.z
-                 ? leaf.pos.z - hfcw
-                 : leaf.pos.z + leaf.width + hfcw);
+  // // neighbor cell _locator_ - ie, a position somewhere _in_ that
+  // // cell, but neither the boundary nor the cell center
+  // const vec3f loc
+  //   = make_vec3f(pos.x < leafCenter.x
+  //                ? leaf.pos.x - hfcw
+  //                : leaf.pos.x + leaf.width + hfcw,
+  //                pos.y < leafCenter.y
+  //                ? leaf.pos.y - hfcw
+  //                : leaf.pos.y + leaf.width + hfcw,
+  //                pos.z < leafCenter.z
+  //                ? leaf.pos.z - hfcw
+  //                : leaf.pos.z + leaf.width + hfcw);
 
-  CellRef cell[2][2][2];
-  cell[0][0][0] = leaf; //findLeafCell(chom,make_vec3f(pos.x,pos.y,pos.z);
-  cell[0][0][1] = findLeafCell(chom,make_vec3f(loc.x,pos.y,pos.z));
-  cell[0][1][0] = findLeafCell(chom,make_vec3f(pos.x,loc.y,pos.z));
-  cell[0][1][1] = findLeafCell(chom,make_vec3f(loc.x,loc.y,pos.z));
-  cell[1][0][0] = findLeafCell(chom,make_vec3f(pos.x,pos.y,loc.z));
-  cell[1][0][1] = findLeafCell(chom,make_vec3f(loc.x,pos.y,loc.z));
-  cell[1][1][0] = findLeafCell(chom,make_vec3f(pos.x,loc.y,loc.z));
-  cell[1][1][1] = findLeafCell(chom,make_vec3f(loc.x,loc.y,loc.z));
+  // CellRef cell[2][2][2];
+  // cell[0][0][0] = leaf; //findLeafCell(chom,make_vec3f(pos.x,pos.y,pos.z);
+  // cell[0][0][1] = findLeafCell(chom,make_vec3f(loc.x,pos.y,pos.z));
+  // cell[0][1][0] = findLeafCell(chom,make_vec3f(pos.x,loc.y,pos.z));
+  // cell[0][1][1] = findLeafCell(chom,make_vec3f(loc.x,loc.y,pos.z));
+  // cell[1][0][0] = findLeafCell(chom,make_vec3f(pos.x,pos.y,loc.z));
+  // cell[1][0][1] = findLeafCell(chom,make_vec3f(loc.x,pos.y,loc.z));
+  // cell[1][1][0] = findLeafCell(chom,make_vec3f(pos.x,loc.y,loc.z));
+  // cell[1][1][1] = findLeafCell(chom,make_vec3f(loc.x,loc.y,loc.z));
 
-  const float dx = abs(pos.x-leafCenter.x)/leaf.width;
-  const float dy = abs(pos.y-leafCenter.y)/leaf.width;
-  const float dz = abs(pos.z-leafCenter.z)/leaf.width;
+  // const float dx = abs(pos.x-leafCenter.x)/leaf.width;
+  // const float dy = abs(pos.y-leafCenter.y)/leaf.width;
+  // const float dz = abs(pos.z-leafCenter.z)/leaf.width;
 
-  const float f000 = cell[0][0][0].value;
-  const float f001 = cell[0][0][1].value;
-  const float f010 = cell[0][1][0].value;
-  const float f011 = cell[0][1][1].value;
-  const float f100 = cell[1][0][0].value;
-  const float f101 = cell[1][0][1].value;
-  const float f110 = cell[1][1][0].value;
-  const float f111 = cell[1][1][1].value;
+  // const float f000 = cell[0][0][0].value;
+  // const float f001 = cell[0][0][1].value;
+  // const float f010 = cell[0][1][0].value;
+  // const float f011 = cell[0][1][1].value;
+  // const float f100 = cell[1][0][0].value;
+  // const float f101 = cell[1][0][1].value;
+  // const float f110 = cell[1][1][0].value;
+  // const float f111 = cell[1][1][1].value;
   
-  const float f00 = (1.f-dx)*f000 + dx*f001;
-  const float f01 = (1.f-dx)*f010 + dx*f011;
-  const float f10 = (1.f-dx)*f100 + dx*f101;
-  const float f11 = (1.f-dx)*f110 + dx*f111;
+  // const float f00 = (1.f-dx)*f000 + dx*f001;
+  // const float f01 = (1.f-dx)*f010 + dx*f011;
+  // const float f10 = (1.f-dx)*f100 + dx*f101;
+  // const float f11 = (1.f-dx)*f110 + dx*f111;
 
-  const float f0 = (1.f-dy)*f00+dy*f01;
-  const float f1 = (1.f-dy)*f10+dy*f11;
+  // const float f0 = (1.f-dy)*f00+dy*f01;
+  // const float f1 = (1.f-dy)*f10+dy*f11;
 
-  const float f = (1.f-dz)*f0+dz*f1;
-  return f;
+  // const float f = (1.f-dz)*f0+dz*f1;
+  // return f;
 }
 
 
@@ -373,14 +327,17 @@ export void ChomboVolume_set(void *uniform _self,
   self->super.computeGradient  = &Chombo_gradient;
 #if 0
   self->super.computeSample    = &Chombo_debug;
-#elif 1
-  self->super.computeSample    = &Chombo_octantMethodProper;
 #elif 0
-  self->super.computeSample    = &Chombo_octantMethodSimple;
+  // works
+  self->super.computeSample    = &Chombo_nearestNeighbor;
 #elif 0
   self->super.computeSample    = &Chombo_lerpOnFinestLevel;
+#elif 1
+  self->super.computeSample    = &Chombo_octantMethodSimple;
+#elif 1
+  self->super.computeSample    = &Chombo_octantMethodProper;
 #else
-  self->super.computeSample    = &Chombo_nearestNeighbor;
+# error no sample() method selected...
 #endif
 
   // self->chombo.brick           = (ChomboBrick  *)_brick_array;
