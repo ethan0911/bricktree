@@ -33,7 +33,7 @@ inline uint32 findLeaf(const Chombo *uniform self,
   uniform FindStack stack[16];
   uniform FindStack *uniform stackPtr = pushStack(&stack[0],0,true);
   
-  while (1) {
+  while (stackPtr > stack) {
     --stackPtr;
     if (stackPtr->active) {
       // const uniform uint32 nodeID = stackPtr->nodeID;
