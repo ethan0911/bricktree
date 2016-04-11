@@ -45,7 +45,7 @@ extern CellRef findCell(const Chombo *uniform self,
             const vec3f relBrickPos
               = (worldSpacePos - brick->bounds.lower) * brick->bounds_scale;
             // brick coords: integer cell coordinates inside brick
-#if 1
+#if 0
             // OPT: the same calculations as below, just in
             // floats. this works as long as all values we calculate
             // with are fraction-less values (so essentially ints) and

@@ -2,7 +2,7 @@ inline float opt_octMethodOnLevel(const uniform Chombo *uniform chom,
                                   const float desiredLevel, const vec3f &pos)
 {
   Octant o;
-#if 1
+#if 0
   initialFind(chom,o,pos,desiredLevel);
   const CellRef mine = o.cr[0][0][0];
   const vec3f mineCenter = centerOf(mine);

@@ -1,6 +1,6 @@
 #include "CompOctant.ih"
 
-#if 1
+#if 0
 void findOthers(const uniform Chombo *uniform self,
                 CompactOctant &o,
                 const float cw)

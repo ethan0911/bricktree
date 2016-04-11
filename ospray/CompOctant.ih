@@ -164,10 +164,14 @@ extern void findOthers(const Chombo *uniform self,
                        const float minWidth)
 {
   const varying float *const uniform  samplePos = &pos.x;
-  const vec3f P0 = o.P0;
+  const vec3f P0 = clamp(o.P0,
+                         make_vec3f(0.f),
+                         self->bounds.upper
+                         -make_vec3f(self->finestLevelCellWidth));
   const vec3f P1 = clamp(o.P1,
                          make_vec3f(0.f),
-                         self->bounds.upper-make_vec3f(self->finestLevelCellWidth));
+                         self->bounds.upper
+                         -make_vec3f(self->finestLevelCellWidth));
   const uint32 kdLeafNodeID = findLeaf(self,pos);
   foreach_unique (nodeID in kdLeafNodeID) {
     const uniform KDTreeNode &node = self->node[nodeID];
