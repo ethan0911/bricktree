@@ -15,34 +15,41 @@
 // ======================================================================== //
 
 #include "CompOctant.ih"
-
-inline float nextafter(const float f, const float s)
-{
-  const float af = abs(f);
-  const float nf = f+s*af*(1.f/(float)(1<<22));
-#ifndef NDEBUG
-  if (nf == f)
-    print("NEXTAFTER NOT WORKING");
-#endif
-  return nf;
-}
-
-inline vec3f nextafter(const vec3f v, const vec3f sign)
-{ return make_vec3f(nextafter(v.x,sign.x),
-                    nextafter(v.y,sign.y),
-                    nextafter(v.z,sign.z)); }
-
+#include "ChomboVolume.ih"
 
 
 /* the octant method in which the boundary is defined by the coarser
-   side */
-extern float octMethodBoundaryFromCoarse(const uniform Chombo *uniform self,
-                                         const vec3f &pos)
+   side - this is 'correct' in that it is interpolating and continuous
+   even across level boundaries. it can, however, lead to weird
+   patterns at boundaries in that the coarse levels can 'bleed' across
+   the boundary.
+
+   To explain this pattern, imagine a boundary between a coarse region
+   on the left and a fine one on the right. The left has a constant 0,
+   the right is refined to (0,1,1,1). The fine region would also have
+   a representation on the coarse level, which would be
+   0.75=avg(0,1,1,1). Now the value we'd expect at the boundary is 0,
+   because both the coarse cell on the left is 0, as well as the
+   left-most of the fine values. However, at the boundary we'd let
+   interpolation on the coarse level define the value, which would be
+   the average of the coarse cell on the left (0) and that on the
+   right (0.75), which is 0.385. Ie, gonig from the left to the right
+   we'd see a function that is first 0 (in the center of the coarse
+   cell), would then interpolate up to 0.385 (interpolated value on
+   coarse level) at the boundary, would then interpolate back down to
+   0 again (left-most value on fine level), and then interpolate back
+   up to 1 (next value(s) on the fine level). This 'ghost' spike at
+   0.38 gives a visible artifact.
+ */
+extern float Chombo_octFromCoarse(void *uniform _self, const vec3f &pos)
 {
+  const ChomboVolume *uniform self = (const ChomboVolume *uniform)_self;
+  const Chombo *uniform chom = &self->chombo;
+
   // ------------------------------------------------------------------
   // determine cell and octant
   // ------------------------------------------------------------------
-  CellRef cell = findCell(self,pos,0.f);
+  CellRef cell = findCell(chom,pos,0.f);
   const vec3f cc = centerOf(cell);
   const vec3f sign = make_vec3f(pos.x < cc.x ? -1.f : +1.f,
                                 pos.y < cc.y ? -1.f : +1.f,
@@ -58,7 +65,7 @@ extern float octMethodBoundaryFromCoarse(const uniform Chombo *uniform self,
   // ------------------------------------------------------------------
   // determine all eight neighbors on cell's level
   // ------------------------------------------------------------------
-  findEightCellsNotOrdered(self,oct,cell.width);
+  findEightCellsNotOrdered(chom,oct,cell.width);
 
   // ------------------------------------------------------------------
   // check if we're at a boundary to a COARSER region. for this
@@ -68,11 +75,12 @@ extern float octMethodBoundaryFromCoarse(const uniform Chombo *uniform self,
   // value.
   // ------------------------------------------------------------------
   for (uniform int i=1;i<8;i++) {
-    if (oct.c[i].width != oct.c[0].width)
+    if (oct.c[i].width != oct.c[0].width) {
       const vec3f cornerPos = make_vec3f((i&1)?oct.P1.x:oct.P0.x,
                                          (i&2)?oct.P1.y:oct.P0.y,
                                          (i&4)?oct.P1.z:oct.P0.z);
-    oct.c[i].value = octMethodBoundaryFromCoarse(self,cornerPos);
+      oct.c[i].value = Chombo_octFromCoarse(_self,cornerPos);
+    }
   }
   
   const float rcpWidth = 1.f/oct.c[C000].width;

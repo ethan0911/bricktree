@@ -19,6 +19,145 @@
 
 
 void findEightCellsNotOrdered(const Chombo *uniform self,
+                              OctCorners &o,
+                              const float minWidth)
+{
+  clear(o);
+  const vec3f _P0 = clamp(o.P0,
+                          make_vec3f(0.f),
+                          self->bounds.upper-make_vec3f(0.5f*self->finestLevelCellWidth));
+  const vec3f _P1 = clamp(o.P1,
+                          make_vec3f(0.f),
+                          self->bounds.upper-make_vec3f(0.5f*self->finestLevelCellWidth));
+  // print("P0:");out(_P0);print("\n");
+  // print("P1:");out(_P1);print("\n");
+  const varying float *const uniform p0 = &_P0.x;
+  const varying float *const uniform p1 = &_P1.x;
+
+  uniform FindStack stack[128];
+  uniform FindStack *uniform stackPtr = pushStack(&stack[0],0,true);
+  
+  uniform int32 leafList[128];
+  uniform int32 numLeaves = 0;
+
+  while (stackPtr > stack) {
+    --stackPtr;
+    // print("Popping % %\n",stackPtr-stack,stackPtr->active);
+    if (stackPtr->active) {
+      uniform uint32 nodeID = stackPtr->nodeID;
+      while (any(true)) {
+        const uniform KDTreeNode &node = self->node[nodeID];
+        const uniform uint32 childID = getOfs(node);
+        // print("node % child %\n",nodeID,childID);
+        if (isLeaf(node)) {
+          leafList[numLeaves++] = childID;
+          break;
+        } else {
+          const uniform int dim = getDim(node);
+          const varying float pos = getPos(node);
+          const bool goLeft  = min(p0[dim],p1[dim]) < pos;
+          const bool goRight = max(p0[dim],p1[dim]) >= pos;
+          // print("plane % %\nL%\nR%\n",dim,pos,goLeft,goRight);
+          
+          if (any(goLeft)) {
+            if (any(goRight)) 
+              stackPtr = pushStack(stackPtr,childID+1,goRight);
+
+            if (!goLeft) 
+              break;
+            nodeID = childID;
+          } else {
+            if (!goRight)
+              break;
+            nodeID = childID+1;
+          }
+        }
+      }
+    }
+  }
+
+  // print("numleaves %\n",numLeaves);
+  for (uniform int leafID=0;leafID<numLeaves;leafID++) {
+    bool isLeaf = true;
+    for (uniform int i=leafList[leafID];any(true);i++,isLeaf=false) {
+      const ChomboBrick *uniform brick = self->item[i];
+      if (brick->cellWidth >= minWidth) {
+        // print("brick width %\n",brick->cellWidth);
+        const float *uniform v = brick->value;
+        const vec3f rp0 = (_P0 - brick->bounds.lower) * brick->bounds_scale;
+        const vec3f rp1 = (_P1 - brick->bounds.lower) * brick->bounds_scale;
+
+        const bool valid_x0 = _P0.x >= brick->bounds.lower.x & _P0.x < brick->bounds.upper.x;
+        const bool valid_x1 = _P1.x >= brick->bounds.lower.x & _P1.x < brick->bounds.upper.x;
+        const bool valid_y0 = _P0.y >= brick->bounds.lower.y & _P0.y < brick->bounds.upper.y;
+        const bool valid_y1 = _P1.y >= brick->bounds.lower.y & _P1.y < brick->bounds.upper.y;
+        const bool valid_z0 = _P0.z >= brick->bounds.lower.z & _P0.z < brick->bounds.upper.z;
+        const bool valid_z1 = _P1.z >= brick->bounds.lower.z & _P1.z < brick->bounds.upper.z;
+        
+        const vec3f f_bc0 = floor(rp0 * brick->f_dims);
+        const vec3f f_bc1 = floor(rp1 * brick->f_dims);
+        
+        // index offsets to neighbor cells
+        const float f_idx_dx0 = f_bc0.x;
+        const float f_idx_dy0 = f_bc0.y*brick->f_dims.x;
+        const float f_idx_dz0 = f_bc0.z*brick->f_dims.x*brick->f_dims.y;
+
+        const float f_idx_dx1 = f_bc1.x;
+        const float f_idx_dy1 = f_bc1.y*brick->f_dims.x;
+        const float f_idx_dz1 = f_bc1.z*brick->f_dims.x*brick->f_dims.y;
+
+        if (valid_z0) {
+          if (valid_x0 & valid_y0) {
+            const int idx = (int)(f_idx_dx0+f_idx_dy0+f_idx_dz0);
+            set(o,C000,v[idx],brick->cellWidth,isLeaf);
+          }
+          if (valid_x1 & valid_y0) {
+            const int idx = (int)(f_idx_dx1+f_idx_dy0+f_idx_dz0);
+            set(o,C001,v[idx],brick->cellWidth,isLeaf);
+          }
+
+          if (valid_x0 & valid_y1) {
+            const int idx = (int)(f_idx_dx0+f_idx_dy1+f_idx_dz0);
+            set(o,C010,v[idx],brick->cellWidth,isLeaf);
+          }
+          if (valid_x1 & valid_y1) {
+            const int idx = (int)(f_idx_dx1+f_idx_dy1+f_idx_dz0);
+            set(o,C011,v[idx],brick->cellWidth,isLeaf);
+          }
+        }
+
+        if (valid_z1) {
+          if (valid_x0 & valid_y0) {
+            const int idx = (int)(f_idx_dx0+f_idx_dy0+f_idx_dz1);
+            set(o,C100,v[idx],brick->cellWidth,isLeaf);
+          }
+          if (valid_x1 & valid_y0) {
+            const int idx = (int)(f_idx_dx1+f_idx_dy0+f_idx_dz1);
+            set(o,C101,v[idx],brick->cellWidth,isLeaf);
+          }
+          
+          if (valid_x0 & valid_y1) {
+            const int idx = (int)(f_idx_dx0+f_idx_dy1+f_idx_dz1);
+            set(o,C110,v[idx],brick->cellWidth,isLeaf);
+          }
+          if (valid_x1 & valid_y1) {
+            const int idx = (int)(f_idx_dx1+f_idx_dy1+f_idx_dz1);
+            set(o,C111,v[idx],brick->cellWidth,isLeaf);
+          }
+        }
+        break;
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+void findEightCellsNotOrdered(const Chombo *uniform self,
                               CompactOctant &o,
                               const float minWidth)
 {
@@ -78,7 +217,8 @@ void findEightCellsNotOrdered(const Chombo *uniform self,
 
   // print("numleaves %\n",numLeaves);
   for (uniform int leafID=0;leafID<numLeaves;leafID++) {
-    for (uniform int i=leafList[leafID];any(true);i++) {
+    bool isLeaf = true;
+    for (uniform int i=leafList[leafID];any(true);i++,isLeaf=false) {
       const ChomboBrick *uniform brick = self->item[i];
       if (brick->cellWidth >= minWidth) {
         // print("brick width %\n",brick->cellWidth);
@@ -110,22 +250,26 @@ void findEightCellsNotOrdered(const Chombo *uniform self,
             const int idx = (int)(f_idx_dx0+f_idx_dy0+f_idx_dz0);
             o.width[0][0][0] = brick->cellWidth;
             o.value[0][0][0] = v[idx];
+            // o.isLeaf[0][0][0] = isLeaf;
           }
           if (valid_x1 & valid_y0) {
             const int idx = (int)(f_idx_dx1+f_idx_dy0+f_idx_dz0);
             o.width[0][0][1] = brick->cellWidth;
             o.value[0][0][1] = v[idx];
+            // o.isLeaf[0][0][1] = isLeaf;
           }
 
           if (valid_x0 & valid_y1) {
             const int idx = (int)(f_idx_dx0+f_idx_dy1+f_idx_dz0);
             o.width[0][1][0] = brick->cellWidth;
             o.value[0][1][0] = v[idx];
+            // o.isLeaf[0][1][0] = isLeaf;
           }
           if (valid_x1 & valid_y1) {
             const int idx = (int)(f_idx_dx1+f_idx_dy1+f_idx_dz0);
             o.width[0][1][1] = brick->cellWidth;
             o.value[0][1][1] = v[idx];
+            // o.isLeaf[0][1][1] = isLeaf;
           }
         }
 
@@ -134,22 +278,26 @@ void findEightCellsNotOrdered(const Chombo *uniform self,
             const int idx = (int)(f_idx_dx0+f_idx_dy0+f_idx_dz1);
             o.width[1][0][0] = brick->cellWidth;
             o.value[1][0][0] = v[idx];
+            // o.isLeaf[1][0][0] = isLeaf;
           }
           if (valid_x1 & valid_y0) {
             const int idx = (int)(f_idx_dx1+f_idx_dy0+f_idx_dz1);
             o.width[1][0][1] = brick->cellWidth;
             o.value[1][0][1] = v[idx];
+            // o.isLeaf[1][0][1] = isLeaf;
           }
           
           if (valid_x0 & valid_y1) {
             const int idx = (int)(f_idx_dx0+f_idx_dy1+f_idx_dz1);
             o.width[1][1][0] = brick->cellWidth;
             o.value[1][1][0] = v[idx];
+            // o.isLeaf[1][1][0] = isLeaf;
           }
           if (valid_x1 & valid_y1) {
             const int idx = (int)(f_idx_dx1+f_idx_dy1+f_idx_dz1);
             o.width[1][1][1] = brick->cellWidth;
             o.value[1][1][1] = v[idx];
+            // o.isLeaf[1][1][1] = isLeaf;
           }
         }
         break;

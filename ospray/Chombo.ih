@@ -74,3 +74,23 @@ struct Chombo {
     node[i] */
   box1f *nodeRange;
 };
+
+inline float nextafter(const float f, const float s)
+{
+  const float af = abs(f);
+  const float nf = f+s*af*(1.f/(float)(1<<23));
+// #ifndef NDEBUG
+//   if (nf == f)
+//     print("NEXTAFTER NOT WORKING");
+// #endif
+  return nf;
+}
+
+inline vec3f nextafter(const vec3f v, const vec3f sign)
+{ 
+  return make_vec3f(nextafter(v.x,sign.x),
+                    nextafter(v.y,sign.y),
+                    nextafter(v.z,sign.z)); 
+}
+
+

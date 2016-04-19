@@ -31,6 +31,52 @@ struct CompactOctant {
 };
 typedef CompactOctant CompOct;
 
+struct Corner {
+  float value, width;
+  bool isLeaf;
+};
+struct OctCorners {
+  vec3f P0, P1;
+  Corner c[8];
+};
+enum { C000=0, C001,C010,C011,C100,C101,C110,C111 };
+
+inline void set(Corner &c,
+                const float v, const float w, const bool l)
+{ 
+  c.value = v;
+  c.width = w;
+  c.isLeaf = l;
+}
+
+inline void set(OctCorners &o, const uniform int i,
+                const float v, const float w, const bool l)
+{ set(o.c[i],v,w,l); }
+
+inline float lerp(const OctCorners &oct, const vec3f &w)
+{
+    
+  const float f000 = oct.c[C000].value;
+  const float f001 = oct.c[C001].value;
+  const float f010 = oct.c[C010].value;
+  const float f011 = oct.c[C011].value; 
+  const float f100 = oct.c[C100].value;
+  const float f101 = oct.c[C101].value;
+  const float f110 = oct.c[C110].value;
+  const float f111 = oct.c[C111].value;
+    
+  const float f00 = (1.f-w.x)*f000 + w.x*f001;
+  const float f01 = (1.f-w.x)*f010 + w.x*f011;
+  const float f10 = (1.f-w.x)*f100 + w.x*f101;
+  const float f11 = (1.f-w.x)*f110 + w.x*f111;
+    
+  const float f0 = (1.f-w.y)*f00+w.y*f01;
+  const float f1 = (1.f-w.y)*f10+w.y*f11;
+    
+  const float f = (1.f-w.z)*f0+w.z*f1;
+  return f;
+}
+
 inline void clear(CompactOctant &oct)
 {
   oct.width[0][0][0] = 0.f;
@@ -41,6 +87,17 @@ inline void clear(CompactOctant &oct)
   oct.width[1][0][1] = 0.f;
   oct.width[1][1][0] = 0.f;
   oct.width[1][1][1] = 0.f;
+}
+inline void clear(OctCorners &oct)
+{
+  oct.c[C000].width = 0.f;
+  oct.c[C001].width = 0.f;
+  oct.c[C010].width = 0.f;
+  oct.c[C011].width = 0.f;
+  oct.c[C100].width = 0.f;
+  oct.c[C101].width = 0.f;
+  oct.c[C110].width = 0.f;
+  oct.c[C111].width = 0.f;
 }
 
 inline void out(const CompactOctant &oct)
@@ -101,6 +158,15 @@ the order of P0 and P1 does NOT matter; ie, it is perfectly valid that
 any coooridnate of P1 is less than P0's */
 extern void findEightCellsNotOrdered(const Chombo *uniform self,
                                      CompactOctant &o,
+                                     const float minWidth);
+
+/*! find the eight cells made up by the combination of {P0,P1}x{x,y,z}.
+  this will return both value AND width of the found cell.
+  
+the order of P0 and P1 does NOT matter; ie, it is perfectly valid that
+any coooridnate of P1 is less than P0's */
+extern void findEightCellsNotOrdered(const Chombo *uniform self,
+                                     OctCorners &o,
                                      const float minWidth);
 
 /*! find the eight corner values given by all combinations of
