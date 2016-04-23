@@ -146,6 +146,8 @@ void findEightCellsNotOrdered(const Chombo *uniform self,
       const ChomboBrick *uniform brick = leaf->brickList[brickID];
       while (brick->cellWidth < desired_width) {
         brick = leaf->brickList[++brickID];
+        if (brick == NULL) 
+          print("invalid brick!\n");
         isLeaf = false;
       }
       

@@ -55,10 +55,11 @@ namespace ospray {
 
       ChomboAccel::Leaf newLeaf;
       newLeaf.bounds = bounds;
-      newLeaf.brickList = new const ChomboData::Brick *[brick.size()];
+      newLeaf.brickList = new const ChomboData::Brick *[brick.size()+1];
       for (int i=0;i<brick.size();i++)
         // push bricks in reverse order, so the finest level comes first
         newLeaf.brickList[i] = brick[brick.size()-1-i];
+      newLeaf.brickList[brick.size()] = NULL;
       this->leaf.push_back(newLeaf);
     }
     
