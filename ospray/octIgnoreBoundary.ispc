@@ -37,7 +37,17 @@ extern float Chombo_octIgnoreBoundaries(void *uniform _self, const vec3f &pos)
   const vec3f sidePos = cell.pos + sideID*cell.width;
   Octant oct;
   oct.P0 = pos;
+#if 1
+  // this is the simplest way of doing it, no blending between levels
+  // at all. bad artifacts
   oct.P1 = pos + sign * make_vec3f(cell.width);
+#else
+  // this is a first hack that at least blends with the closest fine
+  // neighbor (if the neighbor DOES have a finer level). looks much
+  // better, but still not guaranteed to work correctly.
+  const float hfcw = 0.5f*chom->finestLevelCellWidth;
+  oct.P1 = sidePos + sign * make_vec3f(hfcw);
+#endif
 
   findEightCellsNotOrdered(chom,oct,cell.width);
 

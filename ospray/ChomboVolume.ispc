@@ -184,6 +184,9 @@ export void ChomboVolume_set(void *uniform _self,
   case AMR_OCT_SIMPLE:
     self->super.computeSample    = &Chombo_octIgnoreBoundaries;
     break;
+  case AMR_BLEND:
+    self->super.computeSample    = &Chombo_blendFromCoarser;
+    break;
   default:
     print("unknown reconstruction method!?");
   }

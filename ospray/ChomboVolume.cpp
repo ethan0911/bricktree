@@ -84,15 +84,18 @@ namespace ospray {
         std::cout << "-------------------------------------------------------" << std::endl;
         std::cout << "-------------------------------------------------------" << std::endl;
         std::cout << "-------------------------------------------------------" << std::endl;
-        if (methodString == "NEAREST" ||
+        if (methodString == "AMR_NEAREST" ||
             methodString == "nearest")
           method = AMR_NEAREST;
-        else if (methodString == "FINEST" ||
+        else if (methodString == "AMR_FINEST" ||
                  methodString == "finest")
           method = AMR_FINEST;
-        else if (methodString == "OCT-SIMPLE" ||
+        else if (methodString == "AMR_OCT_SIMPLE" ||
                  methodString == "oct-simple")
           method = AMR_OCT_SIMPLE;
+        else if (methodString == "AMR_BLEND" ||
+                 methodString == "blend")
+          method = AMR_BLEND;
         else 
           throw std::runtime_error("cannot parse ospray_amr_method '"+methodString+"'");
       }

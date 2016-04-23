@@ -22,17 +22,17 @@ void findEightCellsNotOrdered(const Chombo *uniform self,
                               const float tgtWidth)
 {
 #if 0
-  set(oct.c[C000],findLeafCell(self,make_vec3f(oct.P0.x,oct.P0.y,oct.P0.z)));
-  set(oct.c[C001],findLeafCell(self,make_vec3f(oct.P1.x,oct.P0.y,oct.P0.z)));
+  set(oct.c[C000],findCell(self,make_vec3f(oct.P0.x,oct.P0.y,oct.P0.z),tgtWidth));
+  set(oct.c[C001],findCell(self,make_vec3f(oct.P1.x,oct.P0.y,oct.P0.z),tgtWidth));
 
-  set(oct.c[C010],findLeafCell(self,make_vec3f(oct.P0.x,oct.P1.y,oct.P0.z)));
-  set(oct.c[C011],findLeafCell(self,make_vec3f(oct.P1.x,oct.P1.y,oct.P0.z)));
+  set(oct.c[C010],findCell(self,make_vec3f(oct.P0.x,oct.P1.y,oct.P0.z),tgtWidth));
+  set(oct.c[C011],findCell(self,make_vec3f(oct.P1.x,oct.P1.y,oct.P0.z),tgtWidth));
 
-  set(oct.c[C100],findLeafCell(self,make_vec3f(oct.P0.x,oct.P0.y,oct.P1.z)));
-  set(oct.c[C101],findLeafCell(self,make_vec3f(oct.P1.x,oct.P0.y,oct.P1.z)));
+  set(oct.c[C100],findCell(self,make_vec3f(oct.P0.x,oct.P0.y,oct.P1.z),tgtWidth));
+  set(oct.c[C101],findCell(self,make_vec3f(oct.P1.x,oct.P0.y,oct.P1.z),tgtWidth));
 
-  set(oct.c[C110],findLeafCell(self,make_vec3f(oct.P0.x,oct.P1.y,oct.P1.z)));
-  set(oct.c[C111],findLeafCell(self,make_vec3f(oct.P1.x,oct.P1.y,oct.P1.z)));
+  set(oct.c[C110],findCell(self,make_vec3f(oct.P0.x,oct.P1.y,oct.P1.z),tgtWidth));
+  set(oct.c[C111],findCell(self,make_vec3f(oct.P1.x,oct.P1.y,oct.P1.z),tgtWidth));
   return;
 #endif
   // clear(o);
