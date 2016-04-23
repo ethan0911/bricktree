@@ -18,20 +18,22 @@
 
 // amr base
 #include "../amr/Array3D.h"
+// ospray
+#include "ospray/common/Data.h"
 
 namespace ospray {
   namespace amr {
 
     /*! this structure defines only the format of the INPUT of chombo
         data - ie, what we get from the scene graph or applicatoin */
-    struct ChomboInput {
-      ChomboInput(const OSPData brickInfoData, 
-                  const OSPData brickDataData);
+    struct ChomboData {
+      ChomboData(const Data &brickInfoData, 
+                 const Data &brickDataData);
 
       /*! this is how an app _specifies_ a brick (or better, the array
         of bricks); the brick data is specified through a separate
         array of data buffers (one data buffer per brick) */
-      struct Brick {
+      struct BrickInfo {
         /*! bounding box of integer coordinates of cells. note that
           this EXCLUDES the width of the rightmost cell: ie, a 4^3
           box at root level pos (0,0,0) would have a _box_ of
@@ -46,9 +48,33 @@ namespace ospray {
         // width of each cell in this level
         float cellWidth;
       };
+
+      struct Brick : public BrickInfo {
+        //! default constructor
+        Brick() : value(NULL) {};
+        /*! actual constructor from a brick info and data pointer */
+        /*! initialize from given data */
+        Brick(const BrickInfo &info, const float *data);
+
+        /* world bounds, including entire cells. ie, a 4^3 root brick
+           at (0,0,0) would have bounds [(0,0,0)-(4,4,4)] (as opposed
+           to the 'box' value, see above!) */
+        box3f bounds;
+        // pointer to the actual data values stored in this brick
+        const float *value;
+        // dimensions of this box's data
+        vec3i dims;
+        // scale factor from grid space to world space (ie,1.f/cellWidth)
+        float gridToWorldScale;
+        
+        // rcp(bounds.upper-bounds.lower);
+        vec3f bounds_scale;
+        // dimensions, in float
+        vec3f f_dims;
+      };
       
-      const Brick  brickInfo[];
-      const float *brickData[];
+      //! out own, internal represenation of a brick
+      const Brick **brick;
       const size_t numBricks;
     };
 

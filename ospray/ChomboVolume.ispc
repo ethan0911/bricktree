@@ -149,7 +149,6 @@ export void *uniform ChomboVolume_create(void *uniform cppE)
 export void ChomboVolume_set(void *uniform _self,
                              void *uniform _xf,
                              uniform vec3i &rootGridDims,
-                             const void *uniform _brick_array,
                              const void *uniform _tree_node,
                              uniform int32 numTreeNodes,
                              const void *uniform _tree_leaf,
@@ -198,7 +197,6 @@ export void ChomboVolume_set(void *uniform _self,
 # error no sample() method selected...
 #endif
 
-  // self->chombo.brick           = (ChomboBrick  *)_brick_array;
   self->chombo.node            = (KDTreeNode   *)_tree_node;
   self->chombo.numNodes        = numTreeNodes;
   self->chombo.leaf            = (ChomboLeaf *)_tree_leaf;

@@ -25,24 +25,6 @@ namespace ospray {
     struct ChomboInternal {
       ChomboInternal(const ChomboInput *input);
 
-      struct Brick : public ChomboData::BrickInfo {
-        /* world bounds, including entire cells. ie, a 4^3 root brick
-           at (0,0,0) would have bounds [(0,0,0)-(4,4,4)] (as opposed
-           to the 'box' value, see above!) */
-        box3f bounds;
-        // pointer to the actual data values stored in this brick
-        float *value;
-        // dimensions of this box's data
-        vec3i dims;
-        // scale factor from grid space to world space (ie,1.f/cellWidth)
-        float gridToWorldScale;
-        
-        // rcp(bounds.upper-bounds.lower);
-        vec3f bounds_scale;
-        // dimensions, in float
-        vec3f f_dims;
-      };
-      
       size_t numBricks;
       Brick *brickArray;
     };
