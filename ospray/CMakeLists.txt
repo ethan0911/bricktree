@@ -14,14 +14,15 @@ OSPRAY_ADD_LIBRARY(ospray_module_amr SHARED
   ChomboVolume.ispc
 
   CellRef.ispc
-  CompOctant.ispc
+  Octant.ispc
 
   lerpOnFinestLevel.ispc
   blendFromCoarser.ispc
 
   octIgnoreBoundary.ispc
+  # general oct-from-coarse method
+  octFromCoarseGeneral.ispc
   octFromCoarseLevel.ispc
-  octFromCoarseCorners.ispc
   )
 
 OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_module_amr

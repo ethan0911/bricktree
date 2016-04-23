@@ -51,7 +51,7 @@ extern float octMethodBoundaryFromCoarse(const uniform Chombo *uniform self,
                                   pos.y < cc.y ? 0.f : 1.f,
                                   pos.z < cc.z ? 0.f : 1.f);
   const vec3f sidePos = cell.pos + sideID*cell.width;
-  OctCorners oct;
+  Octant oct;
   oct.P0 = pos;
   oct.P1 = nextafter(pos + sign * make_vec3f(cell.width),sign);
   

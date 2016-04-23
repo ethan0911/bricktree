@@ -15,32 +15,32 @@
 // ======================================================================== //
 
 // ours
-#include "CompOctant.ih"
+#include "Octant.ih"
 
 void findEightCellsNotOrdered(const Chombo *uniform self,
-                              OctCorners &o,
+                              Octant &oct,
                               const float tgtWidth)
 {
 #if 0
-  set(o.c[C000],findLeafCell(self,make_vec3f(o.P0.x,o.P0.y,o.P0.z)));
-  set(o.c[C001],findLeafCell(self,make_vec3f(o.P1.x,o.P0.y,o.P0.z)));
+  set(oct.c[C000],findLeafCell(self,make_vec3f(oct.P0.x,oct.P0.y,oct.P0.z)));
+  set(oct.c[C001],findLeafCell(self,make_vec3f(oct.P1.x,oct.P0.y,oct.P0.z)));
 
-  set(o.c[C010],findLeafCell(self,make_vec3f(o.P0.x,o.P1.y,o.P0.z)));
-  set(o.c[C011],findLeafCell(self,make_vec3f(o.P1.x,o.P1.y,o.P0.z)));
+  set(oct.c[C010],findLeafCell(self,make_vec3f(oct.P0.x,oct.P1.y,oct.P0.z)));
+  set(oct.c[C011],findLeafCell(self,make_vec3f(oct.P1.x,oct.P1.y,oct.P0.z)));
 
-  set(o.c[C100],findLeafCell(self,make_vec3f(o.P0.x,o.P0.y,o.P1.z)));
-  set(o.c[C101],findLeafCell(self,make_vec3f(o.P1.x,o.P0.y,o.P1.z)));
+  set(oct.c[C100],findLeafCell(self,make_vec3f(oct.P0.x,oct.P0.y,oct.P1.z)));
+  set(oct.c[C101],findLeafCell(self,make_vec3f(oct.P1.x,oct.P0.y,oct.P1.z)));
 
-  set(o.c[C110],findLeafCell(self,make_vec3f(o.P0.x,o.P1.y,o.P1.z)));
-  set(o.c[C111],findLeafCell(self,make_vec3f(o.P1.x,o.P1.y,o.P1.z)));
+  set(oct.c[C110],findLeafCell(self,make_vec3f(oct.P0.x,oct.P1.y,oct.P1.z)));
+  set(oct.c[C111],findLeafCell(self,make_vec3f(oct.P1.x,oct.P1.y,oct.P1.z)));
   return;
 #endif
   // clear(o);
   const uniform float hcw = 0.5f*self->finestLevelCellWidth;
-  const vec3f _P0 = clamp(o.P0,
+  const vec3f _P0 = clamp(oct.P0,
                           make_vec3f(0.f),
                           self->bounds.upper-make_vec3f(hcw));
-  const vec3f _P1 = clamp(o.P1,
+  const vec3f _P1 = clamp(oct.P1,
                           make_vec3f(0.f),
                           self->bounds.upper-make_vec3f(hcw));
   const varying float *const uniform p0 = &_P0.x;
@@ -130,7 +130,7 @@ void findEightCellsNotOrdered(const Chombo *uniform self,
 #define DOCORNER(X,Y,Z)                                                 \
       if (valid_z##Z & valid_y##Y & valid_x##X) {                       \
         const int idx = (int)(f_idx_dx##X+f_idx_dy##Y+f_idx_dz##Z);     \
-        set(o.c[C##Z##Y##X],v[idx],brick->cellWidth,isLeaf);            \
+        set(oct.c[C##Z##Y##X],v[idx],brick->cellWidth,isLeaf);            \
       }                                                                 \
       
       DOCORNER(0,0,0);

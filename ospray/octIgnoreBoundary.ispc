@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "CompOctant.ih"
+#include "Octant.ih"
 
 /*! the simplest variant of an octant method - determines the octant
     of the leaf cell the poitn is in, then finds the 8 neighboring
@@ -35,7 +35,7 @@ extern float Chombo_octIgnoreBoundaries(void *uniform _self, const vec3f &pos)
                                   pos.y < cc.y ? 0.f : 1.f,
                                   pos.z < cc.z ? 0.f : 1.f);
   const vec3f sidePos = cell.pos + sideID*cell.width;
-  OctCorners oct;
+  Octant oct;
   oct.P0 = pos;
   oct.P1 = pos + sign * make_vec3f(cell.width);
 

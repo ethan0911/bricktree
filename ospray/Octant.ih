@@ -19,26 +19,28 @@
 #include "FindStack.ih"
 #include "Chombo.ih"
 
+/*! one corner of an octant */
+struct OctCorner {
+  float value, width;
+  bool isLeaf;
+};
+
 /* actually this is more of a virtual 'dual cell' than an octant. it
    contains all the 8 compintaions of {P0,P1}x{x,y,z}, as follows:
    sample position [iz][iy][ix] is (P_ix.x,P_iy.y,P_iz,z),
    width[iz][iy][ix] is the cell with on the level on which this
    sample was found (at most level for sample [0,0,0]!), and value the
    value of that sample. */
-struct OctCorners {
-  struct Corner {
-    float value, width;
-    bool isLeaf;
-  };
+struct Octant {
   vec3f P0, P1;
-  Corner c[8];
+  OctCorner c[8];
 };
 
 /*! enum to symbolically iterate the 8 corners of an octant */
 enum { C000=0, C001,C010,C011,C100,C101,C110,C111 };
 
 //! set an octant corner to given value, width, and leaf flag
-inline void set(OctCorners::Corner &c,
+inline void set(OctCorner &c,
                 const float v, const float w, const bool l)
 { 
   c.value = v;
@@ -47,7 +49,7 @@ inline void set(OctCorners::Corner &c,
 }
 
 //! set an octant corner to given cellref. leafflag does NOT get set
-inline void set(OctCorners::Corner &c,
+inline void set(OctCorner &c,
                 const CellRef &cr)
 { 
   c.value = cr.value;
@@ -79,7 +81,7 @@ inline float lerp(float value[8], const vec3f &w)
   return f;
 }
 
-inline float lerp(const OctCorners &oct, const vec3f &w)
+inline float lerp(const Octant &oct, const vec3f &w)
 {
     
   const float f000 = oct.c[C000].value;
@@ -104,7 +106,7 @@ inline float lerp(const OctCorners &oct, const vec3f &w)
 }
 
 /*! default-initialize an octant to invalid values */
-inline void clear(OctCorners &oct)
+inline void clear(Octant &oct)
 {
   oct.c[C000].width = 0.f;
   oct.c[C001].width = 0.f;
@@ -122,7 +124,7 @@ inline void clear(OctCorners &oct)
 the order of P0 and P1 does NOT matter; ie, it is perfectly valid that
 any coooridnate of P1 is less than P0's */
 extern void findEightCellsNotOrdered(const Chombo *uniform self,
-                                     OctCorners &o,
+                                     Octant &o,
                                      const float minWidth);
 
 

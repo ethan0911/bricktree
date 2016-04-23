@@ -14,23 +14,23 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "CompOctant.ih"
+#include "Octant.ih"
 #include "ChomboVolume.ih"
 
 typedef float (*uniform BackFill)(const Chombo *uniform chom, 
-                                  const OctCorners &oct);
+                                  const Octant &oct);
 typedef float (*uniform SampleFunc)(const Chombo *uniform chom, 
                                     uniform BackFill backFill,
                                     const vec3f &sample);
 
 float backFillCellValue(const Chombo *uniform chom, 
-                        const OctCorners &oct)
+                        const Octant &oct)
 {
   return oct.c[0].value;
 }
 
 float backFillCoarsestLevel(const Chombo *uniform chom, 
-                            const OctCorners &oct)
+                            const Octant &oct)
 { 
   const float maxWidth = max(max(max(oct.c[0].width,oct.c[1].width),
                                  max(oct.c[2].width,oct.c[3].width)),
@@ -39,7 +39,7 @@ float backFillCoarsestLevel(const Chombo *uniform chom,
 #if 1
   const vec3f pos = oct.P0;
   const vec3f floor_shifted_P0 = maxWidth*floor((pos - make_vec3f(0.5f*maxWidth))/maxWidth);
-  OctCorners oct;
+  Octant oct;
   oct.P0 = floor_shifted_P0;
   oct.P1 = floor_shifted_P0 + make_vec3f(maxWidth);
   findEightCellsNotOrdered(chom,oct,maxWidth);
@@ -60,7 +60,7 @@ float backFillCoarsestLevel(const Chombo *uniform chom,
                                   pos.y < cc.y ? 0.f : 1.f,
                                   pos.z < cc.z ? 0.f : 1.f);
   const vec3f sidePos = cell.pos + sideID*cell.width;
-  OctCorners oct;
+  Octant oct;
   oct.P0 = pos;
   oct.P1 = nextafter(pos + sign * make_vec3f(cell.width),sign);
   
@@ -76,7 +76,7 @@ float backFillCoarsestLevel(const Chombo *uniform chom,
 float sideNeighbor(const Chombo *uniform chom, 
                   uniform SampleFunc sampleFunc,
                   uniform BackFill backFill,
-                  const OctCorners &oct,
+                  const Octant &oct,
                   uniform int side)
 {
    // if neighbor on COARSER level, ask for value at this position
@@ -102,7 +102,7 @@ float sideNeighbor(const Chombo *uniform chom,
 float edgeNeighbor(const Chombo *uniform chom, 
                    SampleFunc sampleFunc,
                    BackFill backFill,
-                   OctCorners &oct,
+                   Octant &oct,
                    uniform int sideA, 
                    uniform int sideB)
 {
@@ -134,7 +134,7 @@ float edgeNeighbor(const Chombo *uniform chom,
 float cornerNeighbor(const Chombo *uniform chom, 
                      SampleFunc sampleFunc,
                      BackFill backFill,
-                     OctCorners &oct)
+                     Octant &oct)
 {
   const float maxWidth = max(max(max(oct.c[0].width,oct.c[1].width),
                                  max(oct.c[2].width,oct.c[3].width)),
@@ -209,7 +209,7 @@ float fromCoarseCorners(const Chombo *uniform chom,
                                   pos.y < cc.y ? 0.f : 1.f,
                                   pos.z < cc.z ? 0.f : 1.f);
   const vec3f sidePos = cell.pos + sideID*cell.width;
-  OctCorners oct;
+  Octant oct;
   oct.P0 = cc;
   oct.P1 = nextafter(cc + sign * make_vec3f(cell.width),sign);
   // oct.P0 = pos;

@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "CompOctant.ih"
+#include "Octant.ih"
 
 /*! interpolate on the finest level */
 extern varying float Chombo_lerpOnFinestLevel(void *uniform _self, 
@@ -30,14 +30,14 @@ extern varying float Chombo_lerpOnFinestLevel(void *uniform _self,
   const vec3f C0 = floor((pos+make_vec3f(hcw))/make_vec3f(cw))-make_vec3f(1.f);
   // const vec3f C0 = floor((pos-make_vec3f(hcw))/make_vec3f(cw));
   const vec3f cc = C0 * make_vec3f(cw) + make_vec3f(hcw);
-  OctCorners oc;
-  oc.P0 = cc;
-  oc.P1 = oc.P0 + make_vec3f(cw);
+  Octant oct;
+  oct.P0 = cc;
+  oct.P1 = oct.P0 + make_vec3f(cw);
 
-  findEightCellsNotOrdered(chom,oc,0.f);
+  findEightCellsNotOrdered(chom,oct,0.f);
 
   const vec3f w = abs(pos-cc) / cw;
-  return lerp(oc,w);
+  return lerp(oct,w);
 }
 
 

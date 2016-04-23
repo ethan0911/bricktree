@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "CompOctant.ih"
+#include "Octant.ih"
 #include "ChomboVolume.ih"
 
 // ------------------------------------------------------------------
@@ -43,7 +43,7 @@ float blendFromCoarser_onLevel(const Chombo *uniform chom, const vec3f &pos, flo
                                   pos.y < cc.y ? 0.f : 1.f,
                                   pos.z < cc.z ? 0.f : 1.f);
   const vec3f sidePos = cell.pos + sideID*cell.width;
-  OctCorners oct;
+  Octant oct;
   oct.P0 = pos;
   oct.P1 = nextafter(pos + sign * make_vec3f(cell.width),sign);
   findEightCellsNotOrdered(chom,oct,cell.width);
