@@ -13,7 +13,6 @@ OSPRAY_ADD_LIBRARY(ospray_module_amr SHARED
   ChomboVolume.cpp
   ChomboVolume.ispc
 
-  initialFind.ispc
   CellRef.ispc
   CompOctant.ispc
 

@@ -39,3 +39,11 @@ inline void set(CellRef &cr, const vec3f &pos, const float width, const float va
   cr.value = value;
 }
 
+  /* packet-based variant of findCell kernel */
+extern CellRef findCell(const Chombo *uniform self,
+                        const varying vec3f &_worldSpacePos,
+                        const float minWidth);
+extern CellRef findLeafCell(const Chombo *uniform self,
+                            const varying vec3f &_worldSpacePos);
+
+

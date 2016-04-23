@@ -15,8 +15,9 @@
 // ======================================================================== //
 
 // ours
-#include "findCell.ih"
-#include "findLeaf.ih"
+#include "CellRef.ih"
+#include "FindStack.ih"
+#include "Chombo.ih"
 
 /* actually this is more of a virtual 'dual cell' than an octant. it
    contains all the 8 compintaions of {P0,P1}x{x,y,z}, as follows:

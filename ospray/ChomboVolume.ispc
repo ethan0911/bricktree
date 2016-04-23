@@ -16,7 +16,6 @@
 
 // ours
 #include "CellRef.ih"
-#include "Octant.ih"
 // ospray
 #include "ospray/math/AffineSpace.ih"
 #include "ospray/common/Ray.ih"
