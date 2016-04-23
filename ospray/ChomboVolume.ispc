@@ -16,6 +16,7 @@
 
 // ours
 #include "CellRef.ih"
+#include "ChomboCommon.h"
 // ospray
 #include "ospray/math/AffineSpace.ih"
 #include "ospray/common/Ray.ih"
@@ -146,6 +147,7 @@ export void *uniform ChomboVolume_create(void *uniform cppE)
 } 
 
 export void ChomboVolume_set(void *uniform _self,
+                             uniform int method,
                              void *uniform _xf,
                              uniform vec3i &rootGridDims,
                              const void *uniform _tree_node,
@@ -172,29 +174,42 @@ export void ChomboVolume_set(void *uniform _self,
 
   self->super.intersect        = &Chombo_intersect;
   self->super.computeGradient  = &Chombo_gradient;
-#if 0
-  self->super.computeSample    = &Chombo_debug;
-#elif 0
-  // works
-  self->super.computeSample    = &Chombo_nearestNeighbor;
-#elif 1
-  // works
-  self->super.computeSample    = &Chombo_lerpOnFinestLevel;
-#elif 0
-  self->super.computeSample    = &Chombo_blendFromCoarser;
-#elif 0
-  self->super.computeSample    = &Chombo_octIgnoreBoundaries;
-#elif 0
-  self->super.computeSample    = &Chombo_octFromCoarseCorners;
-#elif 1
-  self->super.computeSample    = &Chombo_octFromCoarseCellValue;
-#elif 1
-  self->super.computeSample    = &Chombo_octFromCoarseLevel;
-#elif 1
-  self->super.computeSample    = &Chombo_octantMethodProper;
-#else
-# error no sample() method selected...
-#endif
+  switch (method) {
+  case AMR_NEAREST:
+    self->super.computeSample    = &Chombo_nearestNeighbor;
+    break; 
+  case AMR_FINEST:
+    self->super.computeSample    = &Chombo_lerpOnFinestLevel;
+    break;
+  case AMR_OCT_SIMPLE:
+    self->super.computeSample    = &Chombo_octIgnoreBoundaries;
+    break;
+  default:
+    print("unknown reconstruction method!?");
+  }
+// #if 0
+//   self->super.computeSample    = &Chombo_debug;
+// #elif 0
+//   // works
+//   self->super.computeSample    = &Chombo_nearestNeighbor;
+// #elif 1
+//   // works
+//   self->super.computeSample    = &Chombo_lerpOnFinestLevel;
+// #elif 0
+//   self->super.computeSample    = &Chombo_blendFromCoarser;
+// #elif 0
+//   self->super.computeSample    = &Chombo_octIgnoreBoundaries;
+// #elif 0
+//   self->super.computeSample    = &Chombo_octFromCoarseCorners;
+// #elif 1
+//   self->super.computeSample    = &Chombo_octFromCoarseCellValue;
+// #elif 1
+//   self->super.computeSample    = &Chombo_octFromCoarseLevel;
+// #elif 1
+//   self->super.computeSample    = &Chombo_octantMethodProper;
+// #else
+// # error no sample() method selected...
+// #endif
 
   self->chombo.node            = (KDTreeNode   *)_tree_node;
   self->chombo.numNodes        = numTreeNodes;

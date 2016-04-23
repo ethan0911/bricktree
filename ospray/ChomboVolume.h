@@ -20,6 +20,7 @@
 #include "ospray/volume/Volume.h"
 // amr base
 #include "ChomboAccel.h"
+#include "ChomboCommon.h"
 
 namespace ospray {
   namespace amr {

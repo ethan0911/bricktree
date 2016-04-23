@@ -72,7 +72,32 @@ namespace ospray {
       }
       vec3i rootGridDims = rootLevelBox.size()+vec3i(1);
       std::cout << "#osp:chom: found root level dimensions of " << rootGridDims << std::endl;
+
+      int method = AMR_FINEST;
+      const char *methodStringFromEnv = getenv("OSPRAY_AMR_METHOD");
+      if (methodStringFromEnv) {
+        const std::string methodString = methodStringFromEnv;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "FOUND 'OSPRAY_AMR_METHOD' env-var ('" << methodString << "')" << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        std::cout << "-------------------------------------------------------" << std::endl;
+        if (methodString == "NEAREST" ||
+            methodString == "nearest")
+          method = AMR_NEAREST;
+        else if (methodString == "FINEST" ||
+                 methodString == "finest")
+          method = AMR_FINEST;
+        else if (methodString == "OCT-SIMPLE" ||
+                 methodString == "oct-simple")
+          method = AMR_OCT_SIMPLE;
+        else 
+          throw std::runtime_error("cannot parse ospray_amr_method '"+methodString+"'");
+      }
       ispc::ChomboVolume_set(getIE(),
+                             method,
                              xf->getIE(),
                              (ispc::vec3i&)rootGridDims,
                              &accel->node[0],

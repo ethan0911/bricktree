@@ -46,20 +46,57 @@ void findEightCellsNotOrdered(const Chombo *uniform self,
   const varying float *const uniform p0 = &_P0.x;
   const varying float *const uniform p1 = &_P1.x;
 
-  uniform FindStack stack[32];
+  uniform FindStack stack[64];
   uniform FindStack *uniform stackPtr = pushStack(&stack[0],0,true);
   
-  uniform int32 leafList[128];
+  uniform int32 leafList[programCount*8];
   uniform int32 numLeaves = 0;
 
   while (stackPtr > stack) {
     --stackPtr;
     if (stackPtr->active) {
       uniform uint32 nodeID = stackPtr->nodeID;
-      while (any(true)) {
+      while (1) {
         const uniform KDTreeNode &node = self->node[nodeID];
         const uniform uint32 childID = getOfs(node);
         if (isLeaf(node)) {
+
+          // if (numLeaves == programCount * 8) {
+          //   print("OVERFLOW OF LEAVES!?\n");
+          //   print("P0 ");out(_P0);print("\n");
+          //   print("P1 ");out(_P1);print("\n");
+          //   for (uniform int i=0;i<numLeaves;i++) {
+          //     const ChomboLeaf *uniform leaf = &self->leaf[childID];
+          //     print("leaf % : % % % - % % %\n",
+          //           i,
+          //           leaf->bounds.lower.x,
+          //           leaf->bounds.lower.y,
+          //           leaf->bounds.lower.z,
+          //           leaf->bounds.upper.x,
+          //           leaf->bounds.upper.y,
+          //           leaf->bounds.upper.z);
+          //   }
+          // }
+
+
+          // const ChomboLeaf *uniform leaf = &self->leaf[childID];
+          
+          // const bool valid_x0 = _P0.x >= leaf->bounds.lower.x & _P0.x < leaf->bounds.upper.x;
+          // const bool valid_y0 = _P0.y >= leaf->bounds.lower.y & _P0.y < leaf->bounds.upper.y;
+          // const bool valid_z0 = _P0.z >= leaf->bounds.lower.z & _P0.z < leaf->bounds.upper.z;
+          
+          // const bool valid_x1 = _P1.x >= leaf->bounds.lower.x & _P1.x < leaf->bounds.upper.x;
+          // const bool valid_y1 = _P1.y >= leaf->bounds.lower.y & _P1.y < leaf->bounds.upper.y;
+          // const bool valid_z1 = _P1.z >= leaf->bounds.lower.z & _P1.z < leaf->bounds.upper.z;
+
+          
+          // const bool anyValid = 
+          //   valid_x0 | valid_x1 | 
+          //   valid_y0 | valid_y1 | 
+          //   valid_z0 | valid_z1;
+          // if (!(anyValid))
+          //   break;
+
           leafList[numLeaves++] = childID;
           break;
         } else {
@@ -81,6 +118,7 @@ void findEightCellsNotOrdered(const Chombo *uniform self,
       }
     }
   }
+
   // -------------------------------------------------------
   // now, process leaves we found
   // -------------------------------------------------------
