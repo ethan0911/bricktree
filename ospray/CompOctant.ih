@@ -25,24 +25,20 @@
    width[iz][iy][ix] is the cell with on the level on which this
    sample was found (at most level for sample [0,0,0]!), and value the
    value of that sample. */
-// struct CompactOctant {
-//   vec3f P0, P1;
-//   float width[2][2][2];
-//   float value[2][2][2];
-// };
-// typedef CompactOctant CompOct;
-
-struct Corner {
-  float value, width;
-  bool isLeaf;
-};
 struct OctCorners {
+  struct Corner {
+    float value, width;
+    bool isLeaf;
+  };
   vec3f P0, P1;
   Corner c[8];
 };
+
+/*! enum to symbolically iterate the 8 corners of an octant */
 enum { C000=0, C001,C010,C011,C100,C101,C110,C111 };
 
-inline void set(Corner &c,
+//! set an octant corner to given value, width, and leaf flag
+inline void set(OctCorners::Corner &c,
                 const float v, const float w, const bool l)
 { 
   c.value = v;
@@ -50,17 +46,16 @@ inline void set(Corner &c,
   c.isLeaf = l;
 }
 
-inline void set(Corner &c,
+//! set an octant corner to given cellref. leafflag does NOT get set
+inline void set(OctCorners::Corner &c,
                 const CellRef &cr)
 { 
   c.value = cr.value;
   c.width = cr.width;
 }
 
-// inline void set(OctCorners &o, const uniform int i,
-//                 const float v, const float w, const bool l)
-// { set(o.c[i],v,w,l); }
-
+/*! perform trilinear inteprolation with given weight and 8 input
+    values */
 inline float lerp(float value[8], const vec3f &w)
 {
   const float f000 = value[C000];
@@ -108,17 +103,7 @@ inline float lerp(const OctCorners &oct, const vec3f &w)
   return f;
 }
 
-// inline void clear(CompactOctant &oct)
-// {
-//   oct.width[0][0][0] = 0.f;
-//   oct.width[0][0][1] = 0.f;
-//   oct.width[0][1][0] = 0.f;
-//   oct.width[0][1][1] = 0.f;
-//   oct.width[1][0][0] = 0.f;
-//   oct.width[1][0][1] = 0.f;
-//   oct.width[1][1][0] = 0.f;
-//   oct.width[1][1][1] = 0.f;
-// }
+/*! default-initialize an octant to invalid values */
 inline void clear(OctCorners &oct)
 {
   oct.c[C000].width = 0.f;
@@ -131,66 +116,6 @@ inline void clear(OctCorners &oct)
   oct.c[C111].width = 0.f;
 }
 
-// inline void out(const CompactOctant &oct)
-// {
-//   print("CompOct\n");
-//   print(" P0 "); out(oct.P0); print("\n");
-//   print(" P1 "); out(oct.P1); print("\n");
-//   for (uniform int iz=0;iz<2;iz++)
-//     for (uniform int iy=0;iy<2;iy++)
-//       for (uniform int ix=0;ix<2;ix++) {
-//         print("corner[%][%][%]\n",iz,iy,iz);
-//         print("  width %\n",oct.width[iz][iy][ix]);
-//         print("  value %\n",oct.value[iz][iy][ix]);
-//       }
-// }
-
-// inline void check(CompactOctant &oct)
-// {
-//   if (oct.width[0][0][0] == 0.f||
-//       oct.width[0][0][1] == 0.f||
-//       oct.width[0][1][0] == 0.f||
-//       oct.width[0][1][1] == 0.f||
-//       oct.width[1][0][0] == 0.f||
-//       oct.width[1][0][1] == 0.f||
-//       oct.width[1][1][0] == 0.f||
-//       oct.width[1][1][1] == 0.f) {
-//     print("invalid compoct! (some width==0.f)\n");
-//     out(oct);
-//   }
-// }
-
-// inline vec3f centerOf(const CompactOctant &oct)
-// {
-//   return oct.P0 + 0.5f*oct.width[0][0][0];
-// }
-
-
-
-/*! initial find operation for a small octant: this will traverse down
-  to the leaf of 'samplePos', and fill in at least oct[0,0,0]. If
-  any other cells on the given leaf brick fit any other corners of
-  this octant, they will get filled in, too */
-// extern void initialFind(const Chombo *uniform self,
-//                         CompactOctant &oct,
-//                         const varying vec3f &pos,
-//                         const float minWidth);
-
-// /*! fill in addiitonal corners, where applicable. 'nextPos' must be a cellRef */
-// extern void findOthers(const Chombo *uniform self,
-//                        CompactOctant &o,
-//                        const vec3f &pos,
-//                        const float minWidth);
-
-/*! find the eight cells made up by the combination of {P0,P1}x{x,y,z}.
-  this will return both value AND width of the found cell.
-  
-the order of P0 and P1 does NOT matter; ie, it is perfectly valid that
-any coooridnate of P1 is less than P0's */
-// extern void findEightCellsNotOrdered(const Chombo *uniform self,
-//                                      CompactOctant &o,
-//                                      const float minWidth);
-
 /*! find the eight cells made up by the combination of {P0,P1}x{x,y,z}.
   this will return both value AND width of the found cell.
   
@@ -199,16 +124,6 @@ any coooridnate of P1 is less than P0's */
 extern void findEightCellsNotOrdered(const Chombo *uniform self,
                                      OctCorners &o,
                                      const float minWidth);
-
-/*! find the eight corner values given by all combinations of
-  {P0,P1}{xyz}. do NOT set the width values, and always traverse
-  down to the leaf level 
-
-  P0 MUST be less than P1
-*/
-// extern void findEightCornerValuesOrdered(const Chombo *uniform self,
-//                                          CompactOctant &o);
-
 
 
 
