@@ -86,12 +86,27 @@ extern float Chombo_octIgnoreBoundaries(void *uniform _self, const vec3f &pos);
    0.38 gives a visible artifact.
  */
 // ------------------------------------------------------------------
-extern float Chombo_octFromCoarse(void *uniform _self, const vec3f &pos);
+extern float Chombo_octFromCoarseLevel(void *uniform _self, const vec3f &pos);
 
 
+// ------------------------------------------------------------------
+/*! "blend from coarser levels". check if we're in a uniform region,
+    and if so do lerp. if not, blend values from lower level. NOTE
+    THAT QUALITATIVELY THIS IS THE SAME AS ONE OF THE OCT METHODS */
+// ------------------------------------------------------------------
+extern float Chombo_blendFromCoarser(void *uniform _self, const vec3f &pos);
 
-
-
+// ------------------------------------------------------------------
+/*! a 'octant from coarse' method that defines the boundary of two
+    octants through the coarest of all adjacent levels. unlike the
+    'level'-based oct-from-coarse method, this one looks only at the
+    corners of the octant, and defines an intersection of octants as
+    the average of all cells that abut there, even if those are on
+    different levels. ie, it will NOT always use values from a coarser
+    level */
+// ------------------------------------------------------------------
+extern float Chombo_octFromCoarseCellValue(void *uniform _self, const vec3f &pos);
+extern float Chombo_octFromCoarseCorners(void *uniform _self, const vec3f &pos);
 
 
 
@@ -134,10 +149,11 @@ export void *uniform ChomboVolume_create(void *uniform cppE)
 export void ChomboVolume_set(void *uniform _self,
                              void *uniform _xf,
                              uniform vec3i &rootGridDims,
-                             void *uniform _brick_array,
-                             void *uniform _tree_node,
+                             const void *uniform _brick_array,
+                             const void *uniform _tree_node,
                              uniform int32 numTreeNodes,
-                             void *uniform _tree_item,
+                             const void *uniform _tree_leaf,
+                             uniform int32 numLeaves,
                              uniform float finestLevelCellWidth)
 {
   ChomboVolume *uniform self = (ChomboVolume *uniform)_self;
@@ -163,13 +179,19 @@ export void ChomboVolume_set(void *uniform _self,
 #elif 0
   // works
   self->super.computeSample    = &Chombo_nearestNeighbor;
-#elif 0
+#elif 1
   // works
   self->super.computeSample    = &Chombo_lerpOnFinestLevel;
-#elif 1
+#elif 0
+  self->super.computeSample    = &Chombo_blendFromCoarser;
+#elif 0
   self->super.computeSample    = &Chombo_octIgnoreBoundaries;
+#elif 0
+  self->super.computeSample    = &Chombo_octFromCoarseCorners;
 #elif 1
-  self->super.computeSample    = &Chombo_octFromCoarse;
+  self->super.computeSample    = &Chombo_octFromCoarseCellValue;
+#elif 1
+  self->super.computeSample    = &Chombo_octFromCoarseLevel;
 #elif 1
   self->super.computeSample    = &Chombo_octantMethodProper;
 #else
@@ -179,7 +201,8 @@ export void ChomboVolume_set(void *uniform _self,
   // self->chombo.brick           = (ChomboBrick  *)_brick_array;
   self->chombo.node            = (KDTreeNode   *)_tree_node;
   self->chombo.numNodes        = numTreeNodes;
-  self->chombo.item            = (ChomboBrick **)_tree_item;
+  self->chombo.leaf            = (ChomboLeaf *)_tree_leaf;
+  self->chombo.numLeaves       = numLeaves;
   self->chombo.rootGridDims    = rootGridDims;
 
   self->chombo.bounds.lower    = make_vec3f(0);

@@ -36,8 +36,9 @@ extern CellRef findCell(const Chombo *uniform self,
       const uniform uint32 nodeID = stackPtr->nodeID;
       const uniform KDTreeNode &node = self->node[nodeID];
       if (isLeaf(node)) {
-        for (uniform int i=getOfs(node);any(true);i++) {
-          const ChomboBrick *uniform brick = self->item[i];
+        const ChomboLeaf *uniform leaf = &self->leaf[getOfs(node)];
+        for (uniform int i=0;any(true);i++) {
+          const ChomboBrick *uniform brick = leaf->brickList[i];
           if (brick->cellWidth >= minWidth) {
             const vec3f relBrickPos
               = (worldSpacePos - brick->bounds.lower) * brick->bounds_scale;
@@ -95,7 +96,8 @@ extern CellRef findLeafCell(const Chombo *uniform self,
       const uniform uint32 nodeID = stackPtr->nodeID;
       const uniform KDTreeNode node = self->node[nodeID];
       if (isLeaf(node)) {
-        const ChomboBrick *uniform brick = self->item[getOfs(node)];
+        const ChomboLeaf *uniform leaf = &self->leaf[getOfs(node)];
+        const ChomboBrick *uniform brick = leaf->brickList[0];//self->item[getOfs(node)];
         const vec3f relBrickPos
           = (worldSpacePos - brick->bounds.lower) * brick->bounds_scale;
         // brick coords: integer cell coordinates inside brick

@@ -68,6 +68,15 @@ namespace ospray {
         vec3f f_dims;
       };
 
+      struct Leaf {
+        Leaf() {};
+        Leaf(const Leaf &o) : brickList(o.brickList), bounds(o.bounds) {}
+        /*! list of bricks that overlap this leaf; sorted from finest
+            to coarsest level */
+        const Brick **brickList;
+        box3f bounds;
+      };
+
       Chombo();
 
       //! \brief common function to help printf-debugging 
@@ -107,14 +116,18 @@ namespace ospray {
             uint32 numItems;
           };
         };
-        void makeLeaf(index_t nodeID, const std::vector<const Chombo::Brick *> &brickIDs);
+        KDTree() {};
+        ~KDTree();
+        void makeLeaf(index_t nodeID, 
+                      const box3f &bounds,
+                      const std::vector<const Chombo::Brick *> &brickIDs);
         void makeInner(index_t nodeID, int dim, float pos, int childID);
         void buildRec(int nodeID,const box3f &bounds,std::vector<const Chombo::Brick *> &brick);
         /*! build entire tree over given number of bricks */
         void build(const Chombo::Brick *brickArray, size_t numBricks);
 
-        std::vector<Node>                  node;
-        std::vector<const Chombo::Brick *> item;
+        std::vector<Node>         node;
+        std::vector<Chombo::Leaf> leaf;
       };
 
       void makeBricks();

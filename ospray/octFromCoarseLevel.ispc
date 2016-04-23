@@ -41,7 +41,7 @@
    up to 1 (next value(s) on the fine level). This 'ghost' spike at
    0.38 gives a visible artifact.
  */
-extern float Chombo_octFromCoarse(void *uniform _self, const vec3f &pos)
+extern float Chombo_octFromCoarseLevel(void *uniform _self, const vec3f &pos)
 {
   const ChomboVolume *uniform self = (const ChomboVolume *uniform)_self;
   const Chombo *uniform chom = &self->chombo;
@@ -79,7 +79,7 @@ extern float Chombo_octFromCoarse(void *uniform _self, const vec3f &pos)
       const vec3f cornerPos = make_vec3f((i&1)?oct.P1.x:oct.P0.x,
                                          (i&2)?oct.P1.y:oct.P0.y,
                                          (i&4)?oct.P1.z:oct.P0.z);
-      oct.c[i].value = Chombo_octFromCoarse(_self,cornerPos);
+      oct.c[i].value = Chombo_octFromCoarseLevel(_self,cornerPos);
     }
   }
   

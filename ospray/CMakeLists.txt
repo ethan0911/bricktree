@@ -13,8 +13,11 @@ OSPRAY_ADD_LIBRARY(ospray_module_amr SHARED
   CompOctant.ispc
 
   lerpOnFinestLevel.ispc
+  blendFromCoarser.ispc
+
   octIgnoreBoundary.ispc
-  octFromCoarse.ispc
+  octFromCoarseLevel.ispc
+  octFromCoarseCorners.ispc
   )
 
 OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_module_amr

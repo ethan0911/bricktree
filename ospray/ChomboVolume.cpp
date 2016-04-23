@@ -32,20 +32,27 @@ namespace ospray {
     using std::ostream;
     using std::flush;
 
+    Chombo::KDTree::~KDTree() 
+    {
+      for (int i=0;i<leaf.size();i++)
+        delete[] leaf[i].brickList;
+    }
+
     void Chombo::KDTree::makeLeaf(index_t nodeID,
+                                  const box3f &bounds,
                                   const std::vector<const Chombo::Brick *> &brick) 
     { 
       node[nodeID].dim = 3; 
-      node[nodeID].ofs = item.size(); 
+      node[nodeID].ofs = this->leaf.size(); //item.size(); 
       node[nodeID].numItems = brick.size();
-#if 1
-      // push bricks in reverse order, so the finest level comes first
+
+      Chombo::Leaf newLeaf;
+      newLeaf.bounds = bounds;
+      newLeaf.brickList = new const Chombo::Brick *[brick.size()];
       for (int i=0;i<brick.size();i++)
-        item.push_back(brick[brick.size()-1-i]);
-#else
-      for (int i=0;i<brick.size();i++)
-        item.push_back(brick[i]);
-#endif
+        // push bricks in reverse order, so the finest level comes first
+        newLeaf.brickList[i] = brick[brick.size()-1-i];
+      this->leaf.push_back(newLeaf);
     }
     
     void Chombo::KDTree::makeInner(index_t nodeID, int dim, float pos, int childID) 
@@ -84,10 +91,6 @@ namespace ospray {
           bestDim = dim;
       }
 
-      // PRINT(possibleSplits[0].size());
-      // PRINT(possibleSplits[1].size());
-      // PRINT(possibleSplits[2].size());
-      // PRINT(bestDim);
       if (bestDim == -1) {
         // no split dim - make a leaf
 
@@ -95,18 +98,15 @@ namespace ospray {
         // we're looking for (all on a lower level must be earlier in
         // the list)
         assert(nodeID < this->node.size());
-        makeLeaf(nodeID,brick);
-        // tree.node[nodeID].makeLeaf(brickID.back());
+        makeLeaf(nodeID,bounds,brick);
       } else {
         float bestPos = std::numeric_limits<float>::infinity();
         float mid = bounds.center()[bestDim];
         for (auto it = possibleSplits[bestDim].begin(); 
              it != possibleSplits[bestDim].end(); it++) {
-          // cout << "CHECKING POS " << *it << endl;
           if (fabsf(*it - mid) < fabsf(bestPos-mid))
             bestPos = *it;
         }
-        // PRINT(bestPos);
         box3f lBounds = bounds;
         box3f rBounds = bounds;
 
@@ -130,47 +130,26 @@ namespace ospray {
         float sum_lo = 0.f, sum_hi = 0.f;
         for (int i=0;i<brick.size();i++) {
           const box3f wb = intersectionOf(brick[i]->bounds,bounds);
-#if 1
           if (wb.empty())
             throw std::runtime_error("empty box!?");
-#endif
           sum_lo += wb.lower[bestDim];
           sum_hi += wb.upper[bestDim];
-          // cout << "TESTING " << wb << endl;
           if (wb.lower[bestDim] >= bestPos) {
             r.push_back(brick[i]);
-            // cout << "R" << endl;
           } else if (wb.upper[bestDim] <= bestPos) {
             l.push_back(brick[i]);
-            // cout << "L" << endl;
           } else {
             r.push_back(brick[i]);
             l.push_back(brick[i]);
-            // cout << "BOTH" << endl;
           }
         }
-        // PRINT(sum_lo);
-        // PRINT(sum_hi);
-        // PRINT(bestPos);
-        if (l.empty() || r.empty()) {
-          cout << "BUG" << endl;
-          cout << "in" << endl;
-          for (int i=0;i<brick.size();i++) {
-            cout << i << " : " << intersectionOf(brick[i]->bounds,bounds) << endl;
-          }
-          exit(0);
-        }
-        // PRINT(lBounds);
-        // PRINT(rBounds);
-        // PRINT(l.size());
-        // PRINT(r.size());
+        assert(!(l.empty() || r.empty()));
         
         int newNodeID = node.size();
         makeInner(nodeID,bestDim,bestPos,newNodeID);
 
         node.push_back(KDTree::Node());
         node.push_back(KDTree::Node());
-        // node.resize(node.size()+2);
         brick.clear();
 
         buildRec(newNodeID+0,lBounds,l);
@@ -191,7 +170,7 @@ namespace ospray {
       node.resize(1);
       buildRec(0,bounds,brick);
       cout << "#osp:chom: done building kdtree, created " 
-           << node.size() << " nodes, and " << item.size() << " item list entries" << endl;
+           << node.size() << " nodes" << endl;
     }
 
     Chombo::Chombo()
@@ -254,15 +233,14 @@ namespace ospray {
       }
       vec3i rootGridDims = rootLevelBox.size()+vec3i(1);
       cout << "#osp:chom: found root level dimensions of " << rootGridDims << endl;
-      PRINT(kdTree.node.size());
-      PRINT(kdTree.item.size());
       ispc::ChomboVolume_set(getIE(),
                              xf->getIE(),
                              (ispc::vec3i&)rootGridDims,
                              brickArray,
                              &kdTree.node[0],
                              kdTree.node.size(),
-                             &kdTree.item[0],
+                             &kdTree.leaf[0],
+                             kdTree.leaf.size(),
                              finestLevelCellWidth);
       cout << "#osp:chom: done building chombo volume" << endl;
     }

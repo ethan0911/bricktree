@@ -53,14 +53,21 @@ struct ChomboBrick {
   vec3f f_dims;
 };
 
+struct ChomboLeaf {
+  ChomboBrick **brickList;
+  box3f bounds;
+};
+
 struct Chombo {
   ChomboBrick          *uniform brick;
   /*! "item list" array - each leaf node in the tree points into this
     array, and the 'num' elements follwing the pointed-to-location
     are the bricks stored at this leaf */
-  ChomboBrick *uniform *uniform item;
+  ChomboLeaf           *uniform leaf;
+  // ChomboBrick *uniform *uniform item;
   KDTreeNode           *uniform node;
   uniform uint32 numNodes;
+  uniform uint32 numLeaves;
   uniform float finestLevelCellWidth;
 
   vec3i rootGridDims;

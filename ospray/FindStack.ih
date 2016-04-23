@@ -34,8 +34,9 @@ inline uniform FindStack *uniform pushStack(uniform FindStack *uniform stackPtr,
                                             uniform int nodeID,
                                             varying bool valid)
 {
-  unmasked { stackPtr->active = false; }
-  stackPtr->active = valid;
+  // unmasked { stackPtr->active = false; }
+  // stackPtr->active = valid;
+  unmasked { stackPtr->active = valid; };
   stackPtr->nodeID = nodeID;
   return stackPtr+1;
 }
