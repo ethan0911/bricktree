@@ -125,7 +125,6 @@ namespace ospray {
           break;
         }
 
-
         std::vector<const Chombo::Brick *> l, r;
         float sum_lo = 0.f, sum_hi = 0.f;
         for (int i=0;i<brick.size();i++) {
@@ -181,30 +180,14 @@ namespace ospray {
 
     void Chombo::makeBricks()
     {
-      assert(brickInfoData);
-      numBricks = brickInfoData->numBytes / sizeof(BrickInfo);
-      cout << "#osp:chom: making bricks - found " << numBricks << " brick infos" << endl;
-      brickArray = new Brick[numBricks];
-
-      Data **allBricksData = (Data **)brickDataData->data;
-
-      for (int i=0;i<numBricks;i++) {
-        Brick *brick = brickArray+i;
-        BrickInfo *info = (BrickInfo*)brickInfoData->data + i;
-        Data      *thisBrickData = allBricksData[i];
-        // copy values
-        brick->box = info->box;
-        brick->level = info->level;
-        brick->cellWidth = info->cellWidth;
-
-        brick->value = (float*)thisBrickData->data;
-        brick->dims  = brick->box.size() + vec3i(1);
-        brick->gridToWorldScale = 1.f/brick->cellWidth;
-        brick->bounds = box3f(vec3f(brick->box.lower) * brick->cellWidth, 
-                              vec3f(brick->box.upper+vec3i(1)) * brick->cellWidth);
-        brick->bounds_scale = rcp(brick->bounds.size());
-        brick->f_dims = vec3f(brick->dims);
       }
+    }
+
+      /*! Copy voxels into the volume at the given index (non-zero
+        return value indicates success). */
+    int ChomboVolume::setRegion(const void *source, const vec3i &index, const vec3i &count)
+    {
+      FATAL("'setRegion()' doesn't make sense for AMR volumes; they can only be set from existing data");
     }
 
     //! Allocate storage and populate the volume.
