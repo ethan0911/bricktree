@@ -90,8 +90,9 @@ namespace ospray {
       const int nDims = H5Sget_simple_extent_ndims(space);
       hsize_t dims[nDims];
       H5Sget_simple_extent_dims(space,dims,NULL);
+      PRINT(dataName);
       int numData = dims[0];
-      // PRINT(numData);
+      PRINT(numData);
 
       level->data.resize(numData);
       H5Dread(data,H5T_NATIVE_DOUBLE,H5S_ALL,H5S_ALL,H5P_DEFAULT,&level->data[0]);

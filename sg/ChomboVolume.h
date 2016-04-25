@@ -45,7 +45,7 @@ namespace ospray {
       //! return bounding box of all primitives
       virtual box3f getBounds() { return box3f(vec3f(0.f),vec3f(rootGridSize)); }
 
-      void parseChomboFile(const FileName &fileName);
+      void parseChomboFile(const FileName &fileName, const std::string &desiredComponent);
 
       // ------------------------------------------------------------------
       // this is the data we're parsing from the chombo file

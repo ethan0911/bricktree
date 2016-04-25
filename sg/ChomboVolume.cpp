@@ -34,13 +34,13 @@ namespace ospray {
                            sg::ImportState &importerState)
     {
       ChomboVolume *cv = new ChomboVolume;
-      cv->parseChomboFile(fileName);      
+      cv->parseChomboFile(fileName,"");      
       cv->setTransferFunction(new TransferFunction);
       
       importerState.world->add(cv);
     }
     
-    void ChomboVolume::parseChomboFile(const FileName &fileName)
+    void ChomboVolume::parseChomboFile(const FileName &fileName, const std::string &desiredComponent)
     {
       assert(chombo == NULL);
       chombo = ospray::chombo::Chombo::parse(fileName);
@@ -59,8 +59,22 @@ namespace ospray {
       cout << "now extracing brickinfo and float arrays from that ..." << endl;
       cout << "-------------------------------------------------------" << endl;
       
+      componentID = -1;
+      for (int i=0;i<chombo->component.size();i++)
+        if (chombo->component[i] == desiredComponent) {
+          cout << "FOUND desired component '" << desiredComponent << "'" << endl;
+          componentID = i;
+        }
+      if (componentID < 0) {
+        if (desiredComponent == "") {
+          cout << "no component specified - defaulting to component 0" << endl;
+          componentID = 0;
+        } else
+          throw std::runtime_error("could not find desird component '"+desiredComponent+"'");
+      }
+
       for (int levelID=0;levelID<chombo->level.size();levelID++) {
-        const chombo::Level *level = this->chombo->level[levelID];
+        chombo::Level *level = this->chombo->level[levelID];
         cout << " - level: " << levelID << " : " << level->boxes.size() << " boxes" << endl;
         for (int brickID=0;brickID<level->boxes.size();brickID++) {
           BrickInfo bi;
@@ -87,6 +101,7 @@ namespace ospray {
                 *f++ = *inPtr++;
               }
         }
+        level->data.clear();
       }
       cout << "#sg:chom: found " << brickInfo.size() << " bricks" << endl;
     }
@@ -180,9 +195,10 @@ namespace ospray {
       std::string fileName = node->getProp("fileName");
       if (fileName != "") {
         PRINT(fileName);
+        const std::string compName = node->getProp("component");
         std::string realFN = node->doc->fileName.path().str()+"/"+fileName;
         PRINT(realFN);
-        parseChomboFile(realFN);
+        parseChomboFile(realFN,compName);
       } else {
         cout << "#osp:sg: setting chombo volume from XML node" << endl;
         // parse directly from XML file
@@ -208,7 +224,7 @@ namespace ospray {
           sprintf(ext,"_level%02d.bin",level);
           FILE *bin = fopen(levelFileName,"rb");
           if (!bin) throw std::runtime_error("no nodes on level! file="+std::string(levelFileName));
-          
+
           while (1) {
             vec3i coord;
             int rc = fread(&coord,sizeof(coord),1,bin);

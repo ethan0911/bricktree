@@ -47,9 +47,10 @@ namespace ospray {
     ChomboData::ChomboData(const Data &brickInfoData, 
                            const Data &brickDataData)
       : numBricks(getNumBricks(brickInfoData)),
-        brick(new const Brick *[numBricks])
+        brick(NULL)
     {
       std::cout << "#osp:chom: found " << numBricks << " brick infos" << std::endl;
+      brick = new const Brick *[numBricks];
       const BrickInfo *brickInfo = (const BrickInfo *)brickInfoData.data;
       const Data **allBricksData = (const Data **)brickDataData.data;
       for (int i=0;i<numBricks;i++) 
