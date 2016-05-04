@@ -43,10 +43,7 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
     # -----------------------------------------------------
     ADD_LIBRARY(ospray_sg_amr SHARED
       sg/AMRVolume.cpp
-      sg/MultiOctree.cpp
       sg/MultiSum.cpp
-      sg/ChomboReader.cpp
-      sg/ChomboVolume.cpp
       )
     OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_sg_amr
       ospray_amr
