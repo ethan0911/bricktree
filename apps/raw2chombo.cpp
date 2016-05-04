@@ -26,6 +26,7 @@ namespace ospray {
     using std::cout;
 
     bool doParallel = false;
+    bool includeBoundary = false;
 
     std::string toString(long l)
     {
@@ -184,6 +185,14 @@ namespace ospray {
         const float weight = valid ? 1.f : 0.f;
         const float val = input->get(coord);
         range.extend(val);
+
+        if (includeBoundary) {
+          for (int iz=-1;iz<=+1;iz++)
+            for (int iy=-1;iy<=+1;iy++)
+              for (int ix=-1;ix<=+1;ix++)
+                range.extend(input->get(coord+vec3i(ix,iy,iz)));
+        }
+
         if (valid) progress();
         return vec2f(val,weight);
       } else {
@@ -352,6 +361,9 @@ namespace ospray {
         } 
         else if (arg == "-p" || arg == "--parallel") {
           doParallel = true;
+        }
+        else if (arg == "-b" || arg == "--boundary") {
+          includeBoundary = true;
         }
         else if (arg[0] != '-')
           inFileName = av[i];
