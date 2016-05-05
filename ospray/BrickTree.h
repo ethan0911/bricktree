@@ -16,39 +16,39 @@
 
 #pragma once
 
-#include "ospray/common/Model.ih"
 // ospray
-#include "ospray/math/AffineSpace.ih"
-#include "ospray/geometry/Geometry.ih"
+#include "ospray/volume/Volume.h"
+// amr base
+#include "../amr/BrickTree.h"
 
-struct range1f {
-  float lo, hi;
-};
+namespace ospray {
+  namespace amr {
 
-struct SumDataBlock {
-  float value[4][4][4];
-};
+    struct BrickTreeVolume : public ospray::Volume {
+      BrickTreeVolume();
 
-struct SumIndexBlock {
-  int32 child[4][4][4];
-};
+      //! \brief common function to help printf-debugging 
+      virtual std::string toString() const { return "ospray::amr::BrickTreeVolume"; }
 
-struct SumBlockInfo {
-  int32 indexBlockID;
-};
+      //! Allocate storage and populate the volume.
+      virtual void commit();
 
-struct MSAMRVolume {
-  Volume    super; //!< inherited from superclass
+      //! Copy voxels into the volume at the given index (non-zero return value indicates success).
+      virtual int setRegion(const void *source, const vec3i &index, const vec3i &count)
+      {
+        FATAL("'setRegion()' doesn't make sense for AMR volumes; they can only be set from existing data");
+      }
 
-  SumIndexBlock *indexBlock;
-  SumDataBlock  *dataBlock;
-  SumBlockInfo  *blockInfo;
-  int32         *firstIndexBlockOfTree;
-  int32         *firstDataBlockOfTree;
-  // root grid dimensions
-  vec3i rootGridDims;
-  vec3f validFractionOfRootGrid;
-  float finestCellWidth;
-};
-
+      Ref<Data>   firstIndexBrickOfTreeData;
+      Ref<Data>   firstDataBrickOfTreeData;
+      Ref<Data>   dataBrickData;
+      Ref<Data>   indexBrickData;
+      Ref<Data>   brickInfoData;
+      vec3i       rootGridDims;
+      vec3f       validFractionOfRootGrid;
+      OSPDataType voxelType;
+    };
+    
+  }
+}
 

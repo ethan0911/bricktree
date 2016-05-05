@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "MultiSum.ih"
+#include "BrickTree.ih"
 
 /*! \file CellDesc.ih all infrastructure for describing, enumerating,
   and locating logical cells in grid space. note this is for ease of
@@ -69,7 +69,7 @@ inline vec3f centerOf(const CellDesc &cd)
     position. Input is a world space position (something inside the
     object's world-space bounding box; output is transformed into
     logical grid space */
-inline CellDesc toGridSpace(const MSAMRVolume *uniform self, const vec3f worldSpacePos)
+inline CellDesc toGridSpace(const BrickTreeVolume *uniform self, const vec3f worldSpacePos)
 {
   const vec3f unitPos = (worldSpacePos - self->super.boundingBox.lower)
     * rcp(self->super.boundingBox.upper - self->super.boundingBox.lower);

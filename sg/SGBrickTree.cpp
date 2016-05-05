@@ -16,7 +16,7 @@
 
 #undef NDEBUG
 
-#include "MultiSum.h"
+#include "SGBrickTree.h"
 	 
 namespace ospray {
   namespace sg {
@@ -37,7 +37,7 @@ namespace ospray {
     }
 
     //! \brief Initialize this node's value from given XML node 
-    void MultiSumAMR::setFromXML(const xml::Node *const node, 
+    void BrickTree::setFromXML(const xml::Node *const node, 
                                  const unsigned char *binBasePtr)
     {
       size_t ofs = node->getPropl("ofs");
@@ -48,7 +48,7 @@ namespace ospray {
       // -------------------------------------------------------
       const std::string voxelType = node->getProp("voxelType");
       if (voxelType != "float")
-        throw std::runtime_error("can only do float MultiSumAMR right now");
+        throw std::runtime_error("can only do float BrickTree right now");
       this->voxelType = typeForString(voxelType.c_str());
       this->samplingRate = node->getPropf("samplingRate",1.f);
       this->valueRange = Range<float>::fromString(node->getProp("valueRange"),
@@ -91,15 +91,15 @@ namespace ospray {
       cout << "-------------------------------------------------------" << endl;
     }
 
-    void MultiSumAMR::render(RenderContext &ctx)
+    void BrickTree::render(RenderContext &ctx)
     {
       if (ospVolume) 
         return;
 
       ospLoadModule("amr");
-      ospVolume = ospNewVolume("MultiSumAMRVolume");
+      ospVolume = ospNewVolume("BrickTreeVolume");
       if (!ospVolume) 
-        throw std::runtime_error("could not create ospray 'MultiSumAMRVolume'");
+        throw std::runtime_error("could not create ospray 'BrickTreeVolume'");
       
       size_t sizeOfBrick
         = multiSum->brickSize()*multiSum->brickSize()*multiSum->brickSize() * sizeof(int);
@@ -151,7 +151,7 @@ namespace ospray {
 
     }    
 
-    OSP_REGISTER_SG_NODE(MultiSumAMR);
+    OSP_REGISTER_SG_NODE(BrickTree);
 
   }
 }

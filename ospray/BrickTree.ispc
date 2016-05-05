@@ -35,7 +35,7 @@ struct TentAlgoStackEntry {
   float blockWidth;
 };
 
-inline float tentApproximation_packet(MSAMRVolume *uniform self,
+inline float tentApproximation_packet(BrickTreeVolume *uniform self,
                                       const varying vec3f &worldSpacePos)
 {
   GridPos gp = makeGridPos(self,toGridSpace(self,worldSpacePos));
@@ -149,7 +149,7 @@ inline float tentApproximation_packet(MSAMRVolume *uniform self,
 static varying float MSAMR_tentApprox(void *uniform _self, 
                                             const varying vec3f &worldSpacePos)
 {
-  MSAMRVolume *uniform self = (MSAMRVolume *uniform)_self;
+  BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
   float f =  tentApproximation_packet(self,worldSpacePos);
   return f;
 }
@@ -174,17 +174,17 @@ MSAMR_interpolateOnCurrentCellLevel(void *uniform _self,
                                     const varying vec3f &worldSpacePos);
 
 //! The gradient at the given sample location in world coordinates.
-static varying vec3f MSAMRVolume_gradient(void *uniform _self, 
+static varying vec3f BrickTreeVolume_gradient(void *uniform _self, 
                                         const varying vec3f &worldCoordinates)
 {
   return make_vec3f(1,0,0);
 }
 
 //! Find the next hit point in the volume for ray casting based renderers.
-static void MSAMRVolume_intersect(void *uniform _self, 
+static void BrickTreeVolume_intersect(void *uniform _self, 
                                 varying Ray &ray)
 {
-  MSAMRVolume *uniform self = (MSAMRVolume *uniform) _self;
+  BrickTreeVolume *uniform self = (BrickTreeVolume *uniform) _self;
   
   // TODO: clean this up, properly implemnt an integrator with
   // variable step size...
@@ -193,15 +193,15 @@ static void MSAMRVolume_intersect(void *uniform _self,
   ray.t0 += step;
 }
 
-export void *uniform MSAMRVolume_create(void *uniform cppEquivalent) 
+export void *uniform BrickTreeVolume_create(void *uniform cppEquivalent) 
 {
-  MSAMRVolume *uniform self = uniform new uniform MSAMRVolume;
+  BrickTreeVolume *uniform self = uniform new uniform BrickTreeVolume;
   Volume_Constructor(&self->super,cppEquivalent);
 
   return self;
 };
 
-export void MSAMRVolume_set(void *uniform _self,
+export void BrickTreeVolume_set(void *uniform _self,
                             void *uniform _xf,
                             const uniform vec3i &rootGridDims,
                             const uniform vec3f &validFractionOfRootGrid,
@@ -212,7 +212,7 @@ export void MSAMRVolume_set(void *uniform _self,
                             void *uniform firstIndexBlockOfTreeData,
                             uniform float finestCellWidth)
 {
-  MSAMRVolume *uniform self = (MSAMRVolume *uniform)_self;
+  BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
   assert(self);
   
   self->super.boundingBox.lower = make_vec3f(0.f);
@@ -221,7 +221,7 @@ export void MSAMRVolume_set(void *uniform _self,
   self->super.volumeClippingBox.lower = make_vec3f(0.f);
   self->super.volumeClippingBox.upper = make_vec3f(rootGridDims)*validFractionOfRootGrid; 
   
-  self->super.computeGradient = &MSAMRVolume_gradient;
+  self->super.computeGradient = &BrickTreeVolume_gradient;
 
   self->super.samplingRate = 1.f;//samplingRate;
   self->super.samplingStep = .1f;
@@ -240,7 +240,7 @@ export void MSAMRVolume_set(void *uniform _self,
   self->validFractionOfRootGrid = validFractionOfRootGrid;
   self->finestCellWidth = finestCellWidth;
 
-  self->super.intersect = &MSAMRVolume_intersect;
+  self->super.intersect = &BrickTreeVolume_intersect;
   // self->super.computeSample = &MSAMR_nearestNeighbor;
   // self->super.computeSample = &MSAMR_tentApprox;
   self->super.computeSample = &MSAMR_interpolateOnCurrentCellLevel;

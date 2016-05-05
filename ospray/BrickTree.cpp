@@ -14,13 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "MultiSum.h"
+#include "BrickTree.h"
 // ospray
 #include "ospray/common/Model.h"
 #include "ospray/common/Data.h"
 #include "ospray/transferFunction/TransferFunction.h"
 // ispc exports
-#include "MultiSum_ispc.h"
+#include "BrickTree_ispc.h"
 // stl
 #include <set>
 #include <map>
@@ -33,19 +33,19 @@ namespace ospray {
     using std::ostream;
     using std::flush;
 
-    MSAMRVolume::MSAMRVolume()
+    BrickTreeVolume::BrickTreeVolume()
       : Volume(), rootGridDims(-1), voxelType(OSP_FLOAT)
     {
-      ispcEquivalent = ispc::MSAMRVolume_create(this);
+      ispcEquivalent = ispc::BrickTreeVolume_create(this);
     }
     
     //! Allocate storage and populate the volume.
-    void MSAMRVolume::commit()
+    void BrickTreeVolume::commit()
     {
       // right now we only support floats ...
       this->voxelType = OSP_FLOAT;
 
-      cout << "#osp:amr: MSAMRVolume::commit()" << endl;
+      cout << "#osp:amr: BrickTreeVolume::commit()" << endl;
       firstIndexBrickOfTreeData   = getParamData("firstIndexBrickOfTree");
       firstDataBrickOfTreeData   = getParamData("firstDataBrickOfTree");
       dataBrickData  = getParamData("dataBrickData");
@@ -55,14 +55,14 @@ namespace ospray {
       validFractionOfRootGrid = getParam3f("validFractionOfRootGrid",vec3f(0.f));
       int maxLevel = getParam1i("maxLevel",0);
       if (maxLevel < 1)
-        throw std::runtime_error("MSAMRVolume: maxLevel not specified");
+        throw std::runtime_error("BrickTreeVolume: maxLevel not specified");
       float finestCellWidth = 1.f;
       for (int i=0;i<maxLevel;i++)
         finestCellWidth *= .25f;
 
       Ref<TransferFunction> xf = (TransferFunction*)getParamObject("transferFunction");
 
-      ispc::MSAMRVolume_set(getIE(),
+      ispc::BrickTreeVolume_set(getIE(),
                             xf->getIE(),
                             (ispc::vec3i &)rootGridDims,
                             (ispc::vec3f &)validFractionOfRootGrid,
@@ -75,8 +75,7 @@ namespace ospray {
                             );
     }
 
-    OSP_REGISTER_VOLUME(MSAMRVolume,MSAMRVolume);
-    OSP_REGISTER_VOLUME(MSAMRVolume,MultiSumAMRVolume);
+    OSP_REGISTER_VOLUME(BrickTreeVolume,BrickTreeVolume);
 
   }
 } // ::ospray

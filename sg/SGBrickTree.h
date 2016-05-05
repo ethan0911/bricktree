@@ -16,7 +16,8 @@
 
 // ospray
 // ospray/sg
-#include "AMRVolume.h"
+#include "sg/volume/Volume.h"
+#include "sg/common/World.h"
 // amr base
 #include "../amr/BrickTree.h"
 	 
@@ -24,13 +25,13 @@ namespace ospray {
   namespace sg {
     
     /*! multi-octree amr node - for now only working for float format */
-    struct MultiSumAMR : public sg::Volume {
+    struct BrickTree : public sg::Volume {
       
-      MultiSumAMR() : multiSum(NULL), ospVolume(NULL), valueRange(one) {};
+      BrickTree() : multiSum(NULL), ospVolume(NULL), valueRange(one) {};
       
       /*! \brief returns a std::string with the c++ name of this class */
       virtual    std::string toString() const
-      { return "ospray::sg::MultiSumAMR (ospray_amr module)"; }
+      { return "ospray::sg::BrickTree (ospray_amr module)"; }
 
       /*! 'render' the nodes - all geometries, materials, etc will
           create their ospray counterparts, and store them in the

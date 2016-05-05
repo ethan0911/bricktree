@@ -18,10 +18,10 @@
 
 /*! plainest, dumbest way of reconstructing: find the given leaf cell,
   and return the value */
-varying float MSAMR_nearestNeighbor(void *uniform _self, 
+varying float BrickTree_nearestNeighbor(void *uniform _self, 
                                     const varying vec3f &worldSpacePos)
 {
-  const MSAMRVolume *uniform self = (MSAMRVolume *uniform)_self;
+  const BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
   const CellQuery cq = cellQuery(self,toGridSpace(self,worldSpacePos));
   return cq.value;
 }

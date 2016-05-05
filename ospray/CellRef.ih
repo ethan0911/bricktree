@@ -31,7 +31,7 @@ struct CellRef {
   int blockID;
 };
 
-inline CellRef findLeafCell(const MSAMRVolume *uniform self, 
+inline CellRef findLeafCell(const BrickTreeVolume *uniform self, 
                              const varying vec3f worldSpacePos)
 {
   CellRef cell;

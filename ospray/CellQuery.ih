@@ -35,7 +35,7 @@ struct CellQuery {
     'desredCD' with width=0 - this merely means that we'll traverse
     until we reach a leaf 
 */
-inline CellQuery cellQuery(const MSAMRVolume *uniform self,
+inline CellQuery cellQuery(const BrickTreeVolume *uniform self,
                            const varying CellDesc desiredCD)
 {
   CellQuery cq;

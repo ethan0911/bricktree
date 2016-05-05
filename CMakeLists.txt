@@ -42,8 +42,7 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
     # scene graph plugin
     # -----------------------------------------------------
     ADD_LIBRARY(ospray_sg_amr SHARED
-      sg/AMRVolume.cpp
-      sg/MultiSum.cpp
+      sg/SGBrickTree.cpp
       )
     OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_sg_amr
       ospray_amr
