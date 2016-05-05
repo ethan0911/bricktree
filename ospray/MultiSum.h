@@ -39,11 +39,11 @@ namespace ospray {
         FATAL("'setRegion()' doesn't make sense for AMR volumes; they can only be set from existing data");
       }
 
-      Ref<Data>   firstIndexBlockOfTreeData;
-      Ref<Data>   firstDataBlockOfTreeData;
-      Ref<Data>   dataBlockData;
-      Ref<Data>   indexBlockData;
-      Ref<Data>   blockInfoData;
+      Ref<Data>   firstIndexBrickOfTreeData;
+      Ref<Data>   firstDataBrickOfTreeData;
+      Ref<Data>   dataBrickData;
+      Ref<Data>   indexBrickData;
+      Ref<Data>   brickInfoData;
       vec3i       rootGridDims;
       vec3f       validFractionOfRootGrid;
       OSPDataType voxelType;

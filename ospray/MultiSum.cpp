@@ -46,11 +46,11 @@ namespace ospray {
       this->voxelType = OSP_FLOAT;
 
       cout << "#osp:amr: MSAMRVolume::commit()" << endl;
-      firstIndexBlockOfTreeData   = getParamData("firstIndexBlockOfTree");
-      firstDataBlockOfTreeData   = getParamData("firstDataBlockOfTree");
-      dataBlockData  = getParamData("dataBlockData");
-      indexBlockData = getParamData("indexBlockData");
-      blockInfoData  = getParamData("blockInfoData");
+      firstIndexBrickOfTreeData   = getParamData("firstIndexBrickOfTree");
+      firstDataBrickOfTreeData   = getParamData("firstDataBrickOfTree");
+      dataBrickData  = getParamData("dataBrickData");
+      indexBrickData = getParamData("indexBrickData");
+      brickInfoData  = getParamData("brickInfoData");
       rootGridDims   = getParam3i("rootGridDims",vec3i(-1));
       validFractionOfRootGrid = getParam3f("validFractionOfRootGrid",vec3f(0.f));
       int maxLevel = getParam1i("maxLevel",0);
@@ -66,11 +66,11 @@ namespace ospray {
                             xf->getIE(),
                             (ispc::vec3i &)rootGridDims,
                             (ispc::vec3f &)validFractionOfRootGrid,
-                            dataBlockData->data,
-                            indexBlockData->data,
-                            blockInfoData->data,
-                            firstDataBlockOfTreeData->data,
-                            firstIndexBlockOfTreeData->data,
+                            dataBrickData->data,
+                            indexBrickData->data,
+                            brickInfoData->data,
+                            firstDataBrickOfTreeData->data,
+                            firstIndexBrickOfTreeData->data,
                             finestCellWidth
                             );
     }
