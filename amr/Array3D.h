@@ -154,9 +154,10 @@ namespace ospray {
       SubBoxArray3D(const Array3D<value_t> *actual, const box3i &clipBox) 
         : actual(actual), clipBox(clipBox) 
       {
-        assert(clipBox.upper.x <= actual.size().x);
-        assert(clipBox.upper.y <= actual.size().y);
-        assert(clipBox.upper.z <= actual.size().z);
+        assert(actual);
+        assert(clipBox.upper.x <= actual->size().x);
+        assert(clipBox.upper.y <= actual->size().y);
+        assert(clipBox.upper.z <= actual->size().z);
       };
 
       /*! return size (ie, "dimensions") of volume */
