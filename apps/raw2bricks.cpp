@@ -277,10 +277,12 @@ namespace ospray {
                  const vec3i &dims,
                  const std::string &inFileName,
                  const std::string &outFileName,
+                 const box3i &clipBox,
                  const float threshold,
                  const int maxLevels)
     {
-      const Array3D<T> *input = openInput<T>(inputFormat,dims,inFileName);
+      const Array3D<T> *org_input = openInput<T>(inputFormat,dims,inFileName);
+      const Array3D<T> *input = new SubBoxArray3D<T>(org_input,clipBox);
       // threshold = 0.f;
       int rootGridLevel = 0;
       // compute num skiplevels based on num levels specified:
@@ -312,52 +314,22 @@ namespace ospray {
     }
 
 
-    // template<int N, typename T>
-    // void buildIt(const std::string &inputFormat,
-    //              const vec3i &dims,
-    //              const std::string &inFileName,
-    //              const std::string &outFileName,
-    //              const float threshold,
-    //              const int maxLevels)
-    // {
-    //   const Array3D<T> *input = getInput<T>(inputFormat,dims,inFileName);
-    //   const Array3D<T> *input = NULL;
-    //   cout << "going to mmap RAW file:" << endl;
-    //   cout << "  input file is   " << inFileName << endl;
-    //   cout << "  expected format " << typeToString<T>() << endl;
-    //   cout << "  expected dims   " << dims << endl;
-      
-    //   input = mmapRAW<T>(inFileName,dims);
-    //   // } else if (format == "uint8") {
-    //   //   const Array3D<uint8> *input_uint8 = mmapRAW<uint8>(inFileName,dims);
-    //   //   input = new Array3DAccessor<uint8,float>(input_uint8);
-    //   // } else if (format == "double") {
-    //   //   const Array3D<double> *input_double = mmapRAW<double>(inFileName,dims);
-    //   //   input = new Array3DAccessor<double,float>(input_double);
-    //   // } else
-    //   //   throw std::runtime_error("unsupported format '"+format+"'");
-
-
-    //   cout << "loading complete." << endl;
-
-    //   if (treeFormat == "uint8")
-    // }
-
     template<int N>
     void buildIt(const std::string &inputFormat,
                  const std::string &treeFormat,
                  const vec3i &dims,
                  const std::string &inFileName,
                  const std::string &outFileName,
+                 const box3i &clipBox,
                  const float threshold,
                  const int maxLevels)
     {
       if (treeFormat == "uint8")
-        buildIt<N,uint8>(inputFormat,dims,inFileName,outFileName,threshold,maxLevels);
+        buildIt<N,uint8>(inputFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
       else if (treeFormat == "float")
-        buildIt<N,float>(inputFormat,dims,inFileName,outFileName,threshold,maxLevels);
+        buildIt<N,float>(inputFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
       else if (treeFormat == "double")
-        buildIt<N,double>(inputFormat,dims,inFileName,outFileName,threshold,maxLevels);
+        buildIt<N,double>(inputFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
       else 
         error("unsupported format");
     }
@@ -372,6 +344,7 @@ namespace ospray {
       float       threshold   = 0.f;
       vec3i       dims        = vec3i(0);
       int         brickSize   = 4;
+      box3i       clipBox(vec3i(-1),vec3i(-1));
 
       for (int i=1;i<ac;i++) {
         const std::string arg = av[i];
@@ -393,11 +366,28 @@ namespace ospray {
           dims.y = atoi(av[++i]);
           dims.z = atoi(av[++i]);
         }
+        else if (arg == "--clip" || arg == "--sub-box") {
+          clipBox.lower.x = atof(av[++i]);
+          clipBox.lower.y = atof(av[++i]);
+          clipBox.lower.z = atof(av[++i]);
+          clipBox.upper = clipBox.lower;
+          clipBox.upper.x += atof(av[++i]);
+          clipBox.upper.y += atof(av[++i]);
+          clipBox.upper.z += atof(av[++i]);
+        }
         else if (arg[0] != '-')
           inFileName = av[i];
         else
           error("unknown arg '"+arg+"'");
       }
+      if (clipBox.lower == vec3i(-1))
+        clipBox.lower = vec3i(0);
+      if (clipBox.upper == vec3i(-1))
+        clipBox.upper = dims;
+      else
+        clipBox.upper = min(clipBox.upper,dims);
+      assert(!clipBox.empty());
+      
       
       if (dims == vec3i(0))
         error("no input dimensions (-dims) specified");
@@ -408,16 +398,22 @@ namespace ospray {
       
       switch (brickSize) {
       case 2:
-        buildIt<2>(inputFormat,treeFormat,dims,inFileName,outFileName,threshold,maxLevels);
+        buildIt<2>(inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
         break;
       case 4:
-        buildIt<4>(inputFormat,treeFormat,dims,inFileName,outFileName,threshold,maxLevels);
+        buildIt<4>(inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
         break;
       case 8:
-        buildIt<8>(inputFormat,treeFormat,dims,inFileName,outFileName,threshold,maxLevels);
+        buildIt<8>(inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
         break;
       case 16:
-        buildIt<16>(inputFormat,treeFormat,dims,inFileName,outFileName,threshold,maxLevels);
+        buildIt<16>(inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
+        break;
+      case 32:
+        buildIt<32>(inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
+        break;
+      case 64:
+        buildIt<64>(inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
         break;
       default:
         error("unsupported brick size ...");

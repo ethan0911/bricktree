@@ -146,6 +146,46 @@ namespace ospray {
 
 
 
+
+    /*! implements a sub-set of another array3d */
+    template<typename value_t>
+    struct SubBoxArray3D : public Array3D<value_t> {
+
+      SubBoxArray3D(const Array3D<value_t> *actual, const box3i &clipBox) 
+        : actual(actual), clipBox(clipBox) 
+      {
+        assert(clipBox.upper.x <= actual.size().x);
+        assert(clipBox.upper.y <= actual.size().y);
+        assert(clipBox.upper.z <= actual.size().z);
+      };
+
+      /*! return size (ie, "dimensions") of volume */
+      virtual vec3i size() const override { return clipBox.size(); };
+
+      /*! get cell value at location
+
+        \warning 'where' MUST be a valid cell location */
+      virtual value_t get(const vec3i &where) const override 
+      { return actual->get(where+clipBox.lower); }
+      
+      /*! set cell value at location to given value
+
+        \warning 'where' MUST be a valid cell location */
+      virtual void set(const vec3i &where, const value_t &t) { throw std::runtime_error("cannot 'set' in a SubBoxArray3D"); };
+
+      /*! returns number of elements (as 64-bit int) across all dimensions */
+      virtual size_t numElements() const override 
+      { 
+        vec3i dims = clipBox.size();
+        return size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
+      }
+
+      const box3i clipBox;
+      const Array3D<value_t> *actual;
+    };
+
+
+
     /*! implemnetaiton of a wrapper class that makes an actual array3d
         of one type look like that of another type */
     template<typename in_t, typename out_t>
