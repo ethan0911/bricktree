@@ -141,16 +141,22 @@ namespace ospray {
     template struct BrickTree<4,uint8>;
     template struct BrickTree<8,uint8>;
     template struct BrickTree<16,uint8>;
+    template struct BrickTree<32,uint8>;
+    template struct BrickTree<64,uint8>;
 
     template struct BrickTree<2,float>;
     template struct BrickTree<4,float>;
     template struct BrickTree<8,float>;
     template struct BrickTree<16,float>;
+    template struct BrickTree<32,float>;
+    template struct BrickTree<64,float>;
 
     template struct BrickTree<2,double>;
     template struct BrickTree<4,double>;
     template struct BrickTree<8,double>;
     template struct BrickTree<16,double>;
+    template struct BrickTree<32,double>;
+    template struct BrickTree<64,double>;
 
   } // ::ospray::amr
 } // ::ospray

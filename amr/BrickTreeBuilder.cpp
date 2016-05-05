@@ -307,16 +307,22 @@ namespace ospray {
     template struct MultiBrickTreeBuilder<4,uint8>;
     template struct MultiBrickTreeBuilder<8,uint8>;
     template struct MultiBrickTreeBuilder<16,uint8>;
+    template struct MultiBrickTreeBuilder<32,uint8>;
+    template struct MultiBrickTreeBuilder<64,uint8>;
 
     template struct MultiBrickTreeBuilder<2,float>;
     template struct MultiBrickTreeBuilder<4,float>;
     template struct MultiBrickTreeBuilder<8,float>;
     template struct MultiBrickTreeBuilder<16,float>;
+    template struct MultiBrickTreeBuilder<32,float>;
+    template struct MultiBrickTreeBuilder<64,float>;
 
     template struct MultiBrickTreeBuilder<2,double>;
     template struct MultiBrickTreeBuilder<4,double>;
     template struct MultiBrickTreeBuilder<8,double>;
     template struct MultiBrickTreeBuilder<16,double>;
+    template struct MultiBrickTreeBuilder<32,double>;
+    template struct MultiBrickTreeBuilder<64,double>;
     
   } // ::ospray::amr
 } // ::ospray
