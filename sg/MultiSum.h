@@ -18,7 +18,7 @@
 // ospray/sg
 #include "AMRVolume.h"
 // amr base
-#include "../amr/Sumerian.h"
+#include "../amr/BrickTree.h"
 	 
 namespace ospray {
   namespace sg {
@@ -53,15 +53,15 @@ namespace ospray {
       vec3f clipBoxSize;
       vec3i rootGridSize;
 
-      OSPData dataBlockData;
-      OSPData indexBlockData;
-      OSPData blockInfoData;
-      OSPData firstIndexBlockOfTreeData;
-      OSPData firstDataBlockOfTreeData;
+      OSPData dataBrickData;
+      OSPData indexBrickData;
+      OSPData brickInfoData;
+      OSPData firstIndexBrickOfTreeData;
+      OSPData firstDataBrickOfTreeData;
       float samplingRate;
       int maxLevel;
 
-      amr::Sumerian *multiSum;
+      amr::BrickTreeBase *multiSum;
       
       /*! total range of all values in the tree, so we can set the
         proper xfer fct */

@@ -19,7 +19,6 @@
 #include "ospray/common/Model.h"
 #include "ospray/common/Data.h"
 #include "ospray/transferFunction/TransferFunction.h"
-#include "../amr/Sumerian.h"
 // ispc exports
 #include "MultiSum_ispc.h"
 // stl

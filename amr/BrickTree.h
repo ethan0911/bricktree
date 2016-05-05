@@ -27,6 +27,28 @@ namespace ospray {
     template<typename T>
     const char *typeToString();
 
+    struct BrickTreeBase {
+      virtual std::string voxelType() const = 0;
+      virtual int         brickSize() const = 0;
+      virtual const void *brickInfoPtr()  const = 0;
+      virtual const void *dataBrickPtr()  const = 0;
+      virtual const void *indexBrickPtr() const = 0;
+      virtual vec3i getRootGridDims() const = 0;
+      virtual const int *firstIndexBrickOfTreePtr() = 0;
+      virtual const int *firstDataBrickOfTreePtr() = 0;
+
+      static BrickTreeBase *mapFrom(const void *ptr,
+                                    const std::vector<int> &dataBlockCount,
+                                    const std::vector<int> &indexBlockCount);
+
+      size_t numDataBricks;
+      size_t numIndexBricks;
+      size_t numBrickInfos;
+      vec3i rootGridDims;
+      vec3f validFractionOfRootGrid;
+      
+    };
+
     /* hierarchical tree of bricks. if N is the template parameter,
        this tree will encode bricks of NxNxN cells (a so-called data
        brick). child pointers are encoded in 'index bricks', with each
@@ -41,8 +63,11 @@ namespace ospray {
        not have a child at all, in which the corresponding child index
        in the index brick is 'invalidID'  */
     template<int N, typename T=float>
-    struct BrickTree {
+    struct BrickTree : public BrickTreeBase {
       static inline int invalidID() { return -1; }
+
+      virtual std::string voxelType() const override { return typeToString<T>(); };
+      virtual int         brickSize() const override { return N; };
       
       /*! 4x4x4 brick/brick of data. */
       struct DataBrick {
@@ -97,19 +122,23 @@ namespace ospray {
                    std::vector<int32_t> numDataBricksPerTree,
                    std::vector<int32_t> numIndexBricksPerTree);
 
-      const DataBrick *dataBrick;
-      size_t numDataBricks;
-      const IndexBrick *indexBrick;
-      size_t numIndexBricks;
-      const BrickInfo *brickInfo;
-      size_t numBrickInfos;
+      virtual const void *brickInfoPtr()  const override { return brickInfo; }
+      virtual const void *dataBrickPtr()  const override { return dataBrick; }
+      virtual const void *indexBrickPtr() const override { return indexBrick; }
 
-      vec3i rootGridDims;
-      vec3f validFractionOfRootGrid;
-      
+      const DataBrick *dataBrick;
+      const IndexBrick *indexBrick;
+      const BrickInfo *brickInfo;
+
+      virtual vec3i getRootGridDims() const override { return rootGridDims; }
+
       /* gives, for each root cell / tree in the root grid, the ID of
          the first index brick in the (shared) data brick array */
       const int32_t *firstIndexBrickOfTree;
+
+      virtual const int *firstIndexBrickOfTreePtr() { return firstIndexBrickOfTree; } ;
+      virtual const int *firstDataBrickOfTreePtr() { return firstDataBrickOfTree; } ;
+
       /* gives, for each root cell / tree in the root grid, the ID of
          the first data brick in the (shared) data brick array */
       const int32_t *firstDataBrickOfTree;

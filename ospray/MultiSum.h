@@ -19,7 +19,7 @@
 // ospray
 #include "ospray/volume/Volume.h"
 // amr base
-#include "../amr/Sumerian.h"
+#include "../amr/BrickTree.h"
 
 namespace ospray {
   namespace amr {

@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 // ospray
-#include "AMR.h"
+#include "Array3D.h"
 // stdlib, for mmap
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -36,6 +36,24 @@
 
 namespace ospray {
   namespace amr {
+
+    using std::cout;
+    using std::endl;
+
+    template<typename T>
+    void readMem(const unsigned char *&ptr, T &t)
+    {
+      memcpy(&t,ptr,sizeof(t));
+      ptr += sizeof(t);
+    }
+    template<typename T>
+    void readMem(const unsigned char *&ptr, std::vector<T> &t, size_t num)
+    {
+      t.resize(num);
+      memcpy(&t[0],ptr,num*sizeof(T));
+      ptr += num*sizeof(T);
+    }
+
 
     // Array3D //
 

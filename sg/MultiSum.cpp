@@ -59,23 +59,22 @@ namespace ospray {
       maxLevel = node->getPropl("maxLevel",0);
 
       // -------------------------------------------------------
-      // data and index blocks
+      // data and index bricks
       // -------------------------------------------------------
-      std::vector<int> dataBlockCount;
-      std::vector<int> indexBlockCount;
+      std::vector<int> dataBrickCount;
+      std::vector<int> indexBrickCount;
       for (int childID=0;childID<node->child.size();childID++) {
         const xml::Node *child = node->child[childID];
-        if (child->name == "dataBlocks")
-          parseVecInt(dataBlockCount,child->content.c_str());
+        if (child->name == "dataBricks")
+          parseVecInt(dataBrickCount,child->content.c_str());
         else if (child->name == "dataBricks")
-          parseVecInt(dataBlockCount,child->content.c_str());
-        else if (child->name == "indexBlocks")
-          parseVecInt(indexBlockCount,child->content.c_str());
+          parseVecInt(dataBrickCount,child->content.c_str());
         else if (child->name == "indexBricks")
-          parseVecInt(indexBlockCount,child->content.c_str());
+          parseVecInt(indexBrickCount,child->content.c_str());
+        else if (child->name == "indexBricks")
+          parseVecInt(indexBrickCount,child->content.c_str());
       }
-      multiSum = new Sumerian;
-      multiSum->mapFrom(binBasePtr,rootGridSize,clipBoxSize,dataBlockCount,indexBlockCount);
+      multiSum = BrickTreeBase::mapFrom(binBasePtr,dataBrickCount,indexBrickCount);
 
       // -------------------------------------------------------
       // transfer function
@@ -102,31 +101,37 @@ namespace ospray {
       if (!ospVolume) 
         throw std::runtime_error("could not create ospray 'MultiSumAMRVolume'");
       
+      size_t sizeOfBrick
+        = multiSum->brickSize()*multiSum->brickSize()*multiSum->brickSize() * sizeof(int);
       // -------------------------------------------------------
-      dataBlockData = ospNewData(multiSum->numDataBlocks*sizeof(multiSum->dataBlock[0]),OSP_UCHAR,
-                                 multiSum->dataBlock,OSP_DATA_SHARED_BUFFER);
-      ospSetData(ospVolume,"dataBlockData",dataBlockData);
-      indexBlockData = ospNewData(multiSum->numIndexBlocks*sizeof(multiSum->indexBlock[0]),OSP_UCHAR,
-                                   multiSum->indexBlock,OSP_DATA_SHARED_BUFFER);
-      ospSetData(ospVolume,"indexBlockData",indexBlockData);
-      blockInfoData = ospNewData(multiSum->numIndexBlocks*sizeof(multiSum->blockInfo[0]),OSP_UCHAR,
-                                  multiSum->blockInfo,OSP_DATA_SHARED_BUFFER);
-      ospSetData(ospVolume,"blockInfoData",blockInfoData);
+      dataBrickData = ospNewData(multiSum->numDataBricks*sizeOfBrick,
+                                 OSP_UCHAR,
+                                 multiSum->dataBrickPtr(),OSP_DATA_SHARED_BUFFER);
+      ospSetData(ospVolume,"dataBrickData",dataBrickData);
+      indexBrickData = ospNewData(multiSum->numIndexBricks*sizeOfBrick,
+                                  OSP_UCHAR,
+                                  multiSum->indexBrickPtr(),OSP_DATA_SHARED_BUFFER);
+      ospSetData(ospVolume,"indexBrickData",indexBrickData);
+      brickInfoData = ospNewData(multiSum->numIndexBricks*sizeOfBrick,
+                                 OSP_UCHAR,
+                                 multiSum->brickInfoPtr(),OSP_DATA_SHARED_BUFFER);
+      ospSetData(ospVolume,"brickInfoData",brickInfoData);
 
       ospSet1f(ospVolume,"samplingRate",samplingRate);
       ospSet1i(ospVolume,"maxLevel",maxLevel);
 
-      firstIndexBlockOfTreeData
-        = ospNewData(multiSum->rootGridDims.product(),OSP_INT,
-                     multiSum->firstIndexBlockOfTree,OSP_DATA_SHARED_BUFFER);
-      ospSetData(ospVolume,"firstIndexBlockOfTree",firstIndexBlockOfTreeData);
+      firstIndexBrickOfTreeData
+        = ospNewData(multiSum->getRootGridDims().product(),OSP_INT,
+                     multiSum->firstIndexBrickOfTreePtr(),OSP_DATA_SHARED_BUFFER);
+      ospSetData(ospVolume,"firstIndexBrickOfTree",firstIndexBrickOfTreeData);
 
-      firstDataBlockOfTreeData
-        = ospNewData(multiSum->rootGridDims.product(),OSP_INT,
-                     multiSum->firstDataBlockOfTree,OSP_DATA_SHARED_BUFFER);
-      ospSetData(ospVolume,"firstDataBlockOfTree",firstDataBlockOfTreeData);
+      firstDataBrickOfTreeData
+        = ospNewData(multiSum->getRootGridDims().product(),OSP_INT,
+                     multiSum->firstDataBrickOfTreePtr(),OSP_DATA_SHARED_BUFFER);
+      ospSetData(ospVolume,"firstDataBrickOfTree",firstDataBrickOfTreeData);
 
-      ospSetVec3i(ospVolume,"rootGridDims",(osp::vec3i&)multiSum->rootGridDims);
+      vec3i rootDims = multiSum->getRootGridDims();
+      ospSetVec3i(ospVolume,"rootGridDims",(osp::vec3i&)rootDims);
       ospSetVec3f(ospVolume,"validFractionOfRootGrid",multiSum->validFractionOfRootGrid);
 
       // -------------------------------------------------------

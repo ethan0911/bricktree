@@ -36,6 +36,7 @@ namespace ospray {
       cout << " -dims <nx> <ny> <nz>   : input dimensions" << endl;
       cout << " --format|-f <uint8|float|double> : desired voxel type" << endl;
       cout << " --input-format|-if <uint8|float|double>: format of input raw file (if different from '--format')" << endl;
+      cout << " --brick-size|-bs <N>   : use bricks of NxNxN voxels" << endl;
       cout << " --depth <maxlevels>    : use maxlevels octree refinement levels" << endl;
       cout << " -o <outfilename.xml>   : output file name" << endl;
       cout << " -t <threshold>         : threshold of which nodes to split or not (ABSOLUTE float val)" << endl;
@@ -64,11 +65,6 @@ namespace ospray {
       numDone += reduce_mul((end-begin));
       double pctgDone = 100.f * numDone / double(input->numElements());
       cout << "build update (done w/ " << pctgDone << "% of volume)" << endl;
-
-      // if (!builder->getRootGrid()) {
-      //   cout << "(no nodes created, yet)" << endl;
-      //   return;
-      // }
 
       for (int iz=0;iz<builder->getRootGridSize().z;iz++)
         for (int iy=0;iy<builder->getRootGridSize().y;iy++)
