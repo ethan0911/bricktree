@@ -18,7 +18,7 @@
 
 #include "BrickTree.h"
 
-#ifdef OSPRAY_USE_TBB
+#ifdef OSPRAY_TASKING_TBB
 #  include <tbb/parallel_for.h>
 #  define PARALLEL_MULTI_TREE_BUILD
 #endif
