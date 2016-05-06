@@ -200,14 +200,14 @@ namespace ospray {
 
       /*! return size (ie, "dimensions") of volume */
       virtual vec3i size() const override 
-      { return vec3i(slice[0].size().x,slice[0].size().y,slice.size()); };
+      { return vec3i(slice[0]->size().x,slice[0]->size().y,slice.size()); };
 
       /*! get cell value at location
 
         \warning 'where' MUST be a valid cell location */
       virtual value_t get(const vec3i &where) const override 
       { 
-        return slice[clamp(where.z,slice.size()-1)]->get(vec3i(where.x,where.y,0)); 
+        return slice[clamp(where.z,0,(int)slice.size()-1)]->get(vec3i(where.x,where.y,0)); 
       }
       
       /*! set cell value at location to given value
@@ -217,7 +217,7 @@ namespace ospray {
       
       /*! returns number of elements (as 64-bit int) across all dimensions */
       virtual size_t numElements() const override 
-      { return slice[0]->size()*slice.size(); }
+      { return slice[0]->numElements()*slice.size(); }
 
       const std::vector<const Array3D<value_t> *> slice;
     };

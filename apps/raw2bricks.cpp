@@ -203,11 +203,13 @@ namespace ospray {
         cout << "looks like a multi-slice input of " << dims.z << " slices" << endl;
         cout << "=======================================================" << endl;
         std::vector<const Array3D<T> *> slices;
+        const vec3i sliceDims(dims.x,dims.y,1);
         for (int z=0;z<dims.z;z++) {
           slices.push_back(openInput<T>(format,sliceDims,inFileName[z]));
           assert(slices.back()->size().z == 1);
+          assert(slices.back()->size() == slices[0]->size());
         }
-        return MultiSliceArray3D<T>(slices);
+        return new MultiSliceArray3D<T>(slices);
       } else
         throw std::runtime_error("do not understand input - neither a single raw file, now what looks like a multi-slice input!?");
     }
