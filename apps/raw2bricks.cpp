@@ -187,7 +187,7 @@ namespace ospray {
       } else
         throw std::runtime_error("unsupported format '"+format+"'");
         
-      cout << "loading complete." << endl;
+      // cout << "loading complete." << endl;
       return input;
     }
 

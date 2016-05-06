@@ -94,7 +94,6 @@ namespace ospray {
       FILE *file = fopen(fileName.c_str(),"rb");
       fseek(file,0,SEEK_END);
       size_t actualFileSize = ftell(file);
-      PRINT(actualFileSize);
       fclose(file);
 
       size_t fileSize = size_t(dims.x)*size_t(dims.y)*size_t(dims.z)*sizeof(T);
@@ -107,23 +106,8 @@ namespace ospray {
       int fd = ::open(fileName.c_str(), O_LARGEFILE | O_RDONLY);
       assert(fd >= 0);
 
-      void *mem = mmap(NULL,fileSize,PROT_READ,MAP_SHARED// |MAP_HUGETLB
-                       ,fd,0);
+      void *mem = mmap(NULL,fileSize,PROT_READ,MAP_SHARED,fd,0);
       assert(mem != NULL && (long long)mem != -1LL);
-
-      // double *test = (double *)mem;
-      // PRINT(test[0]);
-      // size_t ofs = 35240025088LL;
-
-      // for (size_t i=0;i<fileSize;i+=(1024LL)*(1024LL)*(1024LL)) {
-      //   PRINT(i);
-      //   PRINT(prettyNumber(i));
-      //   PRINT(prettyNumber(i*sizeof(double)));
-      //   PRINT(test[i]);
-      // }
-      // PRINT(ofs);
-      // PRINT(fileSize);
-      // PRINT(test[ofs]);
 
       ActualArray3D<T> *volume = new ActualArray3D<T>(dims,mem);
 
@@ -131,18 +115,6 @@ namespace ospray {
     }
     
     // ActualArray3D //
-
-    // template<typename T>
-    // vec3i ActualArray3D<T>::size() const
-    // {
-    //   return dims;
-    // }
-
-    // template<typename T>
-    // size_t ActualArray3D<T>::numElements() const
-    // {
-    //   return size_t(dims.x)*size_t(dims.y)*size_t(dims.z);
-    // }
 
     template<typename T>
     size_t ActualArray3D<T>::indexOf(const vec3i &pos) const
