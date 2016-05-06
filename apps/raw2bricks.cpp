@@ -16,6 +16,10 @@
 
 // own
 #include "../amr/BrickTreeBuilder.h"
+#ifdef PARALLEL_MULTI_TREE_BUILD
+# include <tbb/task_scheduler_init.h>
+#endif
+
 
 namespace ospray {
   namespace amr {
@@ -394,7 +398,7 @@ namespace ospray {
         else if (arg == "--num-threads" || arg == "-nt") {
 #ifdef PARALLEL_MULTI_TREE_BUILD
           int numThreads = atoi(av[++i]);
-          tbb::tbb_init(maxNumThreads);
+          static tbb::task_scheduler_init tbb_init(numThreads);
 #else
           ++i;
           cout << "tbb support not compiled in ... " << endl;
