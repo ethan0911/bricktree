@@ -168,11 +168,11 @@ namespace ospray {
                                 const std::string &inFileName)
     {
       const Array3D<T> *input = NULL;
-      cout << "going to mmap RAW file:" << endl;
-      cout << "  input file is   " << inFileName << endl;
-      cout << "  expected format " << typeToString<T>() << endl;
-      cout << "  expected dims   " << dims << endl;
-      
+      cout << "mmapping RAW file (" << dims << ":" << typeToString<T>() << "):" << inFileName << endl;
+      // cout << "  input file is   " << inFileName[0] << endl;
+      // cout << "  expected format " << typeToString<T>() << endl;
+      // cout << "  expected dims   " << dims << endl;
+        
       if (format == "") {
         input = mmapRAW<T>(inFileName,dims);
       } else if (format == "uint8") {
@@ -186,9 +186,30 @@ namespace ospray {
         input = new Array3DAccessor<double,T>(input_double);
       } else
         throw std::runtime_error("unsupported format '"+format+"'");
-      
+        
       cout << "loading complete." << endl;
       return input;
+    }
+
+    template<typename T>
+    const Array3D<T> *openInput(const std::string &format,
+                                const vec3i &dims,
+                                const std::vector<std::string> &inFileName)
+    {
+      if (inFileName.size() == 1) 
+        return openInput<T>(format,dims,inFileName[0]);
+      else if (inFileName.size() == dims.z) {
+        cout << "=======================================================" << endl;
+        cout << "looks like a multi-slice input of " << dims.z << " slices" << endl;
+        cout << "=======================================================" << endl;
+        std::vector<const Array3D<T> *> slices;
+        for (int z=0;z<dims.z;z++) {
+          slices.push_back(openInput<T>(format,sliceDims,inFileName[z]));
+          assert(slices.back()->size().z == 1);
+        }
+        return MultiSliceArray3D<T>(slices);
+      } else
+        throw std::runtime_error("do not understand input - neither a single raw file, now what looks like a multi-slice input!?");
     }
     
     template<int N, typename T>
@@ -275,7 +296,7 @@ namespace ospray {
     template<int N, typename T>
     void buildIt(const std::string &inputFormat,
                  const vec3i &dims,
-                 const std::string &inFileName,
+                 const std::vector<std::string> &inFileName,
                  const std::string &outFileName,
                  const box3i &clipBox,
                  const float threshold,
@@ -318,7 +339,7 @@ namespace ospray {
     void buildIt(const std::string &inputFormat,
                  const std::string &treeFormat,
                  const vec3i &dims,
-                 const std::string &inFileName,
+                 const std::vector<std::string> &inFileName,
                  const std::string &outFileName,
                  const box3i &clipBox,
                  const float threshold,
@@ -336,7 +357,7 @@ namespace ospray {
 
     extern "C" int main(int ac, char **av)
     {
-      std::string inFileName  = "";
+      std::vector<std::string> inFileName;
       std::string outFileName = "";
       std::string inputFormat = "";
       std::string treeFormat  = "float";
@@ -376,7 +397,7 @@ namespace ospray {
           clipBox.upper.z += atof(av[++i]);
         }
         else if (arg[0] != '-')
-          inFileName = av[i];
+          inFileName.push_back(av[i]);
         else
           error("unknown arg '"+arg+"'");
       }
@@ -391,8 +412,8 @@ namespace ospray {
       
       if (dims == vec3i(0))
         error("no input dimensions (-dims) specified");
-      if (inFileName == "")
-        error("no input file specified");
+      if (inFileName.empty())
+        error("no input file(s) specified");
       if (outFileName == "")
         error("no output file specified");
       

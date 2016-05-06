@@ -289,6 +289,7 @@ namespace ospray {
       rootGrid = newGrid;
     }
     
+#ifdef PARALLEL_MULTI_TREE_BUILD
     template<int N, typename T>
     BrickTreeBuilder<N,T> *
     MultiBrickTreeBuilder<N,T>::getRootCell(const vec3i &rootCellID)
@@ -301,7 +302,7 @@ namespace ospray {
       }
       return rootGrid->get(rootCellID);
     }
-
+#endif
 
     template struct MultiBrickTreeBuilder<2,uint8>;
     template struct MultiBrickTreeBuilder<4,uint8>;

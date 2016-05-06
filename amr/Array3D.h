@@ -187,7 +187,47 @@ namespace ospray {
 
 
 
-    /*! implemnetaiton of a wrapper class that makes an actual array3d
+
+
+    /*! implements a array3d that's composed of multiple individual slices */
+    template<typename value_t>
+    struct MultiSliceArray3D : public Array3D<value_t> {
+
+      MultiSliceArray3D(const std::vector<const Array3D<value_t> *> &slice) 
+        : slice(slice)
+      {
+      };
+
+      /*! return size (ie, "dimensions") of volume */
+      virtual vec3i size() const override 
+      { return vec3i(slice[0].size().x,slice[0].size().y,slice.size()); };
+
+      /*! get cell value at location
+
+        \warning 'where' MUST be a valid cell location */
+      virtual value_t get(const vec3i &where) const override 
+      { 
+        return slice[clamp(where.z,slice.size()-1)]->get(vec3i(where.x,where.y,0)); 
+      }
+      
+      /*! set cell value at location to given value
+        
+        \warning 'where' MUST be a valid cell location */
+      virtual void set(const vec3i &where, const value_t &t) { throw std::runtime_error("cannot 'set' in a MultiSliceArray3D"); };
+      
+      /*! returns number of elements (as 64-bit int) across all dimensions */
+      virtual size_t numElements() const override 
+      { return slice[0]->size()*slice.size(); }
+
+      const std::vector<const Array3D<value_t> *> slice;
+    };
+
+
+
+
+
+
+    /*! implementation of a wrapper class that makes an actual array3d
         of one type look like that of another type */
     template<typename in_t, typename out_t>
     struct Array3DAccessor : public Array3D<out_t> {
