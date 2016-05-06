@@ -112,6 +112,8 @@ namespace ospray {
           rootSize *= N;
         
 #ifdef PARALLEL_MULTI_TREE_BUILD
+        // if (maxNumThreads != 0)
+        //   tbb_init(maxNumThreads);
         int rootLevelBrickSize = rootSize;
         for (int i=0;i<rootGridLevel;i++)
           rootLevelBrickSize /= N;
@@ -388,6 +390,15 @@ namespace ospray {
           dims.x = atoi(av[++i]);
           dims.y = atoi(av[++i]);
           dims.z = atoi(av[++i]);
+        }
+        else if (arg == "--num-threads" || arg == "-nt") {
+#ifdef PARALLEL_MULTI_TREE_BUILD
+          int numThreads = atoi(av[++i]);
+          tbb::tbb_init(maxNumThreads);
+#else
+          ++i;
+          cout << "tbb support not compiled in ... " << endl;
+#endif
         }
         else if (arg == "--clip" || arg == "--sub-box") {
           clipBox.lower.x = atof(av[++i]);
