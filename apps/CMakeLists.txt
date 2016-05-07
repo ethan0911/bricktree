@@ -8,3 +8,13 @@ TARGET_LINK_LIBRARIES(ospRaw2Bricks
   ospray_amr
   )
 
+# -----------------------------------------------------
+# raw to slice-ppm converter tool
+# -----------------------------------------------------
+ADD_EXECUTABLE(ospRawSlice
+  raw2slice.cpp
+  )
+TARGET_LINK_LIBRARIES(ospRawSlice
+  ospray_amr
+  )
+
