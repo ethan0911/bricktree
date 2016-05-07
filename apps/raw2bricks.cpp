@@ -80,6 +80,11 @@ namespace ospray {
             }
           }
 
+	cout << "- format " 
+		<< typeToString<T>() << " BS " << N 
+		<< " dataBrickSz = " << sizeof(typename BrickTree<N,T>::DataBrick) 
+		<< " idxBrickSz = " << sizeof(typename BrickTree<N,T>::IndexBrick) 
+		<< endl;
       cout << "- root grid size " << builder->getRootGridSize() << endl;
       cout << "- total num index bricks " << prettyNumber(numIndexBricks)
            << " (estd " << prettyNumber(long(numIndexBricks * 100.f / pctgDone)) << ")" << endl;
@@ -353,6 +358,8 @@ namespace ospray {
                  const float threshold,
                  const int maxLevels)
     {
+	PRINT(inputFormat);
+	PRINT(treeFormat);
       if (treeFormat == "uint8")
         buildIt<N,uint8>(inputFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
       else if (treeFormat == "float")
@@ -387,9 +394,9 @@ namespace ospray {
         else if (arg == "--brick-size" || arg == "-bs")
           brickSize = atof(av[++i]);
         else if (arg == "--format")
-          inputFormat = av[++i];
-        else if (arg == "--input-format" || arg == "-if")
           treeFormat = av[++i];
+        else if (arg == "--input-format" || arg == "-if")
+          inputFormat = av[++i];
         else if (arg == "-dims" || arg == "--dimensions") {
           dims.x = atoi(av[++i]);
           dims.y = atoi(av[++i]);
