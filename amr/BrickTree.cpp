@@ -32,8 +32,25 @@ namespace ospray {
     const char *typeToString<double>() { return "double"; };
 
 
+    BrickTreeBase *BrickTreeBase::mapFrom(const void *ptr, 
+                                          const std::string &format, 
+                                          int BS, 
+                                          size_t superBlockOfs)
+    {
+      throw std::runtime_error("not implemented yet...");
+    }
+    
+
+
+    // template<int N, typename T>
+    // void BrickTree<N,T>::saveTo(FILE *bin, size_t &superBlockOfs)
+    // {
+    //   throw std::runtime_error("not implemented yet...");
+    // }
+
+
     template<int N, typename T>
-    void BrickTree<N,T>::DataBrick::clear()
+    void BrickTree<N,T>::ValueBrick::clear()
     {
       for (int iz=0;iz<N;iz++)
         for (int iy=0;iy<N;iy++)
@@ -51,7 +68,7 @@ namespace ospray {
     }
 
     // template<int N, typename T>
-    // Range<float> BrickTree<N,T>::DataBrick::getValueRange() const
+    // Range<float> BrickTree<N,T>::ValueBrick::getValueRange() const
     // {
     //   Range<float> r = empty;
     //   for (int iz=0;iz<N;iz++)
@@ -65,7 +82,7 @@ namespace ospray {
     void BrickTree<N,T>::mapFrom(const unsigned char *ptr, 
                            const vec3i &rootGrid,
                            const vec3f &fracOfRootGrid,
-                           std::vector<int32_t> numDataBricksPerTree,
+                           std::vector<int32_t> numValueBricksPerTree,
                            std::vector<int32_t> numIndexBricksPerTree)
     {
       this->rootGridDims = rootGrid;
@@ -77,23 +94,23 @@ namespace ospray {
         * (size_t)rootGridDims.y
         * (size_t)rootGridDims.z; 
       int32_t *firstIndexBrickOfTree = new int32_t[numRootCells];
-      int32_t *firstDataBrickOfTree = new int32_t[numRootCells];
+      int32_t *firstValueBrickOfTree = new int32_t[numRootCells];
       size_t sumIndex = 0;
-      size_t sumData = 0;
+      size_t sumValue = 0;
       for (size_t i=0;i<numRootCells;i++) {
         firstIndexBrickOfTree[i] = sumIndex;
-        firstDataBrickOfTree[i] = sumData;
-        sumData += numDataBricksPerTree[i];
+        firstValueBrickOfTree[i] = sumValue;
+        sumValue += numValueBricksPerTree[i];
         sumIndex += numIndexBricksPerTree[i];
       }
       this->firstIndexBrickOfTree = firstIndexBrickOfTree;
-      this->firstDataBrickOfTree = firstDataBrickOfTree;
+      this->firstValueBrickOfTree = firstValueBrickOfTree;
       
-      numDataBricks = sumData;
+      numValueBricks = sumValue;
       numIndexBricks = sumIndex;
       
-      dataBrick = (const DataBrick *)ptr;
-      ptr += numDataBricks * sizeof(DataBrick);
+      valueBrick = (const ValueBrick *)ptr;
+      ptr += numValueBricks * sizeof(ValueBrick);
       
       indexBrick = (const IndexBrick *)ptr;
       ptr += numIndexBricks * sizeof(IndexBrick);
@@ -102,7 +119,7 @@ namespace ospray {
     }      
 
     template<int N, typename T>
-    double BrickTree<N,T>::DataBrick::computeWeightedAverage(// coordinates of lower-left-front
+    double BrickTree<N,T>::ValueBrick::computeWeightedAverage(// coordinates of lower-left-front
                                                              // voxel, in resp level
                                                              const vec3i &brickCoord,
                                                              // size of bricks in current level

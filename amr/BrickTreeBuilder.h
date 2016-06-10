@@ -37,22 +37,22 @@ namespace ospray {
       /*! public interface to writing values into the tree */
       virtual void set(const vec3i &coord, int level, float v) override;
 
-      /*! find or create data brick that contains given cell. if that
+      /*! find or create value brick that contains given cell. if that
         brick (or any of its parents, indices referring to it, etc)
         does not exist, create and initialize whatever is required to
         have this node */
-      typename BrickTree<N,T>::DataBrick *findDataBrick(const vec3i &coord, int level);
+      typename BrickTree<N,T>::ValueBrick *findValueBrick(const vec3i &coord, int level);
 
-      int32 newDataBrick();
+      int32 newValueBrick();
 
-      /*! get index brick for given data brick ID - create if required */
-      typename BrickTree<N,T>::IndexBrick *getIndexBrickFor(int32 dataBrickID);
+      /*! get index brick for given value brick ID - create if required */
+      typename BrickTree<N,T>::IndexBrick *getIndexBrickFor(int32 valueBrickID);
 
       std::vector<int32> indexBrickOf;
-      std::vector<typename BrickTree<N,T>::DataBrick *>  dataBrick;
+      std::vector<typename BrickTree<N,T>::ValueBrick *>  valueBrick;
       std::vector<typename BrickTree<N,T>::IndexBrick *> indexBrick;
 
-      /*! be done with the build, and save all data to the xml/bin
+      /*! be done with the build, and save all value to the xml/bin
         file of 'fileName' and 'filename+"bin"' */
       virtual void save(const std::string &ospFileName, const vec3f &clipBoxSize) override;
 
@@ -69,7 +69,7 @@ namespace ospray {
       /*! public interface to writing values into the tree */
       virtual void set(const vec3i &coord, int level, float v) override;
 
-      /*! be done with the build, and save all data to the xml/bin
+      /*! be done with the build, and save all value to the xml/bin
         file of 'fileName' and 'filename+"bin"' */
       virtual void save(const std::string &ospFileName, const vec3f &clipBoxSize) override;
 

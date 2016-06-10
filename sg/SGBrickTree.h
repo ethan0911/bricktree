@@ -54,11 +54,11 @@ namespace ospray {
       vec3f clipBoxSize;
       vec3i rootGridSize;
 
-      OSPData dataBrickData;
-      OSPData indexBrickData;
-      OSPData brickInfoData;
-      OSPData firstIndexBrickOfTreeData;
-      OSPData firstDataBrickOfTreeData;
+      OSPData valueBrickValue;
+      OSPData indexBrickValue;
+      OSPData brickInfoValue;
+      OSPData firstIndexBrickOfTreeValue;
+      OSPData firstValueBrickOfTreeValue;
       float samplingRate;
       int maxLevel;
 

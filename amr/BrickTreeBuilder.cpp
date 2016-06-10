@@ -40,7 +40,7 @@ namespace ospray {
     BrickTreeBuilder<N,T>::BrickTreeBuilder()
       : maxLevel(0)
     {
-      newDataBrick();
+      newValueBrick();
     }
 
     template<int N, typename T>
@@ -50,24 +50,24 @@ namespace ospray {
     }
 
     template<int N, typename T>
-    int32 BrickTreeBuilder<N,T>::newDataBrick()
+    int32 BrickTreeBuilder<N,T>::newValueBrick()
     {
-      int32 ID = dataBrick.size();
-      dataBrick.push_back(new typename BrickTree<N,T>::DataBrick);
-      dataBrick.back()->clear();
+      int32 ID = valueBrick.size();
+      valueBrick.push_back(new typename BrickTree<N,T>::ValueBrick);
+      valueBrick.back()->clear();
       indexBrickOf.push_back(BrickTree<N,T>::invalidID());
       return ID;
     }
 
-    /*! get index brick for given data brick ID - create if required */
+    /*! get index brick for given value brick ID - create if required */
     template<int N, typename T>
     typename BrickTree<N,T>::IndexBrick *
-    BrickTreeBuilder<N,T>::getIndexBrickFor(int32 dataBrickID)
+    BrickTreeBuilder<N,T>::getIndexBrickFor(int32 valueBrickID)
     {
-      assert(dataBrickID < indexBrickOf.size());
-      int32 indexBrickID = indexBrickOf[dataBrickID];
+      assert(valueBrickID < indexBrickOf.size());
+      int32 indexBrickID = indexBrickOf[valueBrickID];
       if (indexBrickID == BrickTree<N,T>::invalidID()) {
-        indexBrickID = indexBrickOf[dataBrickID] = indexBrick.size();
+        indexBrickID = indexBrickOf[valueBrickID] = indexBrick.size();
         indexBrick.push_back(new typename BrickTree<N,T>::IndexBrick);
         indexBrick.back()->clear();
       }
@@ -77,12 +77,12 @@ namespace ospray {
           for (int ix=0;ix<N;ix++) {
             assert(indexBrick[indexBrickID] != NULL);
             assert(indexBrick[indexBrickID]->childID[iz][iy][ix] == -1 ||
-                   indexBrick[indexBrickID]->childID[iz][iy][ix] < dataBrick.size());
+                   indexBrick[indexBrickID]->childID[iz][iy][ix] < valueBrick.size());
           }
       return indexBrick[indexBrickID];
     }
 
-    /*! be done with the build, and save all data to the xml/bin
+    /*! be done with the build, and save all value to the xml/bin
       file of 'fileName' and 'filename+"bin"' */
     template<int N, typename T>
     void BrickTreeBuilder<N,T>::save(const std::string &ospFileName, const vec3f &clipBoxSize)
@@ -90,13 +90,13 @@ namespace ospray {
       throw std::runtime_error("saving an individual sumerian not implemented yet (use multisum instead)");
     }
 
-    /*! find or create data brick that contains given cell. if that
+    /*! find or create value brick that contains given cell. if that
       brick (or any of its parents, indices referring to it, etc)
       does not exist, create and initialize whatever is required to
       have this node */
     template<int N, typename T>
-    typename BrickTree<N,T>::DataBrick *
-    BrickTreeBuilder<N,T>::findDataBrick(const vec3i &coord, int level)
+    typename BrickTree<N,T>::ValueBrick *
+    BrickTreeBuilder<N,T>::findValueBrick(const vec3i &coord, int level)
     {
       // start with the root brick
       int brickSize = brickSizeOf<N>(level);
@@ -106,7 +106,7 @@ namespace ospray {
       while (brickSize > N) {
         int cellSize = brickSize / N;
 
-        assert(brickID < dataBrick.size());
+        assert(brickID < valueBrick.size());
         typename BrickTree<N,T>::IndexBrick *ib = getIndexBrickFor(brickID);
         assert(ib);
         int cx = (coord.x % brickSize) / cellSize;
@@ -116,16 +116,16 @@ namespace ospray {
         assert(cy < N);
         assert(cz < N);
         brickID = ib->childID[cz][cy][cx];
-        assert(brickID == -1 || brickID < dataBrick.size());
+        assert(brickID == -1 || brickID < valueBrick.size());
         if (brickID == BrickTree<N,T>::invalidID()) {
-          brickID = ib->childID[cz][cy][cx] = newDataBrick();
+          brickID = ib->childID[cz][cy][cx] = newValueBrick();
         }
-        assert(brickID < dataBrick.size());
+        assert(brickID < valueBrick.size());
         brickSize = cellSize;
       }
       
-      assert(brickID < dataBrick.size());
-      return dataBrick[brickID];
+      assert(brickID < valueBrick.size());
+      return valueBrick[brickID];
     }
     
 
@@ -137,7 +137,7 @@ namespace ospray {
 #endif
       maxLevel = max(maxLevel,level);
       assert(reduce_max(coord) < brickSizeOf<N>(level));
-      typename BrickTree<N,T>::DataBrick *db = this->findDataBrick(coord, level);
+      typename BrickTree<N,T>::ValueBrick *db = this->findValueBrick(coord, level);
       assert(db);
       db->value[coord.z % N][coord.y % N][coord.x % N] = v;
     }
@@ -152,7 +152,7 @@ namespace ospray {
       : rootGrid(NULL), valueRange(empty)
     {}
 
-    /*! be done with the build, and save all data to the xml/bin
+    /*! be done with the build, and save all value to the xml/bin
       file of 'fileName' and 'filename+"bin"' */
     template<int N, typename T>
     void MultiBrickTreeBuilder<N,T>::save(const std::string &ospFileName, const vec3f &clipBoxSize)
@@ -187,7 +187,7 @@ namespace ospray {
       fprintf(osp,"   maxLevel=\"%i\"\n",maxLevel);
       fprintf(osp,"   >\n");
 
-      fprintf(osp,"\t<dataBricks>\n");
+      fprintf(osp,"\t<valueBricks>\n");
       for (int iz=0;iz<rootGrid->size().z;iz++)
         for (int iy=0;iy<rootGrid->size().y;iy++)
           for (int ix=0;ix<rootGrid->size().x;ix++) {
@@ -195,13 +195,13 @@ namespace ospray {
             if (!msb) {
               fprintf(osp," %i\n",0);
             } else {
-              fprintf(osp,"\t\t%li\n",msb->dataBrick.size());
-              for (int i=0;i<msb->dataBrick.size();i++) {
-                fwrite(msb->dataBrick[i],sizeof(*msb->dataBrick[i]),1,bin);
+              fprintf(osp,"\t\t%li\n",msb->valueBrick.size());
+              for (int i=0;i<msb->valueBrick.size();i++) {
+                fwrite(msb->valueBrick[i],sizeof(*msb->valueBrick[i]),1,bin);
               }
             }
           }
-      fprintf(osp,"\t</dataBricks>\n");
+      fprintf(osp,"\t</valueBricks>\n");
       
       fprintf(osp,"\t<indexBricks>\n");
       size_t treeRootOffset = 0;
@@ -217,7 +217,7 @@ namespace ospray {
                 typename BrickTree<N,T>::IndexBrick ib = *msb->indexBrick[i];
                 fwrite(&ib,sizeof(ib),1,bin);
               }
-              treeRootOffset += msb->dataBrick.size();
+              treeRootOffset += msb->valueBrick.size();
             }
           }
       fprintf(osp,"\t</indexBricks>\n");
