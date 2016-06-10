@@ -20,7 +20,7 @@
 #include "ospray/common/Data.h"
 #include "ospray/transferFunction/TransferFunction.h"
 // ispc exports
-#include "BrickTree_ispc.h"
+//#include "BrickTree_ispc.h"
 // stl
 #include <set>
 #include <map>
@@ -36,7 +36,7 @@ namespace ospray {
     BrickTreeVolume::BrickTreeVolume()
       : Volume(), rootGridDims(-1), voxelType(OSP_FLOAT)
     {
-      ispcEquivalent = ispc::BrickTreeVolume_create(this);
+      // ispcEquivalent = ispc::BrickTreeVolume_create(this);
     }
     
     //! Allocate storage and populate the volume.
@@ -62,17 +62,17 @@ namespace ospray {
 
       Ref<TransferFunction> xf = (TransferFunction*)getParamObject("transferFunction");
 
-      ispc::BrickTreeVolume_set(getIE(),
-                            xf->getIE(),
-                            (ispc::vec3i &)rootGridDims,
-                            (ispc::vec3f &)validFractionOfRootGrid,
-                            dataBrickData->data,
-                            indexBrickData->data,
-                            brickInfoData->data,
-                            firstDataBrickOfTreeData->data,
-                            firstIndexBrickOfTreeData->data,
-                            finestCellWidth
-                            );
+      // ispc::BrickTreeVolume_set(getIE(),
+      //                       xf->getIE(),
+      //                       (ispc::vec3i &)rootGridDims,
+      //                       (ispc::vec3f &)validFractionOfRootGrid,
+      //                       dataBrickData->data,
+      //                       indexBrickData->data,
+      //                       brickInfoData->data,
+      //                       firstDataBrickOfTreeData->data,
+      //                       firstIndexBrickOfTreeData->data,
+      //                       finestCellWidth
+      //                       );
     }
 
     OSP_REGISTER_VOLUME(BrickTreeVolume,BrickTreeVolume);

@@ -41,136 +41,102 @@ namespace ospray {
       cout << " --format|-f <uint8|float|double> : desired voxel type" << endl;
       cout << " --input-format|-if <uint8|float|double>: format of input raw file (if different from '--format')" << endl;
       cout << " --brick-size|-bs <N>   : use bricks of NxNxN voxels" << endl;
-      cout << " --depth <maxlevels>    : use maxlevels octree refinement levels" << endl;
+      cout << " --depth <depth>        : num levels per block" << endl;
       cout << " -o <outfilename.xml>   : output file name" << endl;
       cout << " -t <threshold>         : threshold of which nodes to split or not (ABSOLUTE float val)" << endl;
       exit(msg != "");
     }
 
-#if 1
+// #if 1
+
+//     template<int N, typename T>
+//     void progress(MultiBrickTreeBuilder<N,T> *builder,
+//                   const Array3D<T> *input,
+//                   const vec3i &begin=vec3i(-1), 
+//                   const vec3i &end=vec3i(-1))
+//     {
+//       static std::mutex progressMutex;
+//       std::lock_guard<std::mutex> lock(progressMutex);
+
+//       static size_t numDone = 0;
+
+//       size_t numIndexBricks = 0;
+//       size_t numDataBricks = 0;
+
+//       assert(builder);
+//       cout << "done brick " << begin << " - " << end
+//            << " num = " << reduce_mul(end-begin) << endl;
+//       numDone += reduce_mul((end-begin));
+//       double pctgDone = 100.f * numDone / double(input->numElements());
+//       cout << "build update (done w/ " << pctgDone << "% of volume)" << endl;
+
+//       for (int iz=0;iz<builder->getRootGridSize().z;iz++)
+//         for (int iy=0;iy<builder->getRootGridSize().y;iy++)
+//           for (int ix=0;ix<builder->getRootGridSize().x;ix++) {
+//             BrickTreeBuilder<N,T> *msb = builder->getRootCell(vec3i(ix,iy,iz));
+//             if (msb) {
+//               numIndexBricks += msb->indexBrick.size();
+//               numDataBricks += msb->dataBrick.size();
+//             }
+//           }
+
+// 	cout << "- format " 
+// 		<< typeToString<T>() << " BS " << N 
+// 		<< " dataBrickSz = " << sizeof(typename BrickTree<N,T>::DataBrick) 
+// 		<< " idxBrickSz = " << sizeof(typename BrickTree<N,T>::IndexBrick) 
+// 		<< endl;
+//       cout << "- root grid size " << builder->getRootGridSize() << endl;
+//       cout << "- total num index bricks " << prettyNumber(numIndexBricks)
+//            << " (estd " << prettyNumber(long(numIndexBricks * 100.f / pctgDone)) << ")" << endl;
+//       cout << "- total num data bricks " << prettyNumber(numDataBricks)
+//            << " (estd " << prettyNumber(long(numDataBricks * 100.f / pctgDone)) << ")" << endl;
+
+//       size_t totalSize
+//         = numIndexBricks * sizeof(typename BrickTree<N,T>::IndexBrick)
+//         + numDataBricks * (sizeof(typename BrickTree<N,T>::DataBrick) + sizeof(int));
+      
+//       cout << "- total size (bytes) " << prettyNumber(totalSize)
+//            << " (estd " << prettyNumber(long(totalSize * 100.f / pctgDone)) << ")" << endl;
+//       size_t sizeExpected = long(totalSize * 100.f / pctgDone);
+//       size_t sizeOriginal = input->numElements()*sizeof(T);
+//       cout << "[that's a compression rate (ASSUMING INPUT WAS TS) of " << (sizeExpected *100.f / sizeOriginal) << "%]" << endl << endl;;
+//     }
+// #endif
 
     template<int N, typename T>
-    void progress(MultiBrickTreeBuilder<N,T> *builder,
-                  const Array3D<T> *input,
-                  const vec3i &begin=vec3i(-1), 
-                  const vec3i &end=vec3i(-1))
-    {
-      static std::mutex progressMutex;
-      std::lock_guard<std::mutex> lock(progressMutex);
-
-      static size_t numDone = 0;
-
-      size_t numIndexBricks = 0;
-      size_t numDataBricks = 0;
-
-      assert(builder);
-      cout << "done brick " << begin << " - " << end
-           << " num = " << reduce_mul(end-begin) << endl;
-      numDone += reduce_mul((end-begin));
-      double pctgDone = 100.f * numDone / double(input->numElements());
-      cout << "build update (done w/ " << pctgDone << "% of volume)" << endl;
-
-      for (int iz=0;iz<builder->getRootGridSize().z;iz++)
-        for (int iy=0;iy<builder->getRootGridSize().y;iy++)
-          for (int ix=0;ix<builder->getRootGridSize().x;ix++) {
-            BrickTreeBuilder<N,T> *msb = builder->getRootCell(vec3i(ix,iy,iz));
-            if (msb) {
-              numIndexBricks += msb->indexBrick.size();
-              numDataBricks += msb->dataBrick.size();
-            }
-          }
-
-	cout << "- format " 
-		<< typeToString<T>() << " BS " << N 
-		<< " dataBrickSz = " << sizeof(typename BrickTree<N,T>::DataBrick) 
-		<< " idxBrickSz = " << sizeof(typename BrickTree<N,T>::IndexBrick) 
-		<< endl;
-      cout << "- root grid size " << builder->getRootGridSize() << endl;
-      cout << "- total num index bricks " << prettyNumber(numIndexBricks)
-           << " (estd " << prettyNumber(long(numIndexBricks * 100.f / pctgDone)) << ")" << endl;
-      cout << "- total num data bricks " << prettyNumber(numDataBricks)
-           << " (estd " << prettyNumber(long(numDataBricks * 100.f / pctgDone)) << ")" << endl;
-
-      size_t totalSize
-        = numIndexBricks * sizeof(typename BrickTree<N,T>::IndexBrick)
-        + numDataBricks * (sizeof(typename BrickTree<N,T>::DataBrick) + sizeof(int));
+    struct BlockBuilder : public BrickTreeBuilder<N,T> {
       
-      cout << "- total size (bytes) " << prettyNumber(totalSize)
-           << " (estd " << prettyNumber(long(totalSize * 100.f / pctgDone)) << ")" << endl;
-      size_t sizeExpected = long(totalSize * 100.f / pctgDone);
-      size_t sizeOriginal = input->numElements()*sizeof(T);
-      cout << "[that's a compression rate (ASSUMING INPUT WAS TS) of " << (sizeExpected *100.f / sizeOriginal) << "%]" << endl << endl;;
-    }
-#endif
-
-    template<int N, typename T>
-    struct SumFromArrayBuilder {
-      
-      SumFromArrayBuilder(const Array3D<T> *input, 
-                          MultiBrickTreeBuilder<N,T> *builder,
-                          float threshold = 0.f,
-                          int rootGridLevel = 0)
+      BlockBuilder(const Array3D<T> *input, 
+                   // BrickTreeBuilder<N,T> *builder,
+                   int blockWidth,
+                   float threshold
+                   )
         : input(input), 
           threshold(threshold), 
-          valueRange(empty), 
-          builder(builder),
-          rootGridLevel(rootGridLevel)
+          // builder(builder),
+          valueRange(empty),
+          blockWidth(blockWidth)
       {
-        int rootSize = N;
-        while (rootSize < reduce_max(input->size())) 
-          rootSize *= N;
-        
-#ifdef PARALLEL_MULTI_TREE_BUILD
-        // if (maxNumThreads != 0)
-        //   tbb_init(maxNumThreads);
-        int rootLevelBrickSize = rootSize;
-        for (int i=0;i<rootGridLevel;i++)
-          rootLevelBrickSize /= N;
-        PRINT(rootLevelBrickSize);
-        PRINT(rootGridLevel);
-        vec3i rootGridDims = divRoundUp(input->size(),vec3i(rootLevelBrickSize));
-        PRINT(rootGridDims);
-        int numRootGridBricks = rootGridDims.product();
-        std::mutex mutex;
-        tbb::parallel_for(0, numRootGridBricks, 1, [&](int brickID)
-                          {
-                            vec3i rootID;
-                            rootID.x = brickID % rootGridDims.x;
-                            rootID.y = (brickID / rootGridDims.x) % rootGridDims.y;
-                            rootID.z = (brickID / rootGridDims.x / rootGridDims.y);
-                            double avg;
-                            Range<double> myRange = buildRec(avg,rootID,
-                                                             //0,
-                                                             rootGridLevel,
-                                                             rootLevelBrickSize);
-                            
-                            mutex.lock();
-                            valueRange.extend(myRange);
-                            mutex.unlock();
-                          }
-                          );
-        
-#else
-        double avg;
-        
-        valueRange = buildRec(avg,vec3i(0),0,rootSize);
-#endif
+        this->valueRange = buildRec(this->averageValue,vec3i(0),0,blockWidth);
       }
-
-      std::vector<typename BrickTree<N,T>::IndexBrick> indexBrick;
-      std::vector<typename BrickTree<N,T>::DataBrick>  dataBrick;
-      std::vector<typename BrickTree<N,T>::BrickInfo>  brickInfo;
+      
+      // std::vector<typename BrickTree<N,T>::IndexBrick> indexBrick;
+      // std::vector<typename BrickTree<N,T>::DataBrick>  dataBrick;
+      // std::vector<typename BrickTree<N,T>::BrickInfo>  brickInfo;
       
       Range<double> buildRec(double &avg, 
                              const vec3i &begin,
                              int level,
-                             int brickSize);
+                             int blockWidth);
       
+      void save(const std::string &ospFileName, const vec3i &validSize);
+
       Range<double> valueRange;
+      double        averageValue;
       const Array3D<T> *input;
       const float threshold;
-      MultiBrickTreeBuilder<N,T> *builder;
-      int rootGridLevel;
+      // BrickTreeBuilder<N,T> *builder;
+      const int blockWidth;
     };
 
     template<typename T>
@@ -226,26 +192,34 @@ namespace ospray {
     }
     
     template<int N, typename T>
-    Range<double> SumFromArrayBuilder<N,T>::buildRec(double &avg, 
-                                                     const vec3i &begin,
-                                                     int level,
-                                                     int brickSize)
+    Range<double> BlockBuilder<N,T>::buildRec(double &avg, 
+                                              const vec3i &begin,
+                                              int level,
+                                              int levelWidth)
     {
-      vec3i lo = min(input->size(),begin*brickSize);
-      vec3i hi = min(input->size(),lo + vec3i(brickSize));
+      // PING;
+      // PRINT(begin);
+      // PRINT(level);
+      // PRINT(levelWidth);
+
+      vec3i lo = min(input->size(),begin*levelWidth);
+      vec3i hi = min(input->size(),lo + vec3i(levelWidth));
+      // PRINT(lo);
+      // PRINT(hi);
+
       if ((hi-lo).product() == 0) { avg = T(0); return Range<double>(T(0),T(0)); }
 
-      bool output = level == rootGridLevel; //(brickSize == 64); //N*N*N);
-      if (output) 
-        cout << "building brick " << lo << " - " << hi << " bs " << brickSize << endl;
+      // bool output = level == rootGridLevel; //(levelWidth == 64); //N*N*N);
+      // if (output) 
+      //   cout << "building brick " << lo << " - " << hi << " bs " << levelWidth << endl;
 
       Range<double> range = empty;
       typename BrickTree<N,T>::DataBrick db;
       db.clear();
 
-      const int cellSize = brickSize / N;
+      const int cellSize = levelWidth / N;
         
-      if (brickSize == N) {
+      if (levelWidth == N) {
         // -------------------------------------------------------
         // LEAF
         // -------------------------------------------------------
@@ -273,18 +247,18 @@ namespace ospray {
             }
       }
       // now, compute average of this node - we need this even if the node gets killed...
-      avg = db.computeWeightedAverage(begin,brickSize,input->size());        
+      avg = db.computeWeightedAverage(begin,levelWidth,input->size());        
 
-      if (((range.hi - range.lo) <= threshold)
-          && 
-          level > rootGridLevel) 
+      if ((range.hi - range.lo) <= threshold)
+          // && 
+          // level > rootGridLevel) 
         {
           // do not set any fields - kill that brick
         } 
       else {
         // need to actually create this brick:
-        if (output)
-          cout << "inserting brick " << begin << ":" << level << endl;
+        // if (output)
+        //   cout << "inserting brick " << begin << ":" << level << endl;
         for (int iz=0;iz<N;iz++)
           for (int iy=0;iy<N;iy++)
             for (int ix=0;ix<N;ix++) {
@@ -292,91 +266,295 @@ namespace ospray {
               if (cellID.x*cellSize < input->size().x &&
                   cellID.y*cellSize < input->size().y &&
                   cellID.z*cellSize < input->size().z) {
-                if (level >= rootGridLevel) {
-                  builder->set(cellID,level-rootGridLevel,db.value[iz][iy][ix]);
-                }
+                // if (level >= rootGridLevel) {
+                this->set(cellID,level,db.value[iz][iy][ix]);
+                // builder->set(cellID,level,db.value[iz][iy][ix]);
+                // }
               }
             }
       }
-      if (output) {
-        progress(builder,input,lo,hi);
-      }
+      // if (output) {
+      //   progress(builder,input,lo,hi);
+      // }
 
 
       return range;
     }
 
     template<int N, typename T>
-    void buildIt(const std::string &inputFormat,
+    void buildIt(int blockID,
+                 const std::string &inputFormat,
                  const vec3i &dims,
                  const std::vector<std::string> &inFileName,
                  const std::string &outFileName,
                  const box3i &clipBox,
                  const float threshold,
-                 const int maxLevels)
+                 const int blockDepth)
     {
       const Array3D<T> *org_input = openInput<T>(inputFormat,dims,inFileName);
       const Array3D<T> *input = new SubBoxArray3D<T>(org_input,clipBox);
       // threshold = 0.f;
-      int rootGridLevel = 0;
+
+      std::string inputFilesString = "";
+      for (int i=0;i<inFileName.size();i++)
+        inputFilesString += (inFileName[i]+" ");
+      int blockWidth = 1;
+      for (int i=0;i<blockDepth;i++)
+        blockWidth *= N;
+      PRINT(blockWidth);
+      // int rootGridLevel = 0;
       // compute num skiplevels based on num levels specified:
-      int levelWidth = reduce_max(input->size());
-      for (int i=0;i<maxLevels;i++)
-        levelWidth = divRoundUp(levelWidth,N);
-      while (levelWidth > N) {
-        rootGridLevel++;
-        levelWidth = divRoundUp(levelWidth,N);
+      // int levelWidth = reduce_max(input->size());
+      // for (int i=0;i<blockDepth;i++)
+      //   levelWidth = divRoundUp(levelWidth,N);
+      // while (levelWidth > N) {
+      //   rootGridLevel++;
+      //   levelWidth = divRoundUp(levelWidth,N);
+      // }
+      // cout << "building tree with " << rootGridLevel << " skip levels" << endl;
+      // PRINT(levelWidth);
+      const vec3i rootGridSize = divRoundUp(input->size(),vec3i((int)blockWidth));
+      const size_t numBlocks = rootGridSize.product();
+      if (numBlocks >= 1000000)
+        throw std::runtime_error("too many blocks ... consider changing bricksisze or block depth");
+
+
+      const std::string format = typeToString<T>();
+      if (blockID == -1) {
+        // =======================================================
+        // brickID == -1: create the makefile, nothing else
+        // =======================================================
+        // this is the "create makefile" case
+        const std::string makeFileName = outFileName+".mak";
+        FILE *out = fopen(makeFileName.c_str(),"w");
+        assert(out);
+
+        fprintf(out,"# makefile generated by raw2bricks tool\n\n");
+        fprintf(out,"all:",outFileName.c_str());
+        for (int i=0;i<numBlocks;i++)
+          fprintf(out," \\\n\t%s-brick%06i.osp",outFileName.c_str(),i);
+        fprintf(out,"\n");
+
+        fprintf(out,"RAW2BRICKS=./ospRaw2Bricks\n\n");
+
+        for (int i=0;i<numBlocks;i++) {
+          fprintf(out,"%s-brick%06i.osp: %s.mak\n",outFileName.c_str(),i,outFileName.c_str());
+          fprintf(out,"\t${RAW2BRICKS}"
+                  " -o %s"
+                  " --blockID %i"
+                  " --format %s"
+                  " --input-format %s"
+                  " --dimensions %i %i %i"
+                  " --brick-size %i"
+                  " --clip-box %i %i %i %i %i %i"
+                  " --depth %i"
+                  " --threshold %f"
+                  " %s"
+                  "\n",
+                  outFileName.c_str(),
+                  i,
+                  format.c_str(),
+                  (inputFormat!=""?inputFormat.c_str():format.c_str()),
+                  dims.x,dims.y,dims.z,
+                  N,
+                  clipBox.lower.x,clipBox.lower.y,clipBox.lower.z,
+                  clipBox.size().x,clipBox.size().y,clipBox.size().z,
+                  blockDepth,
+                  threshold,
+                  inputFilesString.c_str()
+                  );
+          fprintf(out,"\n");
+        }
+        // fprintf(out,"\t${RAW2BRICKS}"
+        //         " -o %s"
+        //         " --blockID -2"
+        //         " --format %s"
+        //         " --input-format %s"
+        //         " --dimensions %i %i %i"
+        //         " --brick-size %i"
+        //         " --clip-box %i %i %i %i %i %i"
+        //           " --depth %i"
+        //         " --threshold %f"
+        //         " %s"
+        //         ,
+        //         outFileName.c_str(),
+        //         format.c_str(),
+        //         (inputFormat!=""?inputFormat.c_str():format.c_str()),
+        //         dims.x,dims.y,dims.z,
+        //         N,
+        //         clipBox.lower.x,clipBox.lower.y,clipBox.lower.z,
+        //         clipBox.size().x,clipBox.size().y,clipBox.size().z,
+        //         blockDepth,
+        //         threshold,
+        //         inputFilesString.c_str()
+        //         );
+        cout << "done writing makefile." << endl;
+        fclose(out);
+
+        const std::string ospFileName = outFileName+".osp";
+        FILE *osp = fopen(ospFileName.c_str(),"w");
+        fprintf(osp,"<?xml?>\n");
+        fprintf(osp,"<ospray>\n");
+        {
+          fprintf(osp,"<MultiBrickTree\n");
+          fprintf(osp,"   gridSize=\"%i %i %i\"\n",rootGridSize.x,rootGridSize.y,rootGridSize.z);
+          vec3i inputSize = input->size();
+          fprintf(osp,"   format=\"%s\"\n",typeToString<T>());
+          fprintf(osp,"   brickSize=\"%i\"\n",N);
+          fprintf(osp,"   blockWidth=\"%i\"\n",blockWidth);
+          fprintf(osp,"   validSize=\"%i %i %i\"\n",inputSize.x,inputSize.y,inputSize.z);
+          fprintf(osp,"\t/>\n");
+        }
+        fprintf(osp,"</ospray>\n");
+        fclose(osp);
+        cout << "done writing multibrick osp file name..." << endl;
+        exit(0);
+      } else {
+        // =======================================================
+        // actual block ID >= 0: build that bricktree
+        // =======================================================
+        vec3i blockIdx;
+        blockIdx.z = blockID / (rootGridSize.x*rootGridSize.y);
+        blockIdx.y = (blockID / rootGridSize.x) % rootGridSize.y;
+        blockIdx.x = blockID % rootGridSize.x;
+        cout << "----------------------------" << endl;
+        box3i blockDims;
+        blockDims.lower = blockIdx*blockWidth;
+        blockDims.upper = min(blockDims.lower+vec3i(blockWidth),input->size());
+        cout << "building block " << blockID << "/" << numBlocks << " (" << (int)(100.f*blockID/float(numBlocks)) << "%) " << blockIdx << " / " << rootGridSize << ", coords = " << blockDims << endl;
+        cout << "reading in actual block data" << endl;
+        ActualArray3D<T> *blockInput = new ActualArray3D<T>(blockDims.size());
+        tbb::parallel_for(0, (int)blockDims.size().z, 1, [&](int iz){
+            // for (int iz=0;iz<blockWidth;iz++)
+            for (int iy=0;iy<blockDims.size().y;iy++)
+              for (int ix=0;ix<blockDims.size().x;ix++)
+                blockInput->set(vec3i(ix,iy,iz),input->get(blockDims.lower+vec3i(ix,iy,iz)));
+          });
+        cout << "done; now building bricktree..." << endl;
+        cout << "----------------------------" << endl;
+        // BrickTreeBuilder<N,T> *builder = new BrickTreeBuilder<N,T>;
+        BlockBuilder<N,T> block(blockInput,blockWidth,threshold);
+        cout << "done building block's bricktree ... " << endl;
+        PRINT(block.averageValue);
+        PRINT(block.valueRange);
+        char blockOutName[outFileName.size()+100];
+        sprintf(blockOutName,"%s-brick%06i.osp",outFileName.c_str(),blockID);
+        cout << "saving tree to " << blockOutName << endl;
+        block.save(blockOutName,blockInput->size());
+        cout << "done saving block's bricktree... exiting!" << endl;
+        cout << "=========================================" << endl;
+        exit(0);
+// #if 0
+//         BrickTreeBuilder<N,T> *builder = new MultiBrickTreeBuilder<N,T>;
+//         // MultiBrickTreeBuilder<N,T> *builder = new MultiBrickTreeBuilder<N,T>;
+//         PRINT(builder);
+//         vec3i encodedSize = builder->getRootGridSize();
+//         PRINT(encodedSize);
+//         while (encodedSize.x < input->size().x) encodedSize.x *= N;
+//         while (encodedSize.y < input->size().y) encodedSize.y *= N;
+//         while (encodedSize.z < input->size().z) encodedSize.z *= N;
+
+//         vec3f clipBoxSize = vec3f(input->size()) / vec3f(encodedSize);
+//         PRINT(clipBoxSize);
+
+//         // SumFromArrayBuilder<N,T>(input,builder,threshold,rootGridLevel);
+//         cout << "done building!" << endl;
+//         // progress(builder,input);
+
+//         cout << "saving to output file " << outFileName << endl;
+
+//         builder->save(outFileName,clipBoxSize);
+//         cout << "done writing multi-sum tree" << endl;
+// #endif
       }
-      cout << "building tree with " << rootGridLevel << " skip levels" << endl;
-
-      MultiBrickTreeBuilder<N,T> *builder = new MultiBrickTreeBuilder<N,T>;
-      SumFromArrayBuilder<N,T>(input,builder,threshold,rootGridLevel);
-      cout << "done building!" << endl;
-      progress(builder,input);
-
-      cout << "saving to output file " << outFileName << endl;
-
-      vec3i encodedSize = builder->getRootGridSize();
-      while (encodedSize.x < input->size().x) encodedSize.x *= N;
-      while (encodedSize.y < input->size().y) encodedSize.y *= N;
-      while (encodedSize.z < input->size().z) encodedSize.z *= N;
-
-      vec3f clipBoxSize = vec3f(input->size()) / vec3f(encodedSize);
-      
-      builder->save(outFileName,clipBoxSize);
-      cout << "done writing multi-sum tree" << endl;
     }
 
 
+#if 1
+    template<int N, typename T>
+    void BlockBuilder<N,T>::save(const std::string &ospFileName, const vec3i &validSize)
+    {
+
+      const std::string binFileName = ospFileName+"bin";
+      FILE *bin = fopen(binFileName.c_str(),"wb");
+      
+      size_t indexOfs = ftell(bin);
+      for (int i=0;i<this->indexBrick.size();i++) {
+        const typename BrickTree<N,T>::IndexBrick *brick = this->indexBrick[i];
+        if (!fwrite(brick,sizeof(*brick),1,bin))
+          throw std::runtime_error("could not write ... disk full!?");
+      }
+      
+      size_t dataOfs = ftell(bin);      
+      for (int i=0;i<this->dataBrick.size();i++) {
+        const typename BrickTree<N,T>::DataBrick *brick = this->dataBrick[i];
+        if (!fwrite(brick,sizeof(*brick),1,bin))
+          throw std::runtime_error("could not write ... disk full!?");
+      }
+      
+      size_t indexBrickOfOfs = ftell(bin);      
+      for (int i=0;i<this->indexBrickOf.size();i++)
+        if (!fwrite(&this->indexBrickOf[i],sizeof(this->indexBrickOf[i]),1,bin))
+          throw std::runtime_error("could not write ... disk full!?");
+      
+      fclose(bin);
+
+      FILE *osp = fopen(ospFileName.c_str(),"w");
+      fprintf(osp,"<?xml?>\n");
+      fprintf(osp,"<ospray>\n");
+      {
+        fprintf(osp,"  <BrickTree>\n");
+        {
+          fprintf(osp,"    averageValue=\"%f\"\n",averageValue);
+          fprintf(osp,"    valueRange=\"%f %f\"\n",valueRange.lo,valueRange.hi);
+          fprintf(osp,"    format=\"%s\"\n",typeToString<T>());
+          fprintf(osp,"    brickSize=\"%i\"\n",N);
+          fprintf(osp,"    validSize=\"%i %i %i\"\n",validSize.x,validSize.y,validSize.z);
+          fprintf(osp,"    <index num=%li ofs=%li/>\n",
+                  this->indexBrick.size(),indexOfs);
+          fprintf(osp,"    <data num=%li ofs=%li/>\n",
+                  this->dataBrick.size(),dataOfs);
+          fprintf(osp,"    <indexBrickOf num=%li ofs=%li/>\n",
+                  this->indexBrickOf.size(),indexBrickOfOfs);
+        }
+        fprintf(osp,"  </BrickTree>\n");
+      }
+      fprintf(osp,"</ospray>\n");
+      fclose(osp);
+      // throw std::runtime_error("saving an individual sumerian not implemented yet (use multisum instead)");
+    }
+#endif
+
+
     template<int N>
-    void buildIt(const std::string &inputFormat,
+    void buildIt(int blockID,
+                 const std::string &inputFormat,
                  const std::string &treeFormat,
                  const vec3i &dims,
                  const std::vector<std::string> &inFileName,
                  const std::string &outFileName,
                  const box3i &clipBox,
                  const float threshold,
-                 const int maxLevels)
+                 const int blockDepth)
     {
-	PRINT(inputFormat);
-	PRINT(treeFormat);
       if (treeFormat == "uint8")
-        buildIt<N,uint8>(inputFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
+        buildIt<N,uint8>(blockID,inputFormat,dims,inFileName,outFileName,clipBox,threshold,blockDepth);
       else if (treeFormat == "float")
-        buildIt<N,float>(inputFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
+        buildIt<N,float>(blockID,inputFormat,dims,inFileName,outFileName,clipBox,threshold,blockDepth);
       else if (treeFormat == "double")
-        buildIt<N,double>(inputFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
+        buildIt<N,double>(blockID,inputFormat,dims,inFileName,outFileName,clipBox,threshold,blockDepth);
       else 
         error("unsupported format");
     }
 
     extern "C" int main(int ac, char **av)
     {
+      int blockID = -1;
       std::vector<std::string> inFileName;
       std::string outFileName = "";
       std::string inputFormat = "";
       std::string treeFormat  = "float";
-      int         maxLevels   = 3;
+      int         blockDepth   = -1;
       float       threshold   = 0.f;
       vec3i       dims        = vec3i(0);
       int         brickSize   = 4;
@@ -388,11 +566,13 @@ namespace ospray {
           outFileName = av[++i];
         else if (arg == "--depth" || arg == "-depth" || 
                  arg == "--max-levels" || arg == "-ml")
-          maxLevels = atoi(av[++i]);
+          blockDepth = atoi(av[++i]);
         else if (arg == "--threshold" || arg == "-t")
           threshold = atof(av[++i]);
         else if (arg == "--brick-size" || arg == "-bs")
           brickSize = atof(av[++i]);
+        else if (arg == "-bid" || arg == "--blockID")
+          blockID = atoi(av[++i]);
         else if (arg == "--format")
           treeFormat = av[++i];
         else if (arg == "--input-format" || arg == "-if")
@@ -411,7 +591,7 @@ namespace ospray {
           cout << "tbb support not compiled in ... " << endl;
 #endif
         }
-        else if (arg == "--clip" || arg == "--sub-box") {
+        else if (arg == "--clip" || arg == "--sub-box" || arg == "--clip-box") {
           clipBox.lower.x = atof(av[++i]);
           clipBox.lower.y = atof(av[++i]);
           clipBox.lower.z = atof(av[++i]);
@@ -441,24 +621,28 @@ namespace ospray {
       if (outFileName == "")
         error("no output file specified");
       
+      if (blockDepth < 0) {
+        blockDepth = (int)(logf(256.f)/logf(brickSize)+.5f);
+        cout << "automatically set block depth to " << blockDepth << endl;
+      }
       switch (brickSize) {
       case 2:
-        buildIt<2>(inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
+        buildIt<2>(blockID,inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,blockDepth);
         break;
       case 4:
-        buildIt<4>(inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
+        buildIt<4>(blockID,inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,blockDepth);
         break;
       case 8:
-        buildIt<8>(inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
+        buildIt<8>(blockID,inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,blockDepth);
         break;
       case 16:
-        buildIt<16>(inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
+        buildIt<16>(blockID,inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,blockDepth);
         break;
       case 32:
-        buildIt<32>(inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
+        buildIt<32>(blockID,inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,blockDepth);
         break;
       case 64:
-        buildIt<64>(inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,maxLevels);
+        buildIt<64>(blockID,inputFormat,treeFormat,dims,inFileName,outFileName,clipBox,threshold,blockDepth);
         break;
       default:
         error("unsupported brick size ...");

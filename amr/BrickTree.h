@@ -110,21 +110,6 @@ namespace ospray {
         int32 indexBrickID; 
       }; 
 
-      struct Builder {
-        virtual void set(const vec3i &coord, int level, float v) = 0;
-
-        /*! be done with the build, and save all value to the xml/bin
-            file of 'fileName' and 'filename+"bin"'. clipboxsize
-            specifies which fraction of the encoded domain si actually
-            useful. (1,1,1) means that everything is value (as in a
-            native AMR value set), but encoding a 302^3 RAW volume into
-            something that can, by definiion, only encode powers of N,
-            woudl result i na clip box size of ~vec3f(0.3) (=302/1024)
-            : the tree itself encodes voxels up to 1024^3, but only
-            that fraction of them iscatually valid. */
-        virtual void save(const std::string &ospFileName, const vec3f &clipBoxSize) = 0;
-      };
-
       void mapFrom(const unsigned char *ptr, 
                    const vec3i &rootGrid,
                    const vec3f &fracOfRootGrid,

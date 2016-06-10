@@ -185,7 +185,7 @@ namespace ospray {
       for (int v=0;v<NV;v++) 
         for (int u=0;u<NU;u++) {
           float f = input->get(where_00+u*where_du+v*where_dv);
-          f = (f - range.lo) / (range.hi-range.lo+1e-10.f);
+          f = (f - range.lo) / (range.hi-range.lo+1e-10f);
           int i = int(255.f*f+.5f);
           pixel[u+v*NU] = i | (i << 8) | (i << 16) | (i<<24);
         }

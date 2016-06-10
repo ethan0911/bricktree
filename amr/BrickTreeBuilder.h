@@ -27,7 +27,9 @@ namespace ospray {
   namespace amr {
 
     template<int N, typename T>
-    struct BrickTreeBuilder : public BrickTree<N,T>::Builder {
+    struct BrickTreeBuilder
+      // : public BrickTree<N,T>::Builder 
+    {
       BrickTreeBuilder();
       ~BrickTreeBuilder();
 #ifdef PARALLEL_MULTI_TREE_BUILD
@@ -35,7 +37,7 @@ namespace ospray {
 #endif
 
       /*! public interface to writing values into the tree */
-      virtual void set(const vec3i &coord, int level, float v) override;
+      virtual void set(const vec3i &coord, int level, float v) ;
 
       /*! find or create value brick that contains given cell. if that
         brick (or any of its parents, indices referring to it, etc)
@@ -54,47 +56,9 @@ namespace ospray {
 
       /*! be done with the build, and save all value to the xml/bin
         file of 'fileName' and 'filename+"bin"' */
-      virtual void save(const std::string &ospFileName, const vec3f &clipBoxSize) override;
+      // virtual void save(const std::string &ospFileName, const vec3i &validSize) const override;
 
       int maxLevel;
-    };
-
-    /*! multi-sumerian - a root grid of cell, with one sumerian per
-      cell */
-    template<int N, typename T>
-    struct MultiBrickTreeBuilder : public BrickTree<N,T>::Builder {
-      MultiBrickTreeBuilder();
-      ~MultiBrickTreeBuilder();
-
-      /*! public interface to writing values into the tree */
-      virtual void set(const vec3i &coord, int level, float v) override;
-
-      /*! be done with the build, and save all value to the xml/bin
-        file of 'fileName' and 'filename+"bin"' */
-      virtual void save(const std::string &ospFileName, const vec3f &clipBoxSize) override;
-
-      // const ActualArray3D<BrickTreeBuilder<N,T> *> *getRootGrid() const
-      // { return rootGrid; } 
-
-      BrickTreeBuilder<N,T> *getRootCell(const vec3i &rootCellID);
-      vec3i getRootGridSize() {
-#ifdef PARALLEL_MULTI_TREE_BUILD
-        std::lock_guard<std::mutex> lock(this->rootGridMutex);
-#endif
-        return rootGrid->size();
-      }
-    private:
-      void allocateAtLeast(const vec3i &neededSize);
-
-      /*! the 3d array of (single) sumerians */
-      ActualArray3D<BrickTreeBuilder<N,T> *> *rootGrid;
-
-#ifdef PARALLEL_MULTI_TREE_BUILD
-      std::mutex rootGridMutex;
-#endif
-
-      /* value range of all the values written into this tree ... */
-      Range<T> valueRange;
     };
 
   } // ::ospray::amr
