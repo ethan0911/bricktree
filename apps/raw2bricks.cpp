@@ -47,62 +47,6 @@ namespace ospray {
       exit(msg != "");
     }
 
-// #if 1
-
-//     template<int N, typename T>
-//     void progress(MultiBrickTreeBuilder<N,T> *builder,
-//                   const Array3D<T> *input,
-//                   const vec3i &begin=vec3i(-1), 
-//                   const vec3i &end=vec3i(-1))
-//     {
-//       static std::mutex progressMutex;
-//       std::lock_guard<std::mutex> lock(progressMutex);
-
-//       static size_t numDone = 0;
-
-//       size_t numIndexBricks = 0;
-//       size_t numDataBricks = 0;
-
-//       assert(builder);
-//       cout << "done brick " << begin << " - " << end
-//            << " num = " << reduce_mul(end-begin) << endl;
-//       numDone += reduce_mul((end-begin));
-//       double pctgDone = 100.f * numDone / double(input->numElements());
-//       cout << "build update (done w/ " << pctgDone << "% of volume)" << endl;
-
-//       for (int iz=0;iz<builder->getRootGridSize().z;iz++)
-//         for (int iy=0;iy<builder->getRootGridSize().y;iy++)
-//           for (int ix=0;ix<builder->getRootGridSize().x;ix++) {
-//             BrickTreeBuilder<N,T> *msb = builder->getRootCell(vec3i(ix,iy,iz));
-//             if (msb) {
-//               numIndexBricks += msb->indexBrick.size();
-//               numDataBricks += msb->dataBrick.size();
-//             }
-//           }
-
-// 	cout << "- format " 
-// 		<< typeToString<T>() << " BS " << N 
-// 		<< " dataBrickSz = " << sizeof(typename BrickTree<N,T>::DataBrick) 
-// 		<< " idxBrickSz = " << sizeof(typename BrickTree<N,T>::IndexBrick) 
-// 		<< endl;
-//       cout << "- root grid size " << builder->getRootGridSize() << endl;
-//       cout << "- total num index bricks " << prettyNumber(numIndexBricks)
-//            << " (estd " << prettyNumber(long(numIndexBricks * 100.f / pctgDone)) << ")" << endl;
-//       cout << "- total num data bricks " << prettyNumber(numDataBricks)
-//            << " (estd " << prettyNumber(long(numDataBricks * 100.f / pctgDone)) << ")" << endl;
-
-//       size_t totalSize
-//         = numIndexBricks * sizeof(typename BrickTree<N,T>::IndexBrick)
-//         + numDataBricks * (sizeof(typename BrickTree<N,T>::DataBrick) + sizeof(int));
-      
-//       cout << "- total size (bytes) " << prettyNumber(totalSize)
-//            << " (estd " << prettyNumber(long(totalSize * 100.f / pctgDone)) << ")" << endl;
-//       size_t sizeExpected = long(totalSize * 100.f / pctgDone);
-//       size_t sizeOriginal = input->numElements()*sizeof(T);
-//       cout << "[that's a compression rate (ASSUMING INPUT WAS TS) of " << (sizeExpected *100.f / sizeOriginal) << "%]" << endl << endl;;
-//     }
-// #endif
-
     template<int N, typename T>
     struct BlockBuilder : public BrickTreeBuilder<N,T> {
       
@@ -120,10 +64,6 @@ namespace ospray {
         this->valueRange = buildRec(this->averageValue,vec3i(0),0,blockWidth);
       }
       
-      // std::vector<typename BrickTree<N,T>::IndexBrick> indexBrick;
-      // std::vector<typename BrickTree<N,T>::DataBrick>  dataBrick;
-      // std::vector<typename BrickTree<N,T>::BrickInfo>  brickInfo;
-      
       Range<double> buildRec(double &avg, 
                              const vec3i &begin,
                              int level,
@@ -135,7 +75,6 @@ namespace ospray {
       double        averageValue;
       const Array3D<T> *input;
       const float threshold;
-      // BrickTreeBuilder<N,T> *builder;
       const int blockWidth;
     };
 
@@ -145,10 +84,8 @@ namespace ospray {
                                 const std::string &inFileName)
     {
       const Array3D<T> *input = NULL;
-      cout << "mmapping RAW file (" << dims << ":" << typeToString<T>() << "):" << inFileName << endl;
-      // cout << "  input file is   " << inFileName[0] << endl;
-      // cout << "  expected format " << typeToString<T>() << endl;
-      // cout << "  expected dims   " << dims << endl;
+      cout << "mmapping RAW file (" << dims << ":" << typeToString<T>() << "):" 
+           << inFileName << endl;
         
       if (format == "") {
         input = mmapRAW<T>(inFileName,dims);
@@ -164,7 +101,6 @@ namespace ospray {
       } else
         throw std::runtime_error("unsupported format '"+format+"'");
         
-      // cout << "loading complete." << endl;
       return input;
     }
 
@@ -197,21 +133,10 @@ namespace ospray {
                                               int level,
                                               int levelWidth)
     {
-      // PING;
-      // PRINT(begin);
-      // PRINT(level);
-      // PRINT(levelWidth);
-
       vec3i lo = min(input->size(),begin*levelWidth);
       vec3i hi = min(input->size(),lo + vec3i(levelWidth));
-      // PRINT(lo);
-      // PRINT(hi);
 
       if ((hi-lo).product() == 0) { avg = T(0); return Range<double>(T(0),T(0)); }
-
-      // bool output = level == rootGridLevel; //(levelWidth == 64); //N*N*N);
-      // if (output) 
-      //   cout << "building brick " << lo << " - " << hi << " bs " << levelWidth << endl;
 
       Range<double> range = empty;
       typename BrickTree<N,T>::DataBrick db;
@@ -250,15 +175,11 @@ namespace ospray {
       avg = db.computeWeightedAverage(begin,levelWidth,input->size());        
 
       if ((range.hi - range.lo) <= threshold)
-          // && 
-          // level > rootGridLevel) 
         {
           // do not set any fields - kill that brick
         } 
       else {
         // need to actually create this brick:
-        // if (output)
-        //   cout << "inserting brick " << begin << ":" << level << endl;
         for (int iz=0;iz<N;iz++)
           for (int iy=0;iy<N;iy++)
             for (int ix=0;ix<N;ix++) {
@@ -266,17 +187,10 @@ namespace ospray {
               if (cellID.x*cellSize < input->size().x &&
                   cellID.y*cellSize < input->size().y &&
                   cellID.z*cellSize < input->size().z) {
-                // if (level >= rootGridLevel) {
                 this->set(cellID,level,db.value[iz][iy][ix]);
-                // builder->set(cellID,level,db.value[iz][iy][ix]);
-                // }
               }
             }
       }
-      // if (output) {
-      //   progress(builder,input,lo,hi);
-      // }
-
 
       return range;
     }
@@ -301,18 +215,6 @@ namespace ospray {
       int blockWidth = 1;
       for (int i=0;i<blockDepth;i++)
         blockWidth *= N;
-      PRINT(blockWidth);
-      // int rootGridLevel = 0;
-      // compute num skiplevels based on num levels specified:
-      // int levelWidth = reduce_max(input->size());
-      // for (int i=0;i<blockDepth;i++)
-      //   levelWidth = divRoundUp(levelWidth,N);
-      // while (levelWidth > N) {
-      //   rootGridLevel++;
-      //   levelWidth = divRoundUp(levelWidth,N);
-      // }
-      // cout << "building tree with " << rootGridLevel << " skip levels" << endl;
-      // PRINT(levelWidth);
       const vec3i rootGridSize = divRoundUp(input->size(),vec3i((int)blockWidth));
       const size_t numBlocks = rootGridSize.product();
       if (numBlocks >= 1000000)
@@ -365,29 +267,6 @@ namespace ospray {
                   );
           fprintf(out,"\n");
         }
-        // fprintf(out,"\t${RAW2BRICKS}"
-        //         " -o %s"
-        //         " --blockID -2"
-        //         " --format %s"
-        //         " --input-format %s"
-        //         " --dimensions %i %i %i"
-        //         " --brick-size %i"
-        //         " --clip-box %i %i %i %i %i %i"
-        //           " --depth %i"
-        //         " --threshold %f"
-        //         " %s"
-        //         ,
-        //         outFileName.c_str(),
-        //         format.c_str(),
-        //         (inputFormat!=""?inputFormat.c_str():format.c_str()),
-        //         dims.x,dims.y,dims.z,
-        //         N,
-        //         clipBox.lower.x,clipBox.lower.y,clipBox.lower.z,
-        //         clipBox.size().x,clipBox.size().y,clipBox.size().z,
-        //         blockDepth,
-        //         threshold,
-        //         inputFilesString.c_str()
-        //         );
         cout << "done writing makefile." << endl;
         fclose(out);
 
@@ -425,7 +304,6 @@ namespace ospray {
         cout << "reading in actual block data" << endl;
         ActualArray3D<T> *blockInput = new ActualArray3D<T>(blockDims.size());
         tbb::parallel_for(0, (int)blockDims.size().z, 1, [&](int iz){
-            // for (int iz=0;iz<blockWidth;iz++)
             for (int iy=0;iy<blockDims.size().y;iy++)
               for (int ix=0;ix<blockDims.size().x;ix++)
                 blockInput->set(vec3i(ix,iy,iz),input->get(blockDims.lower+vec3i(ix,iy,iz)));
@@ -444,37 +322,12 @@ namespace ospray {
         cout << "done saving block's bricktree... exiting!" << endl;
         cout << "=========================================" << endl;
         exit(0);
-// #if 0
-//         BrickTreeBuilder<N,T> *builder = new MultiBrickTreeBuilder<N,T>;
-//         // MultiBrickTreeBuilder<N,T> *builder = new MultiBrickTreeBuilder<N,T>;
-//         PRINT(builder);
-//         vec3i encodedSize = builder->getRootGridSize();
-//         PRINT(encodedSize);
-//         while (encodedSize.x < input->size().x) encodedSize.x *= N;
-//         while (encodedSize.y < input->size().y) encodedSize.y *= N;
-//         while (encodedSize.z < input->size().z) encodedSize.z *= N;
-
-//         vec3f clipBoxSize = vec3f(input->size()) / vec3f(encodedSize);
-//         PRINT(clipBoxSize);
-
-//         // SumFromArrayBuilder<N,T>(input,builder,threshold,rootGridLevel);
-//         cout << "done building!" << endl;
-//         // progress(builder,input);
-
-//         cout << "saving to output file " << outFileName << endl;
-
-//         builder->save(outFileName,clipBoxSize);
-//         cout << "done writing multi-sum tree" << endl;
-// #endif
       }
     }
 
-
-#if 1
     template<int N, typename T>
     void BlockBuilder<N,T>::save(const std::string &ospFileName, const vec3i &validSize)
     {
-
       const std::string binFileName = ospFileName+"bin";
       FILE *bin = fopen(binFileName.c_str(),"wb");
       
@@ -521,10 +374,7 @@ namespace ospray {
       }
       fprintf(osp,"</ospray>\n");
       fclose(osp);
-      // throw std::runtime_error("saving an individual sumerian not implemented yet (use multisum instead)");
     }
-#endif
-
 
     template<int N>
     void buildIt(int blockID,
