@@ -72,6 +72,7 @@ namespace ospray {
         else if (child->name == "indexBricks")
           parseVecInt(indexBrickCount,child->content.c_str());
       }
+#if 0
       multiSum = BrickTreeBase::mapFrom(binBasePtr,valueBrickCount,indexBrickCount);
 
       // -------------------------------------------------------
@@ -87,10 +88,12 @@ namespace ospray {
       cout << "setting xf value range " << this->valueRange << endl;
       this->transferFunction->setValueRange(this->valueRange.toVec2f());
       cout << "-------------------------------------------------------" << endl;
+#endif
     }
 
     void BrickTree::render(RenderContext &ctx)
     {
+#if 0
       if (ospVolume) 
         return;
 
@@ -146,7 +149,7 @@ namespace ospray {
       // and finally, add this volume to the model
       cout << "adding volume " << ospVolume << endl;
       ospAddVolume(ctx.world->ospModel,ospVolume);
-
+#endif
     }    
 
     OSP_REGISTER_SG_NODE(BrickTree);

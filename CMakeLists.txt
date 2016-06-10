@@ -37,7 +37,7 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
   # -------------------------------------------------------
   ADD_SUBDIRECTORY(ospray)
   
-  IF( THIS_IS_MIC)
+  IF(NOT THIS_IS_MIC)
     # -----------------------------------------------------
     # scene graph plugin
     # -----------------------------------------------------
