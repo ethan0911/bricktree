@@ -8,6 +8,7 @@ OSPRAY_ADD_LIBRARY(ospray_bricktree SHARED
   )
 
 OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_bricktree
+  ospray_common
   ospray
   )
 
