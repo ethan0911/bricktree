@@ -17,9 +17,9 @@
 CONFIGURE_OSPRAY()
 
 # mini-scene graph viewer for _geometry_ (intentionally simple)
-OPTION(OSPRAY_MODULE_AMR_VOLUME "AMR Volume Module (testing)" ON)
+OPTION(OSPRAY_MODULE_BRICKTREE "BrickTree (testing)" ON)
 
-IF (OSPRAY_MODULE_AMR_VOLUME)
+IF (OSPRAY_MODULE_BRICKTREE)
   INCLUDE_DIRECTORIES(${EMBREE_INCLUDE_DIRS})
   INCLUDE_DIRECTORIES_ISPC(${EMBREE_INCLUDE_DIRS})
 
@@ -41,11 +41,11 @@ IF (OSPRAY_MODULE_AMR_VOLUME)
     # -----------------------------------------------------
     # scene graph plugin
     # -----------------------------------------------------
-    ADD_LIBRARY(ospray_sg_amr SHARED
+    ADD_LIBRARY(ospray_sg_bricktree SHARED
       sg/SGBrickTree.cpp
       )
-    OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_sg_amr
-      ospray_amr
+    OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_sg_bricktree
+      ospray_bricktree
       ospray_sg
       hdf5
       )

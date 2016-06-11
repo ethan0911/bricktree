@@ -15,6 +15,6 @@ ADD_EXECUTABLE(ospRawSlice
   raw2slice.cpp
   )
 TARGET_LINK_LIBRARIES(ospRawSlice
-  ospray_amr
+  ospray_bt_common
   )
 

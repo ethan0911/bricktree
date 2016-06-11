@@ -1,4 +1,4 @@
-OSPRAY_ADD_LIBRARY(ospray_module_amr SHARED
+OSPRAY_ADD_LIBRARY(ospray_module_bricktree SHARED
 #  BrickTree.ispc
   BrickTree.cpp
 
@@ -6,7 +6,7 @@ OSPRAY_ADD_LIBRARY(ospray_module_amr SHARED
 #  MSFinestLevel.ispc
   )
 
-OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_module_amr
-  ospray_amr
+OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_module_bricktree
+  ospray_bricktree
   ospray
   )
