@@ -5,140 +5,116 @@ The OSPRay "AMR" (Adaptive Mesh Refinement) Module
 Overview
 ========
 
-This module defines a series of OSPRay volume types and scene graph
-plugins to render various AMR type data formats. In particular, it implements
+This module defines a "bricktree" data structure that builds a
+multi-resolution hierarchy that can represent a MxLxK structured
+volume of type T in a hierarchical, multiresolution, and possibly
+compressed way.
 
-- a class of "BrickTree" data structures that seem particularly
-  interesting for representing structured volumes in a compressed format; and
+In particular, the tree consists of a series of "bricks" of NxNxN
+cells; each contains one value and *can* refer to a child brick (which
+itself will be a NxNxN brick, etc). Bricks therefore form a natural
+hierarchy of branching factor NxNxN.
 
-- a "ChomboVolume" class that maintains a list of Chombo-style
-  "boxes", where each box is essentially a mini-structured volume that
-  lives, with a specified offset, on a specified level
+Each cell in a brick corresponds to a region of voxels in the logical
+structured volume space that the bricktree corresponds. For leaf
+bricks each cell typically corresponds to exactly on logical
+structured voluem cell; for inner nodes typically refer to NxNxN input
+cells on the first inner bricktree level, to N^2xN^2xN^2 cells on the
+second-mode inner level, etc. 
 
+For inner nodes, the value stored in the brick cells should be the
+same as the value of corresponding cell of the corresponding
+structured volume that our bricktree represents; for inner nodes the
+value stored in a cell is the average of all its child cells.
 
+Each cell can - but does not have to - refer to a child brick.  These
+child indices are encoded through two indirections: each brick can
+(but does not have to) have a index brick (if it doesn't have an index
+brick, then none of the brick's cells have children); if it does have
+an index brick then this index brick stores one child index for each
+brick cell (if a given cell does not have children then its
+corresponding child index will be marked as invalid).
 
-How to use the "ChomboVolume" AMR Type
-======================================
+The brick tree is specified through the branching factor N, the data
+type T, and a tree depth of T. A full bricktree of depth D is called a
+"block", and it represents (by definition) a range of N^D x N^D x N^D
+cells. If one block is not sufficient to represent the whole input
+volume (ie, if M,L,K > N^D) then we generate as many blocks as
+required to fully tile the MxLxK blocks.
 
-Loading and Parameterizing a "ChomboVolume"'s data
---------------------------------------------------
+Data Structure / Data Layout
+============================
 
-The ChomboVolume is specified through a sequence of "blocks" (or
-"boxes"), each of which is a miniature structured grid. Each such
-block consists of two parts: a "BrickInfo" struct that specifies its coordinates,
-level, etc; and a array of NxMxK floats for that block's data values.
+Each block of a BrickTree<N,T> is internally stored as three linear
+arrays:
 
-In particular, each BrickInfo looks as follows:
+- one linear array of "value bricks", where each value brick contains
+  NxNxN values of type T.
+  
+- one linear array of int32 "index brick IDs", with exactly one such
+  int32 per value brick. If a given value brick's index brick ID is
+  negative, it doesn't have any children, otherwise this ID refers to
+  an index brick in the index brick array.
+  
+- one linear array of index bricks, where each index brick contains
+  NxNxN int32 indices. Each such index can be -1 (meaning the
+  corresponding cell does not have a child); if >= 0 it refers to a
+  brick in the value brick array (which in turn can have children
+  referred to _it's_ index brick ID, etc).
 
-		struct BrickInfo {
-      //! bounding box of integer coordinates 
-      //! (eg, a 8x8x8 block at origin would have
-      //! box3i((0,0,0),(7,7,7)) 
-      box3i box;
-      //! level this brick is at
-      int   level;
-      // width of each cell in this level
-      float cellWidth;
-    }
+- Each bricktree block is stored in two files: a ".osp" file that
+  given high-level info re N, T, etc in XML form; and one ".ospbin"
+  file that contains the three arrays (value brick array, index brick
+  ID array, and index brick array) in binary form.
 
+- the whole volume is represented to one .osp file that contains index
+  info (N,T, (M,L,K) of input volume, etc)
 
-After creating the chombovolume (through
-'ospNewVolume("ChomboVolume")') all this information is passed through
-two data arrays:
+Building a BrickTree
+====================
 
-- the "brickInfo" data array is a OSPData<BrickInfo> (of N entries),
-  where N is the number of blocks
+To build a bricktree, use the "ospRawToBricks" tool. For example, to
+build a bricktree with N=4, T=float, and depth=4 (ie, 256^3 blocks)
+for the 512^3 float magnetic data set, without any sort of data
+conversion or compression, use the following command:
 
-- the "brickData" data array is a OSPData<OSPData> (of N
-  entires). Each entry in this data array is itself a data array of
-  NxMxK floats, where N,M,K are the dimensions of the corresponding
-  brick in the brickInfo array.
+	./ospRaw2Bricks \
+		--format float -dims 512 512 512 magnetic.raw \
+		-bs 4 --depth 4 -t 0 -o magnetic-bt
+	make -f magnetic-bt.mak
+	
+The first call to 'ospRaw2Bricks' geneartes the index file as well as
+a makefile that will then build each brick. If the build process gets
+interrupted for any reason, it *should* be sufficient to just re-run
+the 'make' command; obviously 'make -j 4' etc should work, but using
+too many parallel build processes may overload the file system.
 
-In addition, this being a volume, there should be a "transferFunction"
-specified with the volume.
+Compression
+-----------
 
-Using with the QtViewer
------------------------
+The builder automatically supports compression by letting the user
+specify a threshold (-t <threshold>) that specifies which input
+regions can be safely collapsed. Ie, if an entire input region's that
+a cell would refer to all varies by less than this threshold value
+then the cell will automatically become a leaf cell, and children will
+not be generated for this cell. 
 
-The ChomboVolume comes with a scene graph plugin that can load a
-Chombo hdf5 file (well, it's only tested for the "black hole
-collision" files), and that then renders this as a "ChomboVolume"
-ospray object. 
+The default value for threshold is 0, meaning that it _does_ eliminate
+equal-value regions, but only in a loss-less way.
 
-In addition to the scene graph node, this scene graph plugin also
-registers this Chombo reader as a default reader for anything that has
-a "hdf5" extension. As such, to load a chombo file with the qtviewer,
-simply do
+Other options
+-------------
 
-			 ./ospQtViewer --module amr MyChomboFile.hdf5 --renderer dvr
+The builder also contains ways of specifying a clip-region,
+artificially replicating/repeating the input, converting from an input
+format to an interval format, using multiple input slices, etc. Please
+refer to the help output of the ospRaw2Bricks tool for more details.
+	
 
-Note the "--module amr" (without which the qtviewer will not know what
-to do with a hdf5 file).
+Rendering a BrickTree
+=====================
 
-
-
-
-How to use the BrickTree AMR Types
-==================================
-
-Converting a RAW file to OSPRay AMR format
-------------------------------------------
-
-Assuming you have properly built the AMR module, you should have a
-tool called 'ospRawToAmr' that you can use as follows:
-
-    ./ospRaw2Sum myRawVolume.raw [options]
-
-with the following options:
-
-    -dims <sizeX> <sizeY> <sizeZ>
-
-specifies the dimensions of the input volume (required)
-
-    --format {float|int8|double}
-
-specifies the data format of the input raw file (required)
-
-    -o <filename>
-
-specifies the name of the output ospray AMR file to be generated (required)
-
-    --threshold <t>
-
-specifies the threshold to be define when a group of voxels is
-"homogeneous" enough to be represented by a coarser grid. E.g., if we
-are using a AMR block size of 8^3 voxels, and the absolute difference
-of all voxels with coordinates (i,j,k), i,j,k=(0..8) are less than
-this threshold, then the fine grid will NOT contain these voxels, and
-the coarse grid will refer to a leaf; if the range of these voxel
-values exceeds this threshold, then the coarse grid will refer to a
-refined 8^3 gridlet that contains the respective voxel values.
-
---depth <d>
-
-specifies the depth of the octree's in the multi-octree data
-structure. For example., a depth of 0 means the data set is actually
-_only_ a root grid (each cell is a leaf); a depth of 3 means octrees
-are 3 levels deep, and cover 8x8x8 input cells. I.e., a 1k^3 RAW data
-set built with a depth of d=6 would have a root grid of 1k / 2^d =
-16^3 root cells of (up to) 6-deep octrees; with a depth of d=10 it
-would be a single octree of up to 10 levels.
-
-RAW to AMR conversion example
------------------------------
-
-As an example, consider the 'magnetic' data set, which is
-512^3. Here's how to convert it to a 15^5 root grid with up to 5
-levels, and a refinement threshold of 5%:
-
-  ./ospRaw2Sum ~/models/magnetic-512-volume/magnetic-512-volume.raw -dims 512 512 512 --format float -o /tmp/magnetic.osp -t .05 --depth 5
+Is not yet implemented. SOme of the boilerplate code for loading scne
+graph nodes is alreay available, but does not do anything yet.
 
 
-Rendering an AMR Data Set
-=========================
-
-Given an ospray AMR data set as produced in the 'RAW to AMR
-conversion' section, you should be able to render this via
-
-    ./ospQTViewer --module amr /tmp/magnetic.osp --renderer 
-       
