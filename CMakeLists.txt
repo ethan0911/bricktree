@@ -14,7 +14,7 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-CONFIGURE_OSPRAY()
+#CONFIGURE_OSPRAY()
 
 # mini-scene graph viewer for _geometry_ (intentionally simple)
 OPTION(OSPRAY_MODULE_BRICKTREE "BrickTree (testing)" ON)
