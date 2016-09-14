@@ -20,7 +20,7 @@
 #include "ospray/common/Data.h"
 #include "ospray/transferFunction/TransferFunction.h"
 // ispc exports
-//#include "BrickTree_ispc.h"
+#include "BrickTree_ispc.h"
 // stl
 #include <set>
 #include <map>
@@ -37,6 +37,30 @@ namespace ospray {
       : Volume(), rootGridDims(-1), voxelType(OSP_FLOAT)
     {
       // ispcEquivalent = ispc::BrickTreeVolume_create(this);
+    }
+
+
+
+    /*! callback function called by ispc sampling code to compute a
+        gradient at given sample pos in this (c++-only) module */
+    extern "C" float BrickTree_scalar_computeSample(void *_cppObject,
+                                                    const vec3f &samplePos)
+    {
+      PING;
+
+      BrickTreeVolume *cppObject = (BrickTreeVolume *)_cppObject;
+      // return cppObject->computeSample(samplePos);
+    }
+
+    /*! callback function called by ispc sampling code to compute a
+      sample in this (c++-only) module */
+    extern "C" vec3f BrickTree_scalar_computeGradient(void *_cppObject,
+                                                      const vec3f &samplePos)
+    {
+      PING;
+
+      BrickTreeVolume *cppObject = (BrickTreeVolume *)_cppObject;
+      // return cppObject->computeGradient(samplePos);
     }
     
     //! Allocate storage and populate the volume.
@@ -62,17 +86,11 @@ namespace ospray {
 
       Ref<TransferFunction> xf = (TransferFunction*)getParamObject("transferFunction");
 
-      // ispc::BrickTreeVolume_set(getIE(),
-      //                       xf->getIE(),
-      //                       (ispc::vec3i &)rootGridDims,
-      //                       (ispc::vec3f &)validFractionOfRootGrid,
-      //                       dataBrickData->data,
-      //                       indexBrickData->data,
-      //                       brickInfoData->data,
-      //                       firstDataBrickOfTreeData->data,
-      //                       firstIndexBrickOfTreeData->data,
-      //                       finestCellWidth
-      //                       );
+      ispc::BrickTreeVolume_set(getIE(),
+                                xf->getIE(),
+                                (ispc::vec3i &)rootGridDims,
+                                (ispc::vec3f &)validFractionOfRootGrid,
+                                this);
     }
 
     OSP_REGISTER_VOLUME(BrickTreeVolume,BrickTreeVolume);
