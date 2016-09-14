@@ -27,7 +27,7 @@
 #include <stack>
 
 namespace ospray {
-  namespace amr {
+  namespace bt {
     using std::endl;
     using std::cout;
     using std::ostream;
@@ -69,7 +69,7 @@ namespace ospray {
       // right now we only support floats ...
       this->voxelType = OSP_FLOAT;
 
-      cout << "#osp:amr: BrickTreeVolume::commit()" << endl;
+      cout << "#osp:bt: BrickTreeVolume::commit()" << endl;
       firstIndexBrickOfTreeData   = getParamData("firstIndexBrickOfTree");
       firstDataBrickOfTreeData   = getParamData("firstDataBrickOfTree");
       dataBrickData  = getParamData("dataBrickData");

@@ -21,7 +21,7 @@
 #include "Range.h"
 
 namespace ospray {
-  namespace amr {
+  namespace bt {
 
     /*! ABSTRACTION for a 3D array of data */
     template<typename value_t>
@@ -372,5 +372,5 @@ namespace ospray {
             set(vec3i(ix,iy,iz),t);
     }
 
-  } // ::ospray::amr
+  } // ::ospray::bt
 } // ::ospray

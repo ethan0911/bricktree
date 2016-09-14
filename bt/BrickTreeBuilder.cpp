@@ -18,7 +18,7 @@
 #include "BrickTreeBuilder.h"
 
 namespace ospray {
-  namespace amr {
+  namespace bt {
 
     using std::cout;
     using std::endl;

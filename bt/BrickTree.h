@@ -22,7 +22,7 @@
 #include <iostream>
 
 namespace ospray {
-  namespace amr {
+  namespace bt {
 
     template<typename T>
     const char *typeToString();
@@ -180,7 +180,7 @@ namespace ospray {
       return o;
     }
 
-  } // ::ospray::amr
+  } // ::ospray::bt
 } // ::ospray
 
 

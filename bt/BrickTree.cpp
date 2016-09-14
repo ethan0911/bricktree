@@ -18,7 +18,7 @@
 #include "BrickTree.h"
 
 namespace ospray {
-  namespace amr {
+  namespace bt {
 
     using std::cout;
     using std::endl;
@@ -175,5 +175,5 @@ namespace ospray {
     template struct BrickTree<32,double>;
     template struct BrickTree<64,double>;
 
-  } // ::ospray::amr
+  } // ::ospray::bt
 } // ::ospray

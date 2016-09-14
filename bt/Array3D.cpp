@@ -35,7 +35,7 @@
 
 
 namespace ospray {
-  namespace amr {
+  namespace bt {
 
     using std::cout;
     using std::endl;
@@ -78,11 +78,11 @@ namespace ospray {
       ActualArray3D<T> *volume = new ActualArray3D<T>(dims);
       FILE *file = fopen(fileName.c_str(),"rb");
       if (!file)
-        throw std::runtime_error("ospray::amr::loadRaw(): could not open '"+fileName+"'");
+        throw std::runtime_error("ospray::bt::loadRaw(): could not open '"+fileName+"'");
       const size_t num = size_t(dims.x) * size_t(dims.y) * size_t(dims.z);
       size_t numRead = fread(volume->value,sizeof(T),num,file);
       if (num != numRead)
-        throw std::runtime_error("ospray::amr::loadRaw(): read incomplete data ...");
+        throw std::runtime_error("ospray::bt::loadRaw(): read incomplete data ...");
       fclose(file);
 
       return volume;
@@ -213,5 +213,5 @@ namespace ospray {
     template Array3D<float>  *mmapRAW(const std::string &fileName, const vec3i &dims);
     template Array3D<double> *mmapRAW(const std::string &fileName, const vec3i &dims);
 
-  } // ::ospray::amr
+  } // ::ospray::bt
 } // ::ospray

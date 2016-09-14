@@ -15,14 +15,14 @@
 // ======================================================================== //
 
 // own
-#include "../amr/BrickTreeBuilder.h"
+#include "../bt/BrickTreeBuilder.h"
 #ifdef PARALLEL_MULTI_TREE_BUILD
 # include <tbb/task_scheduler_init.h>
 #endif
 
 
 namespace ospray {
-  namespace amr {
+  namespace bt {
 
     using std::endl;
     using std::cout;

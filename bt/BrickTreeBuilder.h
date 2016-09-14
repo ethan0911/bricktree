@@ -24,7 +24,7 @@
 #endif
 
 namespace ospray {
-  namespace amr {
+  namespace bt {
 
     template<int N, typename T>
     struct BrickTreeBuilder
@@ -61,5 +61,5 @@ namespace ospray {
       int maxLevel;
     };
 
-  } // ::ospray::amr
+  } // ::ospray::bt
 } // ::ospray

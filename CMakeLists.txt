@@ -35,7 +35,7 @@ IF (OSPRAY_MODULE_BRICKTREE)
   INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/apps/qtViewer)
   INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
-  ADD_SUBDIRECTORY(amr)
+  ADD_SUBDIRECTORY(bt)
 
   # -------------------------------------------------------
   # ospray plugin

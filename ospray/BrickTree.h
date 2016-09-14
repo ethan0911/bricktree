@@ -18,17 +18,17 @@
 
 // ospray
 #include "ospray/volume/Volume.h"
-// amr base
-#include "../amr/BrickTree.h"
+// bt base
+#include "../bt/BrickTree.h"
 
 namespace ospray {
-  namespace amr {
+  namespace bt {
 
     struct BrickTreeVolume : public ospray::Volume {
       BrickTreeVolume();
 
       //! \brief common function to help printf-debugging 
-      virtual std::string toString() const { return "ospray::amr::BrickTreeVolume"; }
+      virtual std::string toString() const { return "ospray::bt::BrickTreeVolume"; }
 
       //! Allocate storage and populate the volume.
       virtual void commit();
@@ -36,7 +36,7 @@ namespace ospray {
       //! Copy voxels into the volume at the given index (non-zero return value indicates success).
       virtual int setRegion(const void *source, const vec3i &index, const vec3i &count)
       {
-        FATAL("'setRegion()' doesn't make sense for AMR volumes; they can only be set from existing data");
+        FATAL("'setRegion()' doesn't make sense for BT volumes; they can only be set from existing data");
       }
 
       Ref<Data>   firstIndexBrickOfTreeData;
