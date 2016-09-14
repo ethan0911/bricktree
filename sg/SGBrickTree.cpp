@@ -17,13 +17,14 @@
 #undef NDEBUG
 
 #include "SGBrickTree.h"
-	 
+#include "sg/module/Module.h"
+
 namespace ospray {
   namespace sg {
 
     using std::endl;
     using std::cout;
-    using namespace amr;
+    using namespace bt;
 
     void parseVecInt(std::vector<int> &vec, const std::string &s)
     {
@@ -80,7 +81,7 @@ namespace ospray {
       if (ospVolume) 
         return;
 
-      ospLoadModule("amr");
+      ospLoadModule("bt");
       ospVolume = ospNewVolume("BrickTreeVolume");
       if (!ospVolume) 
         throw std::runtime_error("could not create ospray 'BrickTreeVolume'");
@@ -119,14 +120,14 @@ namespace ospray {
       ospSetVec3f(ospVolume,"validFractionOfRootGrid",multiSum->validFractionOfRootGrid);
 
       // -------------------------------------------------------
-      std::cout << "#sg:amr: adding transfer function" << std::endl;
+      std::cout << "#sg:bt: adding transfer function" << std::endl;
       if (transferFunction) {
         transferFunction->render(ctx);
         ospSetObject(ospVolume,"transferFunction",transferFunction->getOSPHandle());
       }
       
       // -------------------------------------------------------
-      std::cout << "#sg:amr: committing Multi-Octree AMR volume" << std::endl;
+      std::cout << "#sg:bt: committing Multi-BrickTree volume" << std::endl;
       ospCommit(ospVolume);
       
       // and finally, add this volume to the model
@@ -136,6 +137,8 @@ namespace ospray {
     }    
 
     OSP_REGISTER_SG_NODE(BrickTree);
-
+    OSP_SG_REGISTER_MODULE(bricktree) {
+      printf("loading bricktree scene graph plugin\n");
+    }
   }
 }

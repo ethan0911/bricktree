@@ -14,41 +14,10 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#include "BrickTree.h"
 
-// ospray
-#include "ospray/volume/Volume.h"
-// bt base
-#include "../bt/BrickTree.h"
-
-namespace ospray {
-  namespace bt {
-
-    struct BrickTreeVolume : public ospray::Volume {
-      BrickTreeVolume();
-
-      //! \brief common function to help printf-debugging 
-      virtual std::string toString() const { return "ospray::bt::BrickTreeVolume"; }
-
-      //! Allocate storage and populate the volume.
-      virtual void commit();
-
-      //! Copy voxels into the volume at the given index (non-zero return value indicates success).
-      virtual int setRegion(const void *source, const vec3i &index, const vec3i &count)
-      {
-        FATAL("'setRegion()' doesn't make sense for BT volumes; they can only be set from existing data");
-      }
-
-      Ref<Data>   firstIndexBrickOfTreeData;
-      Ref<Data>   firstDataBrickOfTreeData;
-      Ref<Data>   dataBrickData;
-      Ref<Data>   indexBrickData;
-      Ref<Data>   brickInfoData;
-      vec3i       rootGridDims;
-      vec3f       validFractionOfRootGrid;
-      OSPDataType voxelType;
-    };
-    
-  }
+/*! this function has to be present for a module to be loadable ... */
+extern "C" void ospray_init_module_bricktree()
+{
+  printf("loading 'bricktree' module\n");
 }
-

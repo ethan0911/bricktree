@@ -18,20 +18,20 @@
 // ospray/sg
 #include "sg/volume/Volume.h"
 #include "sg/common/World.h"
-// amr base
-#include "../amr/BrickTree.h"
+// bt base
+#include "../bt/BrickTree.h"
 	 
 namespace ospray {
   namespace sg {
     
-    /*! multi-octree amr node - for now only working for float format */
+    /*! multi-octree bt node - for now only working for float format */
     struct BrickTree : public sg::Volume {
       
       BrickTree() : multiSum(NULL), ospVolume(NULL), valueRange(one) {};
       
       /*! \brief returns a std::string with the c++ name of this class */
       virtual    std::string toString() const
-      { return "ospray::sg::BrickTree (ospray_amr module)"; }
+      { return "ospray::sg::BrickTree (ospray_bt module)"; }
 
       /*! 'render' the nodes - all geometries, materials, etc will
           create their ospray counterparts, and store them in the
@@ -62,7 +62,7 @@ namespace ospray {
       float samplingRate;
       int maxLevel;
 
-      amr::BrickTreeBase *multiSum;
+      bt::BrickTreeBase *multiSum;
       
       /*! total range of all values in the tree, so we can set the
         proper xfer fct */
