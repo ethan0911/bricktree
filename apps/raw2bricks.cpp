@@ -41,7 +41,7 @@ namespace ospray {
       cout << " --format|-f <uint8|float|double> : desired voxel type" << endl;
       cout << " --input-format|-if <uint8|float|double>: format of input raw file (if different from '--format')" << endl;
       cout << " --brick-size|-bs <N>   : use bricks of NxNxN voxels" << endl;
-      cout << " --depth <depth>        : num levels per block" << endl;
+      cout << " --depth|-d <depth>     : num levels per block" << endl;
       cout << " -o <outfilename.xml>   : output file name" << endl;
       cout << " -t <threshold>         : threshold of which nodes to split or not (ABSOLUTE float val)" << endl;
       exit(msg != "");
@@ -414,8 +414,11 @@ namespace ospray {
         const std::string arg = av[i];
         if (arg == "-o")
           outFileName = av[++i];
-        else if (arg == "--depth" || arg == "-depth" || 
-                 arg == "--max-levels" || arg == "-ml")
+        else if (arg == "--depth" ||
+                 arg == "-depth" ||
+                 arg == "-d" ||
+                 arg == "--max-levels" ||
+                 arg == "-ml")
           blockDepth = atoi(av[++i]);
         else if (arg == "--threshold" || arg == "-t")
           threshold = atof(av[++i]);
@@ -423,7 +426,7 @@ namespace ospray {
           brickSize = atof(av[++i]);
         else if (arg == "-bid" || arg == "--blockID")
           blockID = atoi(av[++i]);
-        else if (arg == "--format")
+        else if (arg == "--format" || arg == "-f")
           treeFormat = av[++i];
         else if (arg == "--input-format" || arg == "-if")
           inputFormat = av[++i];
