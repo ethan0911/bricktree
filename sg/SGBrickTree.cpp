@@ -45,14 +45,15 @@ namespace ospray {
       // format, root size, value range, ...
       // -------------------------------------------------------
       const std::string format = node->getProp("format");
+      PRINT(format);
       if (format != "float")
         throw std::runtime_error("can only do float BrickTree right now");
       this->voxelType = typeForString(format.c_str());
       this->samplingRate = toFloat(node->getProp("samplingRate","1.f").c_str());
       int brickSize      = toInt(node->getProp("brickSize").c_str());
       assert(brickSize > 0);
-      int depth          = toInt(node->getProp("depth","0").c_str());
-      assert(depth > 0);
+      // int depth          = toInt(node->getProp("depth","0").c_str());
+      // assert(depth > 0);
 
       rootGridSize = toVec3i(node->getProp("gridSize").c_str());
       clipBoxSize  = toVec3f(node->getProp("validSize").c_str());
@@ -77,54 +78,55 @@ namespace ospray {
 
     void BrickTree::render(RenderContext &ctx)
     {
-#if 0
       if (ospVolume) 
         return;
 
-      ospLoadModule("bt");
+      ospLoadModule("bricktree");
       ospVolume = ospNewVolume("BrickTreeVolume");
       if (!ospVolume) 
         throw std::runtime_error("could not create ospray 'BrickTreeVolume'");
       
-      size_t sizeOfBrick
-        = multiSum->brickSize()*multiSum->brickSize()*multiSum->brickSize() * sizeof(int);
-      // -------------------------------------------------------
-      valueBrickValue = ospNewData(multiSum->numValueBricks*sizeOfBrick,
-                                 OSP_UCHAR,
-                                 multiSum->valueBrickPtr(),OSP_DATA_SHARED_BUFFER);
-      ospSetValue(ospVolume,"valueBrickValue",valueBrickValue);
-      indexBrickValue = ospNewData(multiSum->numIndexBricks*sizeOfBrick,
-                                  OSP_UCHAR,
-                                  multiSum->indexBrickPtr(),OSP_DATA_SHARED_BUFFER);
-      ospSetValue(ospVolume,"indexBrickValue",indexBrickValue);
-      brickInfoValue = ospNewData(multiSum->numIndexBricks*sizeOfBrick,
-                                 OSP_UCHAR,
-                                 multiSum->brickInfoPtr(),OSP_DATA_SHARED_BUFFER);
-      ospSetValue(ospVolume,"brickInfoValue",brickInfoValue);
+      // size_t sizeOfBrick
+      //   = multiSum->brickSize()*multiSum->brickSize()*multiSum->brickSize() * sizeof(int);
+      // // -------------------------------------------------------
+      // valueBrickValue = ospNewData(multiSum->numValueBricks*sizeOfBrick,
+      //                            OSP_UCHAR,
+      //                            multiSum->valueBrickPtr(),OSP_DATA_SHARED_BUFFER);
+      // ospSetValue(ospVolume,"valueBrickValue",valueBrickValue);
+      // indexBrickValue = ospNewData(multiSum->numIndexBricks*sizeOfBrick,
+      //                             OSP_UCHAR,
+      //                             multiSum->indexBrickPtr(),OSP_DATA_SHARED_BUFFER);
+      // ospSetValue(ospVolume,"indexBrickValue",indexBrickValue);
+      // brickInfoValue = ospNewData(multiSum->numIndexBricks*sizeOfBrick,
+      //                            OSP_UCHAR,
+      //                            multiSum->brickInfoPtr(),OSP_DATA_SHARED_BUFFER);
+      // ospSetValue(ospVolume,"brickInfoValue",brickInfoValue);
 
-      ospSet1f(ospVolume,"samplingRate",samplingRate);
-      ospSet1i(ospVolume,"maxLevel",maxLevel);
+      // ospSet1f(ospVolume,"samplingRate",samplingRate);
+      // ospSet1i(ospVolume,"maxLevel",maxLevel);
 
-      firstIndexBrickOfTreeValue
-        = ospNewData(multiSum->getRootGridDims().product(),OSP_INT,
-                     multiSum->firstIndexBrickOfTreePtr(),OSP_DATA_SHARED_BUFFER);
-      ospSetValue(ospVolume,"firstIndexBrickOfTree",firstIndexBrickOfTreeValue);
+      // firstIndexBrickOfTreeValue
+      //   = ospNewData(multiSum->getRootGridDims().product(),OSP_INT,
+      //                multiSum->firstIndexBrickOfTreePtr(),OSP_DATA_SHARED_BUFFER);
+      // ospSetValue(ospVolume,"firstIndexBrickOfTree",firstIndexBrickOfTreeValue);
 
-      firstValueBrickOfTreeValue
-        = ospNewData(multiSum->getRootGridDims().product(),OSP_INT,
-                     multiSum->firstValueBrickOfTreePtr(),OSP_DATA_SHARED_BUFFER);
-      ospSetValue(ospVolume,"firstValueBrickOfTree",firstValueBrickOfTreeValue);
+      // firstValueBrickOfTreeValue
+      //   = ospNewData(multiSum->getRootGridDims().product(),OSP_INT,
+      //                multiSum->firstValueBrickOfTreePtr(),OSP_DATA_SHARED_BUFFER);
+      // ospSetValue(ospVolume,"firstValueBrickOfTree",firstValueBrickOfTreeValue);
 
-      vec3i rootDims = multiSum->getRootGridDims();
-      ospSetVec3i(ospVolume,"rootGridDims",(osp::vec3i&)rootDims);
-      ospSetVec3f(ospVolume,"validFractionOfRootGrid",multiSum->validFractionOfRootGrid);
+      // vec3i rootDims = multiSum->getRootGridDims();
+      // ospSetVec3i(ospVolume,"rootGridDims",(osp::vec3i&)rootDims);
+      // ospSetVec3f(ospVolume,"validFractionOfRootGrid",multiSum->validFractionOfRootGrid);
 
-      // -------------------------------------------------------
-      std::cout << "#sg:bt: adding transfer function" << std::endl;
-      if (transferFunction) {
-        transferFunction->render(ctx);
-        ospSetObject(ospVolume,"transferFunction",transferFunction->getOSPHandle());
-      }
+      // // -------------------------------------------------------
+      // std::cout << "#sg:bt: adding transfer function" << std::endl;
+      // if (transferFunction) {
+      //   transferFunction->render(ctx);
+      //   ospSetObject(ospVolume,"transferFunction",transferFunction->getOSPHandle());
+      // }
+
+      throw std::runtime_error("not yet actually setting anything in bricktreevolume, yet ...");
       
       // -------------------------------------------------------
       std::cout << "#sg:bt: committing Multi-BrickTree volume" << std::endl;
@@ -133,10 +135,15 @@ namespace ospray {
       // and finally, add this volume to the model
       cout << "adding volume " << ospVolume << endl;
       ospAddVolume(ctx.world->ospModel,ospVolume);
-#endif
     }    
 
-    OSP_REGISTER_SG_NODE(BrickTree);
+    /*! in the most exact sense of the word our data structure is a
+        MULTI-bricktree, which is the name of the scene graph node
+        that the converter creates; so make sure we 'define' this type
+        here */
+    typedef BrickTree MultiBrickTree;
+    
+    OSP_REGISTER_SG_NODE(MultiBrickTree);
     OSP_SG_REGISTER_MODULE(bricktree) {
       printf("loading bricktree scene graph plugin\n");
     }
