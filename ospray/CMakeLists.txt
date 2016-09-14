@@ -1,5 +1,5 @@
 OSPRAY_ADD_LIBRARY(ospray_module_bricktree SHARED
-#  BrickTree.ispc
+  BrickTree.ispc
   BrickTree.cpp
 
 #  MSNearestNeighbor.ispc

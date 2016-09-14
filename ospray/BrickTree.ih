@@ -25,30 +25,10 @@ struct range1f {
   float lo, hi;
 };
 
-struct SumDataBlock {
-  float value[4][4][4];
-};
-
-struct SumIndexBlock {
-  int32 child[4][4][4];
-};
-
-struct SumBlockInfo {
-  int32 indexBlockID;
-};
-
 struct BrickTreeVolume {
   Volume    super; //!< inherited from superclass
-
-  SumIndexBlock *indexBlock;
-  SumDataBlock  *dataBlock;
-  SumBlockInfo  *blockInfo;
-  int32         *firstIndexBlockOfTree;
-  int32         *firstDataBlockOfTree;
-  // root grid dimensions
-  vec3i rootGridDims;
-  vec3f validFractionOfRootGrid;
-  float finestCellWidth;
+  //! pointet to the c++-side object (since we do everything scalar for now)
+  void     *cppObject; 
 };
 
 

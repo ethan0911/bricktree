@@ -22,167 +22,14 @@
 #include "ospray/common/Model.ih"
 #include "ospray/transferFunction/LinearTransferFunction.ih"
 // this module
-#include "CellDesc.ih"
-#include "CellQuery.ih"
+#include "BrickTree.ih"
 // embree
 #include "embree2/rtcore.isph"
 
 
-
-struct TentAlgoStackEntry {
-  int32 blockID;
-  vec3f blockPos;
-  float blockWidth;
-};
-
-inline float tentApproximation_packet(BrickTreeVolume *uniform self,
-                                      const varying vec3f &worldSpacePos)
-{
-  GridPos gp = makeGridPos(self,toGridSpace(self,worldSpacePos));
-  
-  // "packet" variant
-  uniform TentAlgoStackEntry stackBase[100];
-  uniform TentAlgoStackEntry *uniform stackPtr = stackBase;
-  
-  // init numerator and denominator
-  float num = 0.f;
-  float den = 0.f;
-  
-  // -------------------------------------------------------
-  // do initial stack fill
-  // ------------------------------------------------------- 
-  // - compute region of cells in root grid
-  vec3i root_beg = make_vec3i(floor(gp.pos - make_vec3f(.5f)));
-  vec3i root_end = make_vec3i(root_beg+make_vec3i(2));
-  root_beg = max(root_beg,make_vec3i(0));
-  root_end = min(root_end,self->rootGridDims);
-  
-  // now, throw the 2x2x2 possibly overlapping root cells on the stack.
-  for (int _iz=root_beg.z; _iz < root_end.z; _iz++) {
-    foreach_unique (tree_iz in _iz) {
-      for (int _iy=root_beg.y; _iy < root_end.y; _iy++) {
-        foreach_unique (tree_iy in _iy) {
-          for (int _ix=root_beg.x; _ix < root_end.x; _ix++) {
-            foreach_unique (tree_ix in _ix) {
-              const uniform int rootCellID
-                = tree_ix + self->rootGridDims.x*(tree_iy+self->rootGridDims.y*(tree_iz));
-
-              uniform SumDataBlock *uniform dataBlockArray
-                = self->dataBlock+self->firstDataBlockOfTree[rootCellID];
-              uniform SumIndexBlock *uniform indexBlockArray
-                = self->indexBlock+self->firstIndexBlockOfTree[rootCellID];
-              uniform int32 *uniform indexBlockOfArray 
-                = (uniform int32*)self->blockInfo + self->firstDataBlockOfTree[rootCellID];
-              stackPtr->blockPos = make_vec3f(tree_ix,tree_iy,tree_iz);
-              stackPtr->blockWidth = 1.f;
-              stackPtr->blockID = 0; 
-              stackPtr++;
-              
-              // -------------------------------------------------------
-              // process stack nodes...
-              // -------------------------------------------------------
-              // note we do NOT know if the stack entries actually
-              // overlap - that makes the pushing easier.
-              while (stackPtr > stackBase) {
-                -- stackPtr;
-                uniform TentAlgoStackEntry cur = *stackPtr;
-                
-                const vec3f base = make_vec3f(cur.blockPos);
-                const float blockWidth  = cur.blockWidth;
-                uniform int blockID = cur.blockID;
-                SumDataBlock *uniform dataBlock = dataBlockArray + blockID;
-
-                SumIndexBlock *uniform indexBlock = NULL;
-                const uniform int indexBlockID = indexBlockOfArray[blockID];
-                if (indexBlockID >= 0)
-                  indexBlock = indexBlockArray+indexBlockID;
-
-                const uniform float childCellWidth = 0.25f * cur.blockWidth;
-                uniform vec3f childCellPos;
-                vec3f delta;
-                for (uniform int iiz=0;iiz<4;iiz++) {
-                  childCellPos.z = cur.blockPos.z + iiz * childCellWidth;
-                  delta.z = abs(childCellPos.z + 0.5f * childCellWidth - gp.pos.z);
-                  if (delta.z < childCellWidth)
-                    for (uniform int iiy=0;iiy<4;iiy++) {
-                      childCellPos.y = cur.blockPos.y + iiy * childCellWidth;
-                      delta.y = abs(childCellPos.y + 0.5f * childCellWidth - gp.pos.y);
-                      if (delta.y < childCellWidth)
-                        for (uniform int iix=0;iix<4;iix++) {
-                          childCellPos.x = cur.blockPos.x + iix * childCellWidth;
-                          delta.x = abs(childCellPos.x + 0.5f * childCellWidth - gp.pos.x);
-                          
-                          if (delta.x < childCellWidth) {
-                            // -------------------------------------------------------
-                            // OK, this is a cell that at least one ray overlaps!
-                            // -------------------------------------------------------
-                            if (indexBlock && (indexBlock->child[iiz][iiy][iix] >= 0)) {
-                              stackPtr->blockPos = childCellPos;
-                              stackPtr->blockWidth = childCellWidth;
-                              stackPtr->blockID = indexBlock->child[iiz][iiy][iix];
-                              ++stackPtr;
-                            } else {
-                              const vec3f weight = max(make_vec3f(0.f),
-                                                       make_vec3f(1.f) - delta * rcp(childCellWidth));
-                              const float w = reduce_mul(weight);
-                              den += w;
-                              num += w * dataBlock->value[iiz][iiy][iix];
-                            }
-                          }
-                        }
-                    }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  const float result = num / (den + 1e-20f);
-  return result;
-}
-                               
-
-//! The value at the given sample location in world coordinates.
-static varying float MSAMR_tentApprox(void *uniform _self, 
-                                            const varying vec3f &worldSpacePos)
-{
-  BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
-  float f =  tentApproximation_packet(self,worldSpacePos);
-  return f;
-}
-
-/*! plainest, dumbest way of reconstructing: find the given leaf cell,
-    and return the value */
-extern varying float MSAMR_nearestNeighbor(void *uniform _self, 
-                                           const varying vec3f &worldSpacePos);
-
-/*! perform tri-linear interpolation on the finest cell grid level -
-  ie, coarse regions will be entirely flat inside the coarse region, 
-  and have a linar fine-cell blend where they abut */
-extern varying float MSAMR_interpolateOnFinestLevel(void *uniform _self, 
-                                                    const varying vec3f &worldSpacePos);
-
-/*! perform tri-linear interpolation on the level of the leaf cell
-  that the sample is in.  note that THIS IS NOT CORRECT across level
-  boundaries, as a sample may be in a corse cell, but its neighbor
-  might be subdivided, which this one ignores */
-extern varying float 
-MSAMR_interpolateOnCurrentCellLevel(void *uniform _self, 
-                                    const varying vec3f &worldSpacePos);
-
-//! The gradient at the given sample location in world coordinates.
-static varying vec3f BrickTreeVolume_gradient(void *uniform _self, 
-                                        const varying vec3f &worldCoordinates)
-{
-  return make_vec3f(1,0,0);
-}
-
 //! Find the next hit point in the volume for ray casting based renderers.
 static void BrickTreeVolume_intersect(void *uniform _self, 
-                                varying Ray &ray)
+                                      varying Ray &ray)
 {
   BrickTreeVolume *uniform self = (BrickTreeVolume *uniform) _self;
   
@@ -193,24 +40,49 @@ static void BrickTreeVolume_intersect(void *uniform _self,
   ray.t0 += step;
 }
 
+extern "C" unmasked uniform float BrickTree_scalar_computeSample(void *uniform cppObject,
+                                                                 uniform vec3f &samplePos);
+
+static float BrickTreeVolume_computeSample(void *uniform _self, const vec3f &samplePos)
+{
+  BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
+  uniform vec3f uSamplePos[programCount];
+  uniform float uReturnValue[programCount];
+  uSamplePos[programIndex] = samplePos;
+  foreach_active(lane)
+    uReturnValue[lane] = BrickTree_scalar_computeSample(self->cppObject,uSamplePos[lane]);
+  return uReturnValue[programIndex];
+}
+
+extern "C" unmasked uniform vec3f BrickTree_scalar_computeGradient(void *uniform cppObject,
+                                                                   uniform vec3f &samplePos);
+
+static vec3f BrickTreeVolume_computeGradient(void *uniform _self, const vec3f &samplePos)
+{
+  BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
+  uniform vec3f uSamplePos[programCount];
+  uniform vec3f uReturnValue[programCount];
+  uSamplePos[programIndex] = samplePos;
+  foreach_active(lane)
+    uReturnValue[lane] = BrickTree_scalar_computeGradient(self->cppObject,uSamplePos[lane]);
+  return uReturnValue[programIndex];
+}
+
+
 export void *uniform BrickTreeVolume_create(void *uniform cppEquivalent) 
 {
   BrickTreeVolume *uniform self = uniform new uniform BrickTreeVolume;
   Volume_Constructor(&self->super,cppEquivalent);
-
+  
   return self;
 };
 
 export void BrickTreeVolume_set(void *uniform _self,
-                            void *uniform _xf,
-                            const uniform vec3i &rootGridDims,
-                            const uniform vec3f &validFractionOfRootGrid,
-                            void *uniform dataBlock,
-                            void *uniform indexBlock,
-                            void *uniform blockInfo,
-                            void *uniform firstDataBlockOfTreeData,
-                            void *uniform firstIndexBlockOfTreeData,
-                            uniform float finestCellWidth)
+                                void *uniform _xf,
+                                const uniform vec3i &rootGridDims,
+                                const uniform vec3f &validFractionOfRootGrid,
+                                /*! pointer to the c++ side object */
+                                void *uniform cppObject)
 {
   BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
   assert(self);
@@ -221,29 +93,19 @@ export void BrickTreeVolume_set(void *uniform _self,
   self->super.volumeClippingBox.lower = make_vec3f(0.f);
   self->super.volumeClippingBox.upper = make_vec3f(rootGridDims)*validFractionOfRootGrid; 
   
-  self->super.computeGradient = &BrickTreeVolume_gradient;
-
+  self->super.computeGradient = &BrickTreeVolume_computeGradient;
+  
   self->super.samplingRate = 1.f;//samplingRate;
   self->super.samplingStep = .1f;
-
+  
   self->super.gradientShadingEnabled = 0;
-
+  
   self->super.transferFunction = (TransferFunction *uniform)_xf;
 
-  self->dataBlock  = (SumDataBlock  *)dataBlock;
-  self->indexBlock = (SumIndexBlock *)indexBlock;
-  self->blockInfo  = (SumBlockInfo  *)blockInfo;
-  self->firstIndexBlockOfTree = (int32*)firstIndexBlockOfTreeData;
-  self->firstDataBlockOfTree  = (int32*)firstDataBlockOfTreeData;
-  // root grid dimensions
-  self->rootGridDims = rootGridDims;
-  self->validFractionOfRootGrid = validFractionOfRootGrid;
-  self->finestCellWidth = finestCellWidth;
-
   self->super.intersect = &BrickTreeVolume_intersect;
-  // self->super.computeSample = &MSAMR_nearestNeighbor;
-  // self->super.computeSample = &MSAMR_tentApprox;
-  self->super.computeSample = &MSAMR_interpolateOnCurrentCellLevel;
+  self->super.computeSample = &BrickTreeVolume_computeSample;
+
+  self->cppObject = cppObject;
 }
 
 

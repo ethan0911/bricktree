@@ -20,6 +20,12 @@
 OPTION(OSPRAY_MODULE_BRICKTREE "BrickTree (testing)" ON)
 
 IF (OSPRAY_MODULE_BRICKTREE)
+  FIND_PACKAGE(HDF5 REQUIRED)
+  IF (HDF5_FOUND)
+    INCLUDE_DIRECTORIES(${HDF5_INCLUDE_DIRS})
+    ADD_DEFINITIONS(${HDF5_DEFINITIONS})
+  ENDIF()
+  
   INCLUDE_DIRECTORIES(${EMBREE_INCLUDE_DIRS})
   INCLUDE_DIRECTORIES_ISPC(${EMBREE_INCLUDE_DIRS})
 
@@ -40,14 +46,11 @@ IF (OSPRAY_MODULE_BRICKTREE)
     # -----------------------------------------------------
     # scene graph plugin
     # -----------------------------------------------------
-    ADD_LIBRARY(ospray_sg_bricktree SHARED
-      sg/SGBrickTree.cpp
-      )
-    OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_sg_bricktree
-      ospray_bricktree
-      ospray_sg
-      hdf5
-      )
+    ADD_SUBDIRECTORY(sg)
+    
+    # -----------------------------------------------------
+    # converter tools
+    # -----------------------------------------------------
     ADD_SUBDIRECTORY(apps)
   ENDIF()
 
