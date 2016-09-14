@@ -38,43 +38,27 @@ namespace ospray {
 
     //! \brief Initialize this node's value from given XML node 
     void BrickTree::setFromXML(const xml::Node *const node, 
-                                 const unsigned char *binBasePtr)
+                               const unsigned char *binBasePtr)
     {
-      size_t ofs = node->getPropl("ofs");
-      size_t valueSize = node->getPropl("size");
-
       // -------------------------------------------------------
       // format, root size, value range, ...
       // -------------------------------------------------------
-      const std::string voxelType = node->getProp("voxelType");
-      if (voxelType != "float")
+      const std::string format = node->getProp("format");
+      if (format != "float")
         throw std::runtime_error("can only do float BrickTree right now");
-      this->voxelType = typeForString(voxelType.c_str());
-      this->samplingRate = node->getPropf("samplingRate",1.f);
-      this->valueRange = Range<float>::fromString(node->getProp("valueRange"),
-                                                  Range<float>(0.f,1.f));
+      this->voxelType = typeForString(format.c_str());
+      this->samplingRate = toFloat(node->getProp("samplingRate","1.f").c_str());
+      int brickSize      = toInt(node->getProp("brickSize").c_str());
+      assert(brickSize > 0);
+      int depth          = toInt(node->getProp("depth","0").c_str());
+      assert(depth > 0);
 
-      rootGridSize = toVec3i(node->getProp("rootGrid").c_str());
-      clipBoxSize = toVec3f(node->getProp("clipBoxSize").c_str());
-      maxLevel = node->getPropl("maxLevel",0);
+      rootGridSize = toVec3i(node->getProp("gridSize").c_str());
+      clipBoxSize  = toVec3f(node->getProp("validSize").c_str());
 
-      // -------------------------------------------------------
-      // value and index bricks
-      // -------------------------------------------------------
-      std::vector<int> valueBrickCount;
-      std::vector<int> indexBrickCount;
-      for (int childID=0;childID<node->child.size();childID++) {
-        const xml::Node *child = node->child[childID];
-        if (child->name == "valueBricks")
-          parseVecInt(valueBrickCount,child->content.c_str());
-        else if (child->name == "valueBricks")
-          parseVecInt(valueBrickCount,child->content.c_str());
-        else if (child->name == "indexBricks")
-          parseVecInt(indexBrickCount,child->content.c_str());
-      }
-#if 0
-      multiSum = BrickTreeBase::mapFrom(binBasePtr,valueBrickCount,indexBrickCount);
-
+      std::string fileName = node->doc->fileName;
+      PRINT(fileName);
+      
       // -------------------------------------------------------
       // transfer function
       // -------------------------------------------------------
@@ -84,11 +68,10 @@ namespace ospray {
       }
       if (this->transferFunction.ptr == NULL)
         this->transferFunction = new TransferFunction;
-
+     
       cout << "setting xf value range " << this->valueRange << endl;
       this->transferFunction->setValueRange(this->valueRange.toVec2f());
       cout << "-------------------------------------------------------" << endl;
-#endif
     }
 
     void BrickTree::render(RenderContext &ctx)
