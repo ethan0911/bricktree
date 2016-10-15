@@ -102,11 +102,16 @@ namespace ospray {
       if (!ospVolume) 
         throw std::runtime_error("could not create ospray 'BrickTreeVolume'");
 
+      assert(transferFunction);
+      transferFunction->render(ctx);
+      assert(transferFunction->getOSPHandle());
+      
       // -------------------------------------------------------
       ospSet1i(ospVolume,"blockWidth",blockWidth);
       ospSet1i(ospVolume,"brickSize",brickSize);
       ospSetString(ospVolume,"fileName",fileName.c_str());
       ospSetString(ospVolume,"format",format.c_str());
+      ospSetObject(ospVolume,"transferFunction",transferFunction->getOSPHandle());
       std::cout << "#sg:bt: committing Multi-BrickTree volume" << std::endl;
       ospCommit(ospVolume);
       

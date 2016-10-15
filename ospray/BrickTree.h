@@ -34,18 +34,16 @@ namespace ospray {
       virtual void commit();
 
       //! Copy voxels into the volume at the given index (non-zero return value indicates success).
-      virtual int setRegion(const void *source, const vec3i &index, const vec3i &count)
-      {
-        FATAL("'setRegion()' doesn't make sense for BT volumes; they can only be set from existing data");
-      }
+      virtual int setRegion(const void *source, const vec3i &index, const vec3i &count) override;
 
-      Ref<Data>   firstIndexBrickOfTreeData;
-      Ref<Data>   firstDataBrickOfTreeData;
-      Ref<Data>   dataBrickData;
-      Ref<Data>   indexBrickData;
-      Ref<Data>   brickInfoData;
-      vec3i       rootGridDims;
+      vec3i       gridSize;
+      vec3i       validSize;
       vec3f       validFractionOfRootGrid;
+      int         depth;
+      int         brickSize;
+      int         blockWidth;
+      std::string fileName;
+      std::string format;
       OSPDataType voxelType;
     };
     
