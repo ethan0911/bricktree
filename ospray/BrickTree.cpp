@@ -35,8 +35,13 @@ namespace ospray {
 
     /*! the actual sampler code for a bricktree; to be specialized for
       bricksize, voxel type, etcpp */
+    template<typename T, int N>
     struct BrickTreeSampler : public ScalarVolumeSampler
     {
+      BrickTreeSampler(BrickTreeVolume *btv)
+        : btv(btv)
+      {}
+      
       /*! compute sample at given position */
       virtual float computeSample(const vec3f &pos) const override
       { PING; return 0; }
@@ -44,6 +49,8 @@ namespace ospray {
       /*! compute gradient at given position */
       virtual vec3f computeGradient(const vec3f &pos) const override
       { PING; return vec3f(1,0,0); }
+
+      BrickTreeVolume *btv;
     };
     
     BrickTreeVolume::BrickTreeVolume()
@@ -64,20 +71,49 @@ namespace ospray {
 
     /*! callback function called by ispc sampling code to compute a
         gradient at given sample pos in this (c++-only) module */
-    extern "C" float BrickTree_scalar_computeSample(void *_cppSampler,
+    extern "C" float BrickTree_scalar_computeSample(ScalarVolumeSampler *cppSampler,
                                                     const vec3f &samplePos)
     {
-      BrickTreeSampler *cppSampler = (BrickTreeSampler *)_cppSampler;
       return cppSampler->computeSample(samplePos);
     }
 
     /*! callback function called by ispc sampling code to compute a
       sample in this (c++-only) module */
-    extern "C" vec3f BrickTree_scalar_computeGradient(void *_cppSampler,
+    extern "C" vec3f BrickTree_scalar_computeGradient(ScalarVolumeSampler *cppSampler,
                                                       const vec3f &samplePos)
     {
-      BrickTreeSampler *cppSampler = (BrickTreeSampler *)_cppSampler;
       return cppSampler->computeGradient(samplePos);
+    }
+
+    template<typename T, int N>
+    ScalarVolumeSampler *BrickTreeVolume::createSamplerTN()
+    {
+      return new BrickTreeSampler<T,N>(this);
+    }
+    
+    template<typename T>
+    ScalarVolumeSampler *BrickTreeVolume::createSamplerT()
+    {
+      PING;
+      PRINT(brickSize);
+      if (brickSize == 2)
+        return createSamplerTN<T,2>();
+      if (brickSize == 4)
+        return createSamplerTN<T,4>();
+      if (brickSize == 8)
+        return createSamplerTN<T,8>();
+      if (brickSize == 16)
+        return createSamplerTN<T,16>();
+      throw std::runtime_error("BrickTree: unsupported brick size");
+    }
+    
+    ScalarVolumeSampler *BrickTreeVolume::createSampler()
+    {
+      PING;
+      PRINT(format);
+      if (format == "float")
+        return createSamplerT<float>();
+      throw std::runtime_error("BrickTree: unsupported format '"+format+"'");
     }
     
     //! Allocate storage and populate the volume.
@@ -94,9 +130,10 @@ namespace ospray {
       brickSize  = getParam1i("brickSize",-1);
       blockWidth = getParam1i("blockWidth",-1);
       fileName   = getParamString("fileName","");
+      format     = getParamString("format","<not specified>");
       validFractionOfRootGrid = vec3f(validSize) / vec3f(gridSize*blockWidth);
 
-      sampler = new BrickTreeSampler;
+      sampler = createSampler();
       
       ispc::BrickTreeVolume_set(getIE(),
                                 xf->getIE(),

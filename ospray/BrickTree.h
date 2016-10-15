@@ -55,6 +55,16 @@ namespace ospray {
       //! Copy voxels into the volume at the given index (non-zero return value indicates success).
       virtual int setRegion(const void *source, const vec3i &index, const vec3i &count) override;
 
+      /*! create specialization of sampler for given type and brick size */
+      template<typename T, int N>
+      ScalarVolumeSampler *createSamplerTN();
+      /*! create specialization of sampler for given type */
+      template<typename T>
+      ScalarVolumeSampler *createSamplerT();
+      /*! create specialization of sampler given values for brick size an dtype */
+      ScalarVolumeSampler *createSampler();
+
+
       ScalarVolumeSampler *sampler;
       
       vec3i       gridSize;
