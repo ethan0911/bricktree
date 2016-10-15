@@ -37,30 +37,46 @@ namespace ospray {
       free(ss);
     }
 
+      /*! constructor */
+    BrickTree::BrickTree()
+      : ospVolume(NULL),
+        brickSize(-1),
+        blockWidth(-1),
+        validSize(-1),
+        gridSize(-1),
+        format("<none>"),
+        fileName("<none>"),
+        valueRange(one)
+    {};
+    
+    //! return bounding box of all primitives
+    box3f BrickTree::getBounds() 
+    {
+      return box3f(vec3f(0.f),vec3f(validSize));
+    }
+    
     //! \brief Initialize this node's value from given XML node 
     void BrickTree::setFromXML(const xml::Node *const node, 
                                const unsigned char *binBasePtr)
     {
       // -------------------------------------------------------
-      // format, root size, value range, ...
+      // parameter parsing
       // -------------------------------------------------------
-      const std::string format = node->getProp("format");
-      PRINT(format);
+      format       = node->getProp("format");
+      samplingRate = toFloat(node->getProp("samplingRate","1.f").c_str());
+      brickSize    = toInt(node->getProp("brickSize").c_str());
+      blockWidth   = toInt(node->getProp("blockWidth").c_str());
+      gridSize     = toVec3i(node->getProp("gridSize").c_str());
+      validSize    = toVec3i(node->getProp("validSize").c_str());
+      fileName     = node->doc->fileName;
+
+      // -------------------------------------------------------
+      // parameter sanity checking 
+      // -------------------------------------------------------
       if (format != "float")
         throw std::runtime_error("can only do float BrickTree right now");
       this->voxelType = typeForString(format.c_str());
-      this->samplingRate = toFloat(node->getProp("samplingRate","1.f").c_str());
-      int brickSize      = toInt(node->getProp("brickSize").c_str());
-      assert(brickSize > 0);
-      // int depth          = toInt(node->getProp("depth","0").c_str());
-      // assert(depth > 0);
 
-      rootGridSize = toVec3i(node->getProp("gridSize").c_str());
-      clipBoxSize  = toVec3f(node->getProp("validSize").c_str());
-
-      std::string fileName = node->doc->fileName;
-      PRINT(fileName);
-      
       // -------------------------------------------------------
       // transfer function
       // -------------------------------------------------------
@@ -85,50 +101,12 @@ namespace ospray {
       ospVolume = ospNewVolume("BrickTreeVolume");
       if (!ospVolume) 
         throw std::runtime_error("could not create ospray 'BrickTreeVolume'");
-      
-      // size_t sizeOfBrick
-      //   = multiSum->brickSize()*multiSum->brickSize()*multiSum->brickSize() * sizeof(int);
-      // // -------------------------------------------------------
-      // valueBrickValue = ospNewData(multiSum->numValueBricks*sizeOfBrick,
-      //                            OSP_UCHAR,
-      //                            multiSum->valueBrickPtr(),OSP_DATA_SHARED_BUFFER);
-      // ospSetValue(ospVolume,"valueBrickValue",valueBrickValue);
-      // indexBrickValue = ospNewData(multiSum->numIndexBricks*sizeOfBrick,
-      //                             OSP_UCHAR,
-      //                             multiSum->indexBrickPtr(),OSP_DATA_SHARED_BUFFER);
-      // ospSetValue(ospVolume,"indexBrickValue",indexBrickValue);
-      // brickInfoValue = ospNewData(multiSum->numIndexBricks*sizeOfBrick,
-      //                            OSP_UCHAR,
-      //                            multiSum->brickInfoPtr(),OSP_DATA_SHARED_BUFFER);
-      // ospSetValue(ospVolume,"brickInfoValue",brickInfoValue);
 
-      // ospSet1f(ospVolume,"samplingRate",samplingRate);
-      // ospSet1i(ospVolume,"maxLevel",maxLevel);
-
-      // firstIndexBrickOfTreeValue
-      //   = ospNewData(multiSum->getRootGridDims().product(),OSP_INT,
-      //                multiSum->firstIndexBrickOfTreePtr(),OSP_DATA_SHARED_BUFFER);
-      // ospSetValue(ospVolume,"firstIndexBrickOfTree",firstIndexBrickOfTreeValue);
-
-      // firstValueBrickOfTreeValue
-      //   = ospNewData(multiSum->getRootGridDims().product(),OSP_INT,
-      //                multiSum->firstValueBrickOfTreePtr(),OSP_DATA_SHARED_BUFFER);
-      // ospSetValue(ospVolume,"firstValueBrickOfTree",firstValueBrickOfTreeValue);
-
-      // vec3i rootDims = multiSum->getRootGridDims();
-      // ospSetVec3i(ospVolume,"rootGridDims",(osp::vec3i&)rootDims);
-      // ospSetVec3f(ospVolume,"validFractionOfRootGrid",multiSum->validFractionOfRootGrid);
-
-      // // -------------------------------------------------------
-      // std::cout << "#sg:bt: adding transfer function" << std::endl;
-      // if (transferFunction) {
-      //   transferFunction->render(ctx);
-      //   ospSetObject(ospVolume,"transferFunction",transferFunction->getOSPHandle());
-      // }
-
-      throw std::runtime_error("not yet actually setting anything in bricktreevolume, yet ...");
-      
       // -------------------------------------------------------
+      ospSet1i(ospVolume,"blockWidth",blockWidth);
+      ospSet1i(ospVolume,"brickSize",brickSize);
+      ospSetString(ospVolume,"fileName",fileName.c_str());
+      ospSetString(ospVolume,"format",format.c_str());
       std::cout << "#sg:bt: committing Multi-BrickTree volume" << std::endl;
       ospCommit(ospVolume);
       

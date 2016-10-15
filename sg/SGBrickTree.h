@@ -27,7 +27,8 @@ namespace ospray {
     /*! multi-octree bt node - for now only working for float format */
     struct BrickTree : public sg::Volume {
       
-      BrickTree() : multiSum(NULL), ospVolume(NULL), valueRange(one) {};
+      /*! constructor */
+      BrickTree();
       
       /*! \brief returns a std::string with the c++ name of this class */
       virtual    std::string toString() const
@@ -43,26 +44,34 @@ namespace ospray {
                               const unsigned char *binBasePtr);
 
       //! return bounding box of all primitives
-      virtual box3f getBounds() { return box3f(vec3f(0.f),clipBoxSize*vec3f(rootGridSize)); }
+      virtual box3f getBounds() override;
       
       //! handle to the ospray volume object
       OSPVolume   ospVolume;
 
-      //! type of voxel (uint8,float) that we have to deal with 
+      /*! resolutoin (in BLOCKs) of input grid */
+      vec3i gridSize;
+
       OSPDataType voxelType;
-      
-      vec3f clipBoxSize;
-      vec3i rootGridSize;
 
-      OSPData valueBrickValue;
-      OSPData indexBrickValue;
-      OSPData brickInfoValue;
-      OSPData firstIndexBrickOfTreeValue;
-      OSPData firstValueBrickOfTreeValue;
+      /*! user-desired sampling rate */
       float samplingRate;
-      int maxLevel;
+      
+      /*! valid number of voxels in entire data structure
+          (gridSize*BLOCKWIDTH may be larger than this! */
+      vec3i validSize;
 
-      bt::BrickTreeBase *multiSum;
+      /*! voxel format; 'float', 'int', etc */
+      std::string format;
+
+      /*! the filename for the actual data */
+      std::string fileName;
+      
+      /*! size (in voxels^3) of each brick */
+      int brickSize;
+      
+      /*! width (in voxels) of one block in the root grid */
+      int blockWidth;
       
       /*! total range of all values in the tree, so we can set the
         proper xfer fct */
@@ -70,4 +79,4 @@ namespace ospray {
     };
 
   } // ::ospray::sg
-} // ::ospray
+} // ::ospray 
