@@ -33,12 +33,26 @@ namespace ospray {
     using std::ostream;
     using std::flush;
 
+    /*! the actual sampler code for a bricktree; to be specialized for
+      bricksize, voxel type, etcpp */
+    struct BrickTreeSampler : public ScalarVolumeSampler
+    {
+      /*! compute sample at given position */
+      virtual float computeSample(const vec3f &pos) const override
+      { PING; return 0; }
+      
+      /*! compute gradient at given position */
+      virtual vec3f computeGradient(const vec3f &pos) const override
+      { PING; return vec3f(1,0,0); }
+    };
+    
     BrickTreeVolume::BrickTreeVolume()
       : Volume(),
         gridSize(-1),
         validSize(-1),
         brickSize(-1),
-        fileName("<none>")
+        fileName("<none>"),
+        sampler(NULL)
     {
       ispcEquivalent = ispc::BrickTreeVolume_create(this);
     }
@@ -50,24 +64,20 @@ namespace ospray {
 
     /*! callback function called by ispc sampling code to compute a
         gradient at given sample pos in this (c++-only) module */
-    extern "C" float BrickTree_scalar_computeSample(void *_cppObject,
+    extern "C" float BrickTree_scalar_computeSample(void *_cppSampler,
                                                     const vec3f &samplePos)
     {
-      PING;
-
-      BrickTreeVolume *cppObject = (BrickTreeVolume *)_cppObject;
-      // return cppObject->computeSample(samplePos);
+      BrickTreeSampler *cppSampler = (BrickTreeSampler *)_cppSampler;
+      return cppSampler->computeSample(samplePos);
     }
 
     /*! callback function called by ispc sampling code to compute a
       sample in this (c++-only) module */
-    extern "C" vec3f BrickTree_scalar_computeGradient(void *_cppObject,
+    extern "C" vec3f BrickTree_scalar_computeGradient(void *_cppSampler,
                                                       const vec3f &samplePos)
     {
-      PING;
-
-      BrickTreeVolume *cppObject = (BrickTreeVolume *)_cppObject;
-      // return cppObject->computeGradient(samplePos);
+      BrickTreeSampler *cppSampler = (BrickTreeSampler *)_cppSampler;
+      return cppSampler->computeGradient(samplePos);
     }
     
     //! Allocate storage and populate the volume.
@@ -86,17 +96,13 @@ namespace ospray {
       fileName   = getParamString("fileName","");
       validFractionOfRootGrid = vec3f(validSize) / vec3f(gridSize*blockWidth);
 
-      PRINT(getIE());
-      PRINT(xf);
-      PRINT(xf->getIE());
+      sampler = new BrickTreeSampler;
       
-      PING;
       ispc::BrickTreeVolume_set(getIE(),
                                 xf->getIE(),
                                 (ispc::vec3i &)validSize,
-                                (ispc::vec3f &)validFractionOfRootGrid,
-                                this);
-      PING;
+                                this,
+                                sampler);
     }
 
     OSP_REGISTER_VOLUME(BrickTreeVolume,BrickTreeVolume);

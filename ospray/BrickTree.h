@@ -24,7 +24,26 @@
 namespace ospray {
   namespace bt {
 
-    struct BrickTreeVolume : public ospray::Volume {
+    /*! abstract base class for any type of scalar volume sampler 
+
+      we will eventually specialize this for bricktree further below
+    */
+    struct ScalarVolumeSampler
+    {
+      /*! compute sample at given position */
+      virtual float computeSample(const vec3f &pos) const = 0;
+      
+      /*! compute gradient at given position */
+      virtual vec3f computeGradient(const vec3f &pos) const = 0;
+    };
+
+    /*! the actual C++ implementation of an ospray bricktree volume type 
+      
+      note this only maintains all kind of ospray state fo rthis
+      object; the actual sampling is done in the sampler defined in
+      the implementation file */
+    struct BrickTreeVolume : public ospray::Volume
+    {
       BrickTreeVolume();
 
       //! \brief common function to help printf-debugging 
@@ -36,6 +55,8 @@ namespace ospray {
       //! Copy voxels into the volume at the given index (non-zero return value indicates success).
       virtual int setRegion(const void *source, const vec3i &index, const vec3i &count) override;
 
+      ScalarVolumeSampler *sampler;
+      
       vec3i       gridSize;
       vec3i       validSize;
       vec3f       validFractionOfRootGrid;

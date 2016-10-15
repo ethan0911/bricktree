@@ -52,7 +52,8 @@ namespace ospray {
     //! return bounding box of all primitives
     box3f BrickTree::getBounds() 
     {
-      return box3f(vec3f(0.f),vec3f(validSize));
+      const box3f bounds = box3f(vec3f(0.f),vec3f(validSize));
+      return bounds;
     }
     
     //! \brief Initialize this node's value from given XML node 
