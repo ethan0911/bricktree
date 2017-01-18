@@ -31,17 +31,17 @@ namespace ospray {
       BrickTree();
       
       /*! \brief returns a std::string with the c++ name of this class */
-      virtual    std::string toString() const
+      virtual    std::string toString() const override
       { return "ospray::sg::BrickTree (ospray_bt module)"; }
 
       /*! 'render' the nodes - all geometries, materials, etc will
           create their ospray counterparts, and store them in the
           node  */
-      virtual void render(RenderContext &ctx);
+      virtual void render(RenderContext &ctx) override;
 
       //! \brief Initialize this node's value from given XML node 
-      virtual void setFromXML(const xml::Node *const node, 
-                              const unsigned char *binBasePtr);
+      virtual void setFromXML(const xml::Node &node, 
+                              const unsigned char *binBasePtr) override;
 
       //! return bounding box of all primitives
       virtual box3f getBounds() override;

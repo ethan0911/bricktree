@@ -42,7 +42,7 @@ namespace ospray {
       cout << " --input-format|-if <uint8|float|double>: format of input raw file (if different from '--format')" << endl;
       cout << " --brick-size|-bs <N>   : use bricks of NxNxN voxels" << endl;
       cout << " --depth|-d <depth>     : num levels per block" << endl;
-      cout << " -o <outfilename.xml>   : output file name" << endl;
+      cout << " -o <outfilename.osp>   : output file name" << endl;
       cout << " -t <threshold>         : threshold of which nodes to split or not (ABSOLUTE float val)" << endl;
       exit(msg != "");
     }
@@ -286,7 +286,7 @@ namespace ospray {
         }
         fprintf(osp,"</ospray>\n");
         fclose(osp);
-        cout << "done writing multibrick osp file name..." << endl;
+        cout << "done writing multibrick scene graph '.osp' file name..." << endl;
         exit(0);
       } else {
         // =======================================================

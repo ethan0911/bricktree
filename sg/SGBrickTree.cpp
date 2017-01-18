@@ -57,19 +57,19 @@ namespace ospray {
     }
     
     //! \brief Initialize this node's value from given XML node 
-    void BrickTree::setFromXML(const xml::Node *const node, 
+    void BrickTree::setFromXML(const xml::Node &node, 
                                const unsigned char *binBasePtr)
     {
       // -------------------------------------------------------
       // parameter parsing
       // -------------------------------------------------------
-      format       = node->getProp("format");
-      samplingRate = toFloat(node->getProp("samplingRate","1.f").c_str());
-      brickSize    = toInt(node->getProp("brickSize").c_str());
-      blockWidth   = toInt(node->getProp("blockWidth").c_str());
-      gridSize     = toVec3i(node->getProp("gridSize").c_str());
-      validSize    = toVec3i(node->getProp("validSize").c_str());
-      fileName     = node->doc->fileName;
+      format       = node.getProp("format");
+      samplingRate = toFloat(node.getProp("samplingRate","1.f").c_str());
+      brickSize    = toInt(node.getProp("brickSize").c_str());
+      blockWidth   = toInt(node.getProp("blockWidth").c_str());
+      gridSize     = toVec3i(node.getProp("gridSize").c_str());
+      validSize    = toVec3i(node.getProp("validSize").c_str());
+      fileName     = node.doc->fileName;
 
       // -------------------------------------------------------
       // parameter sanity checking 
@@ -81,12 +81,12 @@ namespace ospray {
       // -------------------------------------------------------
       // transfer function
       // -------------------------------------------------------
-      std::string xfName = node->getProp("transferFunction");
+      std::string xfName = node.getProp("transferFunction");
       if (xfName != "") {
-        this->transferFunction = dynamic_cast<TransferFunction*>(sg::findNamedNode(xfName));
+        // this->transferFunction = dynamic_cast<TransferFunction*>(sg::findNamedNode(xfName));
       }
-      if (this->transferFunction.ptr == NULL)
-        this->transferFunction = new TransferFunction;
+      if (!this->transferFunction)
+        this->transferFunction = std::make_shared<TransferFunction>();
      
       cout << "setting xf value range " << this->valueRange << endl;
       this->transferFunction->setValueRange(this->valueRange.toVec2f());
