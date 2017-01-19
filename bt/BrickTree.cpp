@@ -16,6 +16,7 @@
 
 // own
 #include "BrickTree.h"
+#include "common/xml/XML.h"
 
 namespace ospray {
   namespace bt {
@@ -32,22 +33,6 @@ namespace ospray {
     const char *typeToString<double>() { return "double"; };
 
 
-    // BrickTreeBase *BrickTreeBase::mapFrom(const void *ptr, 
-    //                                       const std::string &format, 
-    //                                       int BS, 
-    //                                       size_t superBlockOfs)
-    // {
-    //   throw std::runtime_error("not implemented yet...");
-    // }
-    
-
-
-    // template<int N, typename T>
-    // void BrickTree<N,T>::saveTo(FILE *bin, size_t &superBlockOfs)
-    // {
-    //   throw std::runtime_error("not implemented yet...");
-    // }
-
 
     template<int N, typename T>
     void BrickTree<N,T>::ValueBrick::clear()
@@ -55,72 +40,31 @@ namespace ospray {
       array3D::for_each(vec3i(N),[&](const vec3i &idx) {
           value[idx.z][idx.y][idx.x] = 0.f;
         });
-      // for (int iz=0;iz<N;iz++)
-      //   for (int iy=0;iy<N;iy++)
-      //     for (int ix=0;ix<N;ix++)
-      //       value[iz][iy][ix] = 0.f;
     }
 
     template<int N, typename T>
     void BrickTree<N,T>::IndexBrick::clear()
     {
-      for (int iz=0;iz<N;iz++)
-        for (int iy=0;iy<N;iy++)
-          for (int ix=0;ix<N;ix++)
-            childID[iz][iy][ix] = invalidID();
+      array3D::for_each(vec3i(N),[&](const vec3i &idx) {
+          childID[idx.z][idx.y][idx.x] = invalidID();
+        });
     }
 
-    // template<int N, typename T>
-    // Range<float> BrickTree<N,T>::ValueBrick::getValueRange() const
-    // {
-    //   Range<float> r = empty;
-    //   for (int iz=0;iz<N;iz++)
-    //     for (int iy=0;iy<N;iy++)
-    //       for (int ix=0;ix<N;ix++)
-    //         r.extend(value[iz][iy][ix]);
-    //   return r;
-    // }
 
-    // template<int N, typename T>
-    // void BrickTree<N,T>::mapFrom(const unsigned char *ptr, 
-    //                              const vec3i &rootGrid,
-    //                              const vec3f &fracOfRootGrid,
-    //                              std::vector<int32_t> numValueBricksPerTree,
-    //                              std::vector<int32_t> numIndexBricksPerTree)
-    // {
-    //   this->rootGridDims = rootGrid;
-    //   PRINT(rootGridDims);
-    //   this->validFractionOfRootGrid = fracOfRootGrid;
+    /*! map this one from a binary dump that was created by the bricktreebuilder/raw2bricks tool */
+    template<int N, typename T>
+    void BrickTree<N,T>::map(const FileName &brickFileBase, size_t blockID, const vec3i &treeCoords)
+    {
+      char blockFileName[10000];
+      sprintf(blockFileName,"%s-brick%06i.osp",brickFileBase.str().c_str(),(int)blockID);
 
-    //   const size_t numRootCells
-    //     = (size_t)rootGridDims.x 
-    //     * (size_t)rootGridDims.y
-    //     * (size_t)rootGridDims.z; 
-    //   int32_t *firstIndexBrickOfTree = new int32_t[numRootCells];
-    //   int32_t *firstValueBrickOfTree = new int32_t[numRootCells];
-    //   size_t sumIndex = 0;
-    //   size_t sumValue = 0;
-    //   for (size_t i=0;i<numRootCells;i++) {
-    //     firstIndexBrickOfTree[i] = sumIndex;
-    //     firstValueBrickOfTree[i] = sumValue;
-    //     sumValue += numValueBricksPerTree[i];
-    //     sumIndex += numIndexBricksPerTree[i];
-    //   }
-    //   this->firstIndexBrickOfTree = firstIndexBrickOfTree;
-    //   this->firstValueBrickOfTree = firstValueBrickOfTree;
-      
-    //   numValueBricks = sumValue;
-    //   numIndexBricks = sumIndex;
-      
-    //   valueBrick = (const ValueBrick *)ptr;
-    //   ptr += numValueBricks * sizeof(ValueBrick);
-      
-    //   indexBrick = (const IndexBrick *)ptr;
-    //   ptr += numIndexBricks * sizeof(IndexBrick);
-      
-    //   brickInfo = (const BrickInfo *)ptr;
-    // }      
+      std::shared_ptr<xml::XMLDoc> doc = xml::readXML(blockFileName);
+      if (!doc)
+        throw std::runtime_error("could not read brick tree .osp file '"+std::string(blockFileName)+"'");
 
+      
+    }
+      
     template<int N, typename T>
     double BrickTree<N,T>::ValueBrick::computeWeightedAverage(// coordinates of lower-left-front
                                                              // voxel, in resp level
@@ -139,7 +83,7 @@ namespace ospray {
         for (int iy=0;iy<N;iy++)
           for (int ix=0;ix<N;ix++) {
             vec3i cellBegin = min(brickCoord*vec3i(brickSize)+vec3i(ix,iy,iz)*vec3i(cellSize),maxSize);
-            vec3i cellEnd = min(cellBegin + vec3i(cellSize),maxSize);
+            vec3i cellEnd   = min(cellBegin + vec3i(cellSize),maxSize);
 
             float weight = (cellEnd-cellBegin).product();
             if (weight > 0.f) {

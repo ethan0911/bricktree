@@ -72,6 +72,11 @@ namespace ospray {
       validSize    = toVec3i(node.getProp("validSize").c_str());
       fileName     = node.doc->fileName;
 
+      assert(gridSize.x > 0);
+      assert(gridSize.y > 0);
+      assert(gridSize.z > 0);
+      PRINT(gridSize);
+
       // -------------------------------------------------------
       // parameter sanity checking 
       // -------------------------------------------------------
@@ -111,6 +116,7 @@ namespace ospray {
       // -------------------------------------------------------
       ospSet1i(ospVolume,"blockWidth",blockWidth);
       ospSet1i(ospVolume,"brickSize",brickSize);
+      ospSet3i(ospVolume,"gridSize",gridSize.x,gridSize.y,gridSize.z);
       ospSetString(ospVolume,"fileName",fileName.c_str());
       ospSetString(ospVolume,"format",format.c_str());
       ospSetObject(ospVolume,"transferFunction",transferFunction->getOSPHandle());

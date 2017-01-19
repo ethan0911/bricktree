@@ -132,6 +132,9 @@ namespace ospray {
 
       virtual vec3i getRootGridDims() const override { return rootGridDims; }
 
+      /*! map this one from a binary dump that was created by the bricktreebuilder/raw2bricks tool */
+      void map(const FileName &brickFileBase, size_t treeID, const vec3i &treeIdx);
+      
       /* gives, for each root cell / tree in the root grid, the ID of
          the first index brick in the (shared) value brick array */
       const int32_t *firstIndexBrickOfTree;
@@ -147,9 +150,26 @@ namespace ospray {
     /* a entire *FOREST* of bricktrees */
     template<int N, typename T=float>
     struct BrickTreeForest {
-      BrickTreeForest(const vec3i &rootGridSize,
+      BrickTreeForest(const vec3i &forestSize,
                       const vec3i &originalVolumeSize,
-                      const FileName &brickFileBase);
+                      const FileName &brickFileBase)
+        : forestSize(forestSize),
+          originalVolumeSize(originalVolumeSize),
+          brickFileBase(brickFileBase)
+      {
+        int numTrees = forestSize.product();
+        assert(numTrees > 0);
+        tree.resize(numTrees);
+        array3D::for_each(forestSize,[&](const vec3i &treeCoord){
+            size_t treeID = array3D::longIndex(treeCoord,forestSize);
+            tree[treeID].map(brickFileBase,treeID,treeCoord);
+          });
+      }
+
+      const vec3i forestSize;
+      const vec3i originalVolumeSize;
+      const FileName &brickFileBase;
+      
       std::vector<BrickTree<N,T> > tree;
     };
 

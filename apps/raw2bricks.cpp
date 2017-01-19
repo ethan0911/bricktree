@@ -359,18 +359,19 @@ namespace ospray {
       fprintf(osp,"<?xml?>\n");
       fprintf(osp,"<ospray>\n");
       {
-        fprintf(osp,"  <BrickTree>\n");
+        fprintf(osp,"  <BrickTree\n");
         {
           fprintf(osp,"    averageValue=\"%f\"\n",averageValue);
           fprintf(osp,"    valueRange=\"%f %f\"\n",valueRange.lower,valueRange.upper);
           fprintf(osp,"    format=\"%s\"\n",typeToString<T>());
           fprintf(osp,"    brickSize=\"%i\"\n",N);
           fprintf(osp,"    validSize=\"%i %i %i\"\n",validSize.x,validSize.y,validSize.z);
-          fprintf(osp,"    <indexBricks num=%li ofs=%li/>\n",
+          fprintf(osp,"    >\n");
+          fprintf(osp,"    <indexBricks num=\"%li\" ofs=\"%li\"/>\n",
                   this->indexBrick.size(),indexOfs);
-          fprintf(osp,"    <valueBricks num=%li ofs=%li/>\n",
+          fprintf(osp,"    <valueBricks num=\"%li\" ofs=\"%li\"/>\n",
                   this->valueBrick.size(),dataOfs);
-          fprintf(osp,"    <indexBrickOf num=%li ofs=%li/>\n",
+          fprintf(osp,"    <indexBrickOf num=\"%li\" ofs=\"%li\"/>\n",
                   this->indexBrickOf.size(),indexBrickOfOfs);
         }
         fprintf(osp,"  </BrickTree>\n");

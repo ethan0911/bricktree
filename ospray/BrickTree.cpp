@@ -49,6 +49,7 @@ namespace ospray {
         PING;
         forest = std::make_shared<bt::BrickTreeForest<N,T> >(btv->gridSize,btv->validSize,
                                                              FileName(btv->fileName).dropExt());
+        exit(0);
       }
       
       /*! compute sample at given position */
@@ -137,10 +138,12 @@ namespace ospray {
       if (!xf)
         throw std::runtime_error("#osp:bt: bricktree volume does not have a transfer function");
       
+      gridSize   = getParam3i("gridSize",vec3i(-1));
       brickSize  = getParam1i("brickSize",-1);
       blockWidth = getParam1i("blockWidth",-1);
       fileName   = getParamString("fileName","");
       format     = getParamString("format","<not specified>");
+      PRINT(gridSize);
       validFractionOfRootGrid = vec3f(validSize) / vec3f(gridSize*blockWidth);
 
       sampler = createSampler();
