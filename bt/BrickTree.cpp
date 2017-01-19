@@ -18,6 +18,24 @@
 #include "BrickTree.h"
 #include "common/xml/XML.h"
 
+// stdlib, for mmap
+#include <sys/types.h>
+#include <sys/stat.h>
+#ifdef _WIN32
+#  include <windows.h>
+#else
+#  include <sys/mman.h>
+#endif
+#include <fcntl.h>
+#include <string>
+#include <cstring>
+
+// O_LARGEFILE is a GNU extension.
+#ifdef __APPLE__
+#define  O_LARGEFILE  0
+#endif
+
+
 namespace ospray {
   namespace bt {
 
@@ -61,8 +79,41 @@ namespace ospray {
       std::shared_ptr<xml::XMLDoc> doc = xml::readXML(blockFileName);
       if (!doc)
         throw std::runtime_error("could not read brick tree .osp file '"+std::string(blockFileName)+"'");
-
+      std::shared_ptr<xml::Node> osprayNode = doc->child[0];
+      assert(osprayNode->name == "ospray");
       
+      std::shared_ptr<xml::Node> brickTreeNode = osprayNode->child[0];
+      assert(brickTreeNode->name == "BrickTree");
+
+      std::shared_ptr<xml::Node> indexBricksNode  = brickTreeNode->child[0];
+      std::shared_ptr<xml::Node> valueBricksNode  = brickTreeNode->child[1];
+      std::shared_ptr<xml::Node> indexBrickOfNode = brickTreeNode->child[2];
+
+      size_t indexBricksNum  = std::stoll(indexBricksNode->getProp("num"));
+      size_t indexBricksOfs  = std::stoll(indexBricksNode->getProp("ofs"));
+      size_t valueBricksNum  = std::stoll(valueBricksNode->getProp("num"));
+      size_t valueBricksOfs  = std::stoll(valueBricksNode->getProp("ofs"));
+      size_t indexBrickOfNum = std::stoll(indexBrickOfNode->getProp("num"));
+      size_t indexBrickOfOfs = std::stoll(indexBrickOfNode->getProp("ofs"));
+
+      // mmap the binary file
+      sprintf(blockFileName,"%s-brick%06i.ospbin",brickFileBase.str().c_str(),(int)blockID);
+      FILE *file = fopen(blockFileName,"rb");
+      if (!file)
+        throw std::runtime_error("could not open brick bin file "+std::string(blockFileName));
+      fseek(file,0,SEEK_END);
+      size_t actualFileSize = ftell(file);
+      fclose(file);
+      
+      int fd = ::open(blockFileName, O_LARGEFILE | O_RDONLY);
+      assert(fd >= 0);
+      
+      unsigned char *mem = (unsigned char *)mmap(NULL,actualFileSize,PROT_READ,MAP_SHARED,fd,0);
+      assert(mem != NULL && (long long)mem != -1LL);
+
+      valueBrick = (ValueBrick*)(mem+valueBricksOfs);
+      indexBrick = (IndexBrick*)(mem+indexBricksOfs);
+      brickInfo  = (BrickInfo*)(mem+indexBrickOfOfs);
     }
       
     template<int N, typename T>

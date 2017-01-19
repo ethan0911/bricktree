@@ -129,7 +129,7 @@ namespace ospray {
       const ValueBrick *valueBrick;
       const IndexBrick *indexBrick;
       const BrickInfo  *brickInfo;
-
+      
       virtual vec3i getRootGridDims() const override { return rootGridDims; }
 
       /*! map this one from a binary dump that was created by the bricktreebuilder/raw2bricks tool */
