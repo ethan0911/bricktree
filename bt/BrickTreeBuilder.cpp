@@ -50,9 +50,9 @@ namespace ospray {
     }
 
     template<int N, typename T>
-    int32 BrickTreeBuilder<N,T>::newValueBrick()
+    int32_t BrickTreeBuilder<N,T>::newValueBrick()
     {
-      int32 ID = valueBrick.size();
+      int32_t ID = valueBrick.size();
       valueBrick.push_back(new typename BrickTree<N,T>::ValueBrick);
       valueBrick.back()->clear();
       indexBrickOf.push_back(BrickTree<N,T>::invalidID());
@@ -62,10 +62,10 @@ namespace ospray {
     /*! get index brick for given value brick ID - create if required */
     template<int N, typename T>
     typename BrickTree<N,T>::IndexBrick *
-    BrickTreeBuilder<N,T>::getIndexBrickFor(int32 valueBrickID)
+    BrickTreeBuilder<N,T>::getIndexBrickFor(int32_t valueBrickID)
     {
       assert(valueBrickID < indexBrickOf.size());
-      int32 indexBrickID = indexBrickOf[valueBrickID];
+      int32_t indexBrickID = indexBrickOf[valueBrickID];
       if (indexBrickID == BrickTree<N,T>::invalidID()) {
         indexBrickID = indexBrickOf[valueBrickID] = indexBrick.size();
         indexBrick.push_back(new typename BrickTree<N,T>::IndexBrick);
@@ -82,14 +82,6 @@ namespace ospray {
       return indexBrick[indexBrickID];
     }
 
-    // /*! be done with the build, and save all value to the xml/bin
-    //   file of 'fileName' and 'filename+"bin"' */
-    // template<int N, typename T>
-    // void BrickTreeBuilder<N,T>::save(const std::string &ospFileName, const vec3f &clipBoxSize)
-    // {
-    //   throw std::runtime_error("saving an individual sumerian not implemented yet (use multisum instead)");
-    // }
-
     /*! find or create value brick that contains given cell. if that
       brick (or any of its parents, indices referring to it, etc)
       does not exist, create and initialize whatever is required to
@@ -102,7 +94,7 @@ namespace ospray {
       int brickSize = brickSizeOf<N>(level);
 
       assert(reduce_max(coord) < brickSize);
-      int32 brickID = 0; 
+      int32_t brickID = 0; 
       while (brickSize > N) {
         int cellSize = brickSize / N;
 
@@ -142,12 +134,12 @@ namespace ospray {
       db->value[coord.z % N][coord.y % N][coord.x % N] = v;
     }
 
-    template struct BrickTreeBuilder<2,uint8>;
-    template struct BrickTreeBuilder<4,uint8>;
-    template struct BrickTreeBuilder<8,uint8>;
-    template struct BrickTreeBuilder<16,uint8>;
-    template struct BrickTreeBuilder<32,uint8>;
-    template struct BrickTreeBuilder<64,uint8>;
+    template struct BrickTreeBuilder<2,uint8_t>;
+    template struct BrickTreeBuilder<4,uint8_t>;
+    template struct BrickTreeBuilder<8,uint8_t>;
+    template struct BrickTreeBuilder<16,uint8_t>;
+    template struct BrickTreeBuilder<32,uint8_t>;
+    template struct BrickTreeBuilder<64,uint8_t>;
 
     template struct BrickTreeBuilder<2,float>;
     template struct BrickTreeBuilder<4,float>;

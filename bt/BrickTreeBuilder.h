@@ -17,6 +17,8 @@
 #pragma once
 
 #include "BrickTree.h"
+// std
+#include <mutex>
 
 #ifdef OSPRAY_TASKING_TBB
 #  include <tbb/parallel_for.h>
@@ -26,9 +28,9 @@
 namespace ospray {
   namespace bt {
 
+    /*! builds ONE bricktree - NOT a forest of them; just a single one */
     template<int N, typename T>
     struct BrickTreeBuilder
-      // : public BrickTree<N,T>::Builder 
     {
       BrickTreeBuilder();
       ~BrickTreeBuilder();
@@ -45,13 +47,13 @@ namespace ospray {
         have this node */
       typename BrickTree<N,T>::ValueBrick *findValueBrick(const vec3i &coord, int level);
 
-      int32 newValueBrick();
+      int32_t newValueBrick();
 
       /*! get index brick for given value brick ID - create if required */
-      typename BrickTree<N,T>::IndexBrick *getIndexBrickFor(int32 valueBrickID);
+      typename BrickTree<N,T>::IndexBrick *getIndexBrickFor(int32_t valueBrickID);
 
-      std::vector<int32> indexBrickOf;
-      std::vector<typename BrickTree<N,T>::ValueBrick *>  valueBrick;
+      std::vector<int32_t> indexBrickOf;
+      std::vector<typename BrickTree<N,T>::ValueBrick *> valueBrick;
       std::vector<typename BrickTree<N,T>::IndexBrick *> indexBrick;
 
       /*! be done with the build, and save all value to the xml/bin

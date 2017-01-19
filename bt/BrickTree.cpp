@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2017 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -25,20 +25,20 @@ namespace ospray {
     using std::flush;
 
     template<>
-    const char *typeToString<uint8>() { return "uint8"; };
+    const char *typeToString<uint8_t>() { return "uint8"; };
     template<>
     const char *typeToString<float>() { return "float"; };
     template<>
     const char *typeToString<double>() { return "double"; };
 
 
-    BrickTreeBase *BrickTreeBase::mapFrom(const void *ptr, 
-                                          const std::string &format, 
-                                          int BS, 
-                                          size_t superBlockOfs)
-    {
-      throw std::runtime_error("not implemented yet...");
-    }
+    // BrickTreeBase *BrickTreeBase::mapFrom(const void *ptr, 
+    //                                       const std::string &format, 
+    //                                       int BS, 
+    //                                       size_t superBlockOfs)
+    // {
+    //   throw std::runtime_error("not implemented yet...");
+    // }
     
 
 
@@ -52,10 +52,13 @@ namespace ospray {
     template<int N, typename T>
     void BrickTree<N,T>::ValueBrick::clear()
     {
-      for (int iz=0;iz<N;iz++)
-        for (int iy=0;iy<N;iy++)
-          for (int ix=0;ix<N;ix++)
-            value[iz][iy][ix] = 0.f;
+      array3D::for_each(vec3i(N),[&](const vec3i &idx) {
+          value[idx.z][idx.y][idx.x] = 0.f;
+        });
+      // for (int iz=0;iz<N;iz++)
+      //   for (int iy=0;iy<N;iy++)
+      //     for (int ix=0;ix<N;ix++)
+      //       value[iz][iy][ix] = 0.f;
     }
 
     template<int N, typename T>
@@ -78,45 +81,45 @@ namespace ospray {
     //   return r;
     // }
 
-    template<int N, typename T>
-    void BrickTree<N,T>::mapFrom(const unsigned char *ptr, 
-                           const vec3i &rootGrid,
-                           const vec3f &fracOfRootGrid,
-                           std::vector<int32_t> numValueBricksPerTree,
-                           std::vector<int32_t> numIndexBricksPerTree)
-    {
-      this->rootGridDims = rootGrid;
-      PRINT(rootGridDims);
-      this->validFractionOfRootGrid = fracOfRootGrid;
+    // template<int N, typename T>
+    // void BrickTree<N,T>::mapFrom(const unsigned char *ptr, 
+    //                              const vec3i &rootGrid,
+    //                              const vec3f &fracOfRootGrid,
+    //                              std::vector<int32_t> numValueBricksPerTree,
+    //                              std::vector<int32_t> numIndexBricksPerTree)
+    // {
+    //   this->rootGridDims = rootGrid;
+    //   PRINT(rootGridDims);
+    //   this->validFractionOfRootGrid = fracOfRootGrid;
 
-      const size_t numRootCells
-        = (size_t)rootGridDims.x 
-        * (size_t)rootGridDims.y
-        * (size_t)rootGridDims.z; 
-      int32_t *firstIndexBrickOfTree = new int32_t[numRootCells];
-      int32_t *firstValueBrickOfTree = new int32_t[numRootCells];
-      size_t sumIndex = 0;
-      size_t sumValue = 0;
-      for (size_t i=0;i<numRootCells;i++) {
-        firstIndexBrickOfTree[i] = sumIndex;
-        firstValueBrickOfTree[i] = sumValue;
-        sumValue += numValueBricksPerTree[i];
-        sumIndex += numIndexBricksPerTree[i];
-      }
-      this->firstIndexBrickOfTree = firstIndexBrickOfTree;
-      this->firstValueBrickOfTree = firstValueBrickOfTree;
+    //   const size_t numRootCells
+    //     = (size_t)rootGridDims.x 
+    //     * (size_t)rootGridDims.y
+    //     * (size_t)rootGridDims.z; 
+    //   int32_t *firstIndexBrickOfTree = new int32_t[numRootCells];
+    //   int32_t *firstValueBrickOfTree = new int32_t[numRootCells];
+    //   size_t sumIndex = 0;
+    //   size_t sumValue = 0;
+    //   for (size_t i=0;i<numRootCells;i++) {
+    //     firstIndexBrickOfTree[i] = sumIndex;
+    //     firstValueBrickOfTree[i] = sumValue;
+    //     sumValue += numValueBricksPerTree[i];
+    //     sumIndex += numIndexBricksPerTree[i];
+    //   }
+    //   this->firstIndexBrickOfTree = firstIndexBrickOfTree;
+    //   this->firstValueBrickOfTree = firstValueBrickOfTree;
       
-      numValueBricks = sumValue;
-      numIndexBricks = sumIndex;
+    //   numValueBricks = sumValue;
+    //   numIndexBricks = sumIndex;
       
-      valueBrick = (const ValueBrick *)ptr;
-      ptr += numValueBricks * sizeof(ValueBrick);
+    //   valueBrick = (const ValueBrick *)ptr;
+    //   ptr += numValueBricks * sizeof(ValueBrick);
       
-      indexBrick = (const IndexBrick *)ptr;
-      ptr += numIndexBricks * sizeof(IndexBrick);
+    //   indexBrick = (const IndexBrick *)ptr;
+    //   ptr += numIndexBricks * sizeof(IndexBrick);
       
-      brickInfo = (const BrickInfo *)ptr;
-    }      
+    //   brickInfo = (const BrickInfo *)ptr;
+    // }      
 
     template<int N, typename T>
     double BrickTree<N,T>::ValueBrick::computeWeightedAverage(// coordinates of lower-left-front
@@ -138,7 +141,7 @@ namespace ospray {
             vec3i cellBegin = min(brickCoord*vec3i(brickSize)+vec3i(ix,iy,iz)*vec3i(cellSize),maxSize);
             vec3i cellEnd = min(cellBegin + vec3i(cellSize),maxSize);
 
-            float weight = reduce_mul(cellEnd-cellBegin);
+            float weight = (cellEnd-cellBegin).product();
             if (weight > 0.f) {
               den += weight;
               num += weight * value[iz][iy][ix];
@@ -150,16 +153,16 @@ namespace ospray {
       return num / den;
     }
 
-    template const char *typeToString<uint8>();
+    template const char *typeToString<uint8_t>();
     template const char *typeToString<float>();
     template const char *typeToString<double>();
 
-    template struct BrickTree<2,uint8>;
-    template struct BrickTree<4,uint8>;
-    template struct BrickTree<8,uint8>;
-    template struct BrickTree<16,uint8>;
-    template struct BrickTree<32,uint8>;
-    template struct BrickTree<64,uint8>;
+    template struct BrickTree<2,uint8_t>;
+    template struct BrickTree<4,uint8_t>;
+    template struct BrickTree<8,uint8_t>;
+    template struct BrickTree<16,uint8_t>;
+    template struct BrickTree<32,uint8_t>;
+    template struct BrickTree<64,uint8_t>;
 
     template struct BrickTree<2,float>;
     template struct BrickTree<4,float>;

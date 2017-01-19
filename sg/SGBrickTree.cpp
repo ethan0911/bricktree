@@ -18,6 +18,7 @@
 
 #include "SGBrickTree.h"
 #include "sg/module/Module.h"
+#include "ospray/common/OSPCommon.h"
 
 namespace ospray {
   namespace sg {

@@ -19,11 +19,14 @@
 #ifdef PARALLEL_MULTI_TREE_BUILD
 # include <tbb/task_scheduler_init.h>
 #endif
-
+// ospcommon
+#include "ospcommon/array3D/Array3D.h"
 
 namespace ospray {
   namespace bt {
 
+    using namespace array3D;
+    
     using std::endl;
     using std::cout;
 
@@ -50,7 +53,7 @@ namespace ospray {
     template<int N, typename T>
     struct BlockBuilder : public BrickTreeBuilder<N,T> {
       
-      BlockBuilder(const Array3D<T> *input, 
+      BlockBuilder(std::shared_ptr<Array3D<T>> input, 
                    // BrickTreeBuilder<N,T> *builder,
                    int blockWidth,
                    float threshold
@@ -73,31 +76,31 @@ namespace ospray {
 
       Range<double> valueRange;
       double        averageValue;
-      const Array3D<T> *input;
+      const std::shared_ptr<Array3D<T>> input;
       const float threshold;
       const int blockWidth;
     };
 
     template<typename T>
-    const Array3D<T> *openInput(const std::string &format,
-                                const vec3i &dims,
-                                const std::string &inFileName)
+    std::shared_ptr<Array3D<T>> openInput(const std::string &format,
+                                                const vec3i &dims,
+                                                const std::string &inFileName)
     {
-      const Array3D<T> *input = NULL;
+      std::shared_ptr<Array3D<T>> input;
       cout << "mmapping RAW file (" << dims << ":" << typeToString<T>() << "):" 
            << inFileName << endl;
         
       if (format == "") {
         input = mmapRAW<T>(inFileName,dims);
       } else if (format == "uint8") {
-        const Array3D<uint8> *input_uint8 = mmapRAW<uint8>(inFileName,dims);
-        input = new Array3DAccessor<uint8,T>(input_uint8);
+        std::shared_ptr<Array3D<uint8_t>> input_uint8 = mmapRAW<uint8_t>(inFileName,dims);
+        input = std::make_shared<Array3DAccessor<uint8_t,T>>(input_uint8);
       } else if (format == "float") {
-        const Array3D<float> *input_float = mmapRAW<float>(inFileName,dims);
-        input = new Array3DAccessor<float,T>(input_float);
+        std::shared_ptr<Array3D<float>> input_float = mmapRAW<float>(inFileName,dims);
+        input = std::make_shared<Array3DAccessor<float,T>>(input_float);
       } else if (format == "double") {
-        const Array3D<double> *input_double = mmapRAW<double>(inFileName,dims);
-        input = new Array3DAccessor<double,T>(input_double);
+        std::shared_ptr<Array3D<double>> input_double = mmapRAW<double>(inFileName,dims);
+        input = std::make_shared<Array3DAccessor<double,T>>(input_double);
       } else
         throw std::runtime_error("unsupported format '"+format+"'");
         
@@ -105,9 +108,9 @@ namespace ospray {
     }
 
     template<typename T>
-    const Array3D<T> *openInput(const std::string &format,
-                                const vec3i &dims,
-                                const std::vector<std::string> &inFileName)
+    std::shared_ptr<Array3D<T>> openInput(const std::string &format,
+                                                const vec3i &dims,
+                                                const std::vector<std::string> &inFileName)
     {
       if (inFileName.size() == 1) 
         return openInput<T>(format,dims,inFileName[0]);
@@ -115,14 +118,14 @@ namespace ospray {
         cout << "=======================================================" << endl;
         cout << "looks like a multi-slice input of " << dims.z << " slices" << endl;
         cout << "=======================================================" << endl;
-        std::vector<const Array3D<T> *> slices;
+        std::vector<std::shared_ptr<Array3D<T>>> slices;
         const vec3i sliceDims(dims.x,dims.y,1);
         for (int z=0;z<dims.z;z++) {
           slices.push_back(openInput<T>(format,sliceDims,inFileName[z]));
           assert(slices.back()->size().z == 1);
           assert(slices.back()->size() == slices[0]->size());
         }
-        return new MultiSliceArray3D<T>(slices);
+        return std::make_shared<MultiSliceArray3D<T>>(slices);
       } else
         throw std::runtime_error("do not understand input - neither a single raw file, now what looks like a multi-slice input!?");
     }
@@ -174,7 +177,7 @@ namespace ospray {
       // now, compute average of this node - we need this even if the node gets killed...
       avg = db.computeWeightedAverage(begin,levelWidth,input->size());        
 
-      if ((range.hi - range.lo) <= threshold)
+      if ((range.upper - range.lower) <= threshold)
         {
           // do not set any fields - kill that brick
         } 
@@ -205,8 +208,8 @@ namespace ospray {
                  const float threshold,
                  const int blockDepth)
     {
-      const Array3D<T> *org_input = openInput<T>(inputFormat,dims,inFileName);
-      const Array3D<T> *input = new SubBoxArray3D<T>(org_input,clipBox);
+      std::shared_ptr<Array3D<T>> org_input = openInput<T>(inputFormat,dims,inFileName);
+      std::shared_ptr<Array3D<T>> input = std::make_shared<SubBoxArray3D<T>>(org_input,clipBox);
       // threshold = 0.f;
 
       std::string inputFilesString = "";
@@ -302,7 +305,7 @@ namespace ospray {
         blockDims.upper = min(blockDims.lower+vec3i(blockWidth),input->size());
         cout << "building block " << blockID << "/" << numBlocks << " (" << (int)(100.f*blockID/float(numBlocks)) << "%) " << blockIdx << " / " << rootGridSize << ", coords = " << blockDims << endl;
         cout << "reading in actual block data" << endl;
-        ActualArray3D<T> *blockInput = new ActualArray3D<T>(blockDims.size());
+        std::shared_ptr<ActualArray3D<T>> blockInput = std::make_shared<ActualArray3D<T>>(blockDims.size());
         tbb::parallel_for(0, (int)blockDims.size().z, 1, [&](int iz){
             for (int iy=0;iy<blockDims.size().y;iy++)
               for (int ix=0;ix<blockDims.size().x;ix++)
@@ -359,7 +362,7 @@ namespace ospray {
         fprintf(osp,"  <BrickTree>\n");
         {
           fprintf(osp,"    averageValue=\"%f\"\n",averageValue);
-          fprintf(osp,"    valueRange=\"%f %f\"\n",valueRange.lo,valueRange.hi);
+          fprintf(osp,"    valueRange=\"%f %f\"\n",valueRange.lower,valueRange.upper);
           fprintf(osp,"    format=\"%s\"\n",typeToString<T>());
           fprintf(osp,"    brickSize=\"%i\"\n",N);
           fprintf(osp,"    validSize=\"%i %i %i\"\n",validSize.x,validSize.y,validSize.z);
@@ -388,7 +391,7 @@ namespace ospray {
                  const int blockDepth)
     {
       if (treeFormat == "uint8")
-        buildIt<N,uint8>(blockID,inputFormat,dims,inFileName,outFileName,clipBox,threshold,blockDepth);
+        buildIt<N,uint8_t>(blockID,inputFormat,dims,inFileName,outFileName,clipBox,threshold,blockDepth);
       else if (treeFormat == "float")
         buildIt<N,float>(blockID,inputFormat,dims,inFileName,outFileName,clipBox,threshold,blockDepth);
       else if (treeFormat == "double")

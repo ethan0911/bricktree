@@ -2,7 +2,7 @@
 # data format loaders etc
 # -------------------------------------------------------
 OSPRAY_ADD_LIBRARY(ospray_bricktree SHARED
-  Array3D.cpp
+#  Array3D.cpp
   BrickTree.cpp
   BrickTreeBuilder.cpp
   )

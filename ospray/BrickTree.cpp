@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2017 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,11 +14,16 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+// this - ospray plugin
 #include "BrickTree.h"
+// this - actual bricktree data structure
+#include "../bt/BrickTree.h"
 // ospray
 #include "ospray/common/Model.h"
 #include "ospray/common/Data.h"
 #include "ospray/transferFunction/TransferFunction.h"
+// ospcommon
+#include "ospcommon/FileName.h"
 // ispc exports
 #include "BrickTree_ispc.h"
 // stl
@@ -36,11 +41,15 @@ namespace ospray {
     /*! the actual sampler code for a bricktree; to be specialized for
       bricksize, voxel type, etcpp */
     template<typename T, int N>
-    struct BrickTreeSampler : public ScalarVolumeSampler
+    struct BrickTreeForestSampler : public ScalarVolumeSampler
     {
-      BrickTreeSampler(BrickTreeVolume *btv)
+      BrickTreeForestSampler(BrickTreeVolume *btv)
         : btv(btv)
-      {}
+      {
+        PING;
+        forest = std::make_shared<bt::BrickTreeForest<N,T> >(btv->gridSize,btv->validSize,
+                                                             FileName(btv->fileName).dropExt());
+      }
       
       /*! compute sample at given position */
       virtual float computeSample(const vec3f &pos) const override
@@ -50,6 +59,7 @@ namespace ospray {
       virtual vec3f computeGradient(const vec3f &pos) const override
       { PING; return vec3f(1,0,0); }
 
+      std::shared_ptr<bt::BrickTreeForest<N,T> > forest;
       BrickTreeVolume *btv;
     };
     
@@ -88,7 +98,7 @@ namespace ospray {
     template<typename T, int N>
     ScalarVolumeSampler *BrickTreeVolume::createSamplerTN()
     {
-      return new BrickTreeSampler<T,N>(this);
+      return new BrickTreeForestSampler<T,N>(this);
     }
     
     template<typename T>

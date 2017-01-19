@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2015 Intel Corporation                                    //
+// Copyright 2009-2017 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -17,12 +17,18 @@
 #pragma once
 
 // ospray
-#include "Array3D.h"
+#include "ospcommon/array3D/Array3D.h"
+#include "ospcommon/box.h"
+// ospcommon
+#include "ospcommon/FileName.h"
 // std
 #include <iostream>
+#include <vector>
 
 namespace ospray {
   namespace bt {
+
+    using namespace ospcommon;
 
     template<typename T>
     const char *typeToString();
@@ -30,12 +36,12 @@ namespace ospray {
     struct BrickTreeBase {
       virtual std::string voxelType() const = 0;
       virtual int         brickSize() const = 0;
-      virtual const void *brickInfoPtr()  const = 0;
-      virtual const void *valueBrickPtr()  const = 0;
-      virtual const void *indexBrickPtr() const = 0;
+      // virtual const void *brickInfoPtr()  const = 0;
+      // virtual const void *valueBrickPtr()  const = 0;
+      // virtual const void *indexBrickPtr() const = 0;
       virtual vec3i getRootGridDims() const = 0;
-      virtual const int *firstIndexBrickOfTreePtr() const = 0;
-      virtual const int *firstValueBrickOfTreePtr() const = 0;
+      // virtual const int *firstIndexBrickOfTreePtr() const = 0;
+      // virtual const int *firstValueBrickOfTreePtr() const = 0;
 
       static BrickTreeBase *mapFrom(const void *ptr, 
                                     const std::string &format, 
@@ -99,32 +105,30 @@ namespace ospray {
         ... (see BrickInfo description) */
       struct IndexBrick {
         void clear(); 
-        int32 childID[N][N][N];
+        int32_t childID[N][N][N];
       };
       struct BrickInfo {
-        BrickInfo(int32 ID=invalidID()) : indexBrickID(ID) {};
+        BrickInfo(int32_t ID=invalidID()) : indexBrickID(ID) {};
         
         /*! gives the ID of the index brick that encodes the children
           for the current brick. if the current brick doesn't HAVE any
           children, this will be (int32)-1 */
-        int32 indexBrickID; 
+        int32_t indexBrickID; 
       }; 
 
-      void mapFrom(const unsigned char *ptr, 
-                   const vec3i &rootGrid,
-                   const vec3f &fracOfRootGrid,
-                   std::vector<int32_t> numValueBricksPerTree,
-                   std::vector<int32_t> numIndexBricksPerTree);
+      // void mapFrom(const unsigned char *ptr, 
+      //              const vec3i &rootGrid,
+      //              const vec3f &fracOfRootGrid,
+      //              std::vector<int32_t> numValueBricksPerTree,
+      //              std::vector<int32_t> numIndexBricksPerTree);
 
-      virtual const void *brickInfoPtr()  const override { return brickInfo; }
-      virtual const void *valueBrickPtr()  const override { return valueBrick; }
-      virtual const void *indexBrickPtr() const override { return indexBrick; }
+      // virtual const void *brickInfoPtr()  const override { return brickInfo; }
+      // virtual const void *valueBrickPtr()  const override { return valueBrick; }
+      // virtual const void *indexBrickPtr() const override { return indexBrick; }
 
       const ValueBrick *valueBrick;
       const IndexBrick *indexBrick;
-      const BrickInfo *brickInfo;
-
-      // virtual void saveTo(FILE *bin, size_t &superBlockOfs) override;
+      const BrickInfo  *brickInfo;
 
       virtual vec3i getRootGridDims() const override { return rootGridDims; }
 
@@ -132,15 +136,24 @@ namespace ospray {
          the first index brick in the (shared) value brick array */
       const int32_t *firstIndexBrickOfTree;
 
-      virtual const int *firstIndexBrickOfTreePtr() const override { return firstIndexBrickOfTree; } ;
-      virtual const int *firstValueBrickOfTreePtr() const override { return firstValueBrickOfTree; } ;
+      // virtual const int *firstIndexBrickOfTreePtr() const override { return firstIndexBrickOfTree; } ;
+      // virtual const int *firstValueBrickOfTreePtr() const override { return firstValueBrickOfTree; } ;
 
       /* gives, for each root cell / tree in the root grid, the ID of
          the first value brick in the (shared) value brick array */
       const int32_t *firstValueBrickOfTree;
     };
-    
-    // =======================================================
+
+    /* a entire *FOREST* of bricktrees */
+    template<int N, typename T=float>
+    struct BrickTreeForest {
+      BrickTreeForest(const vec3i &rootGridSize,
+                      const vec3i &originalVolumeSize,
+                      const FileName &brickFileBase);
+      std::vector<BrickTree<N,T> > tree;
+    };
+
+      // =======================================================
     // INLINE IMPLEMENTATION SECTION 
     // =======================================================
     
