@@ -1,15 +1,14 @@
 # -------------------------------------------------------
 # data format loaders etc
 # -------------------------------------------------------
-OSPRAY_ADD_LIBRARY(ospray_bricktree SHARED
-#  Array3D.cpp
+OSPRAY_CREATE_LIBRARY(ospray_bricktree 
   BrickTree.cpp
   BrickTreeBuilder.cpp
-  )
+  # Array3D.cpp
 
-OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_bricktree
+  LINK
   ospray_common
   ospray_xml
-  ospray
+  ospray  
   )
 

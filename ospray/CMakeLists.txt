@@ -1,12 +1,11 @@
-OSPRAY_ADD_LIBRARY(ospray_module_bricktree SHARED
+OSPRAY_CREATE_LIBRARY(ospray_module_bricktree
   BrickTree.ispc
   BrickTree.cpp
   Module.cpp
-#  MSNearestNeighbor.ispc
-#  MSFinestLevel.ispc
-  )
+  # MSNearestNeighbor.ispc
+  # MSFinestLevel.ispc
 
-OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_module_bricktree
+  LINK
   ospray_bricktree
   ospray
-  )
+)

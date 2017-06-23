@@ -1,10 +1,10 @@
 # -----------------------------------------------------
 # scene graph plugin
 # -----------------------------------------------------
-ADD_LIBRARY(ospray_sg_bricktree SHARED
+OSPRAY_CREATE_LIBRARY(ospray_sg_bricktree
   SGBrickTree.cpp
-  )
-OSPRAY_LIBRARY_LINK_LIBRARIES(ospray_sg_bricktree
+
+  LINK
   ospray_bricktree
   ospray_sg
   ${HDF5_LIBRARIES}

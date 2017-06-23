@@ -46,7 +46,7 @@ IF (OSPRAY_MODULE_BRICKTREE)
     # -----------------------------------------------------
     # scene graph plugin
     # -----------------------------------------------------
-    ADD_SUBDIRECTORY(sg)
+    # ADD_SUBDIRECTORY(sg)
     
     # -----------------------------------------------------
     # converter tools
