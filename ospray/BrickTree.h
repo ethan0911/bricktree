@@ -22,62 +22,69 @@
 #include "../bt/BrickTree.h"
 
 namespace ospray {
-  namespace bt {
-
-    /*! abstract base class for any type of scalar volume sampler 
-
-      we will eventually specialize this for bricktree further below
-    */
-    struct ScalarVolumeSampler
-    {
-      /*! compute sample at given position */
-      virtual float computeSample(const vec3f &pos) const = 0;
+    namespace bt {
+	
+	/*! \brief Abstract base class for any type of scalar volume sampler
+	 *
+	 *  we will eventually specialize this for bricktree further below
+	 */
+	struct ScalarVolumeSampler
+	{
+	    /*! compute sample at given position */
+	    virtual float computeSample(const vec3f &pos) const = 0;
       
-      /*! compute gradient at given position */
-      virtual vec3f computeGradient(const vec3f &pos) const = 0;
-    };
+	    /*! compute gradient at given position */
+	    virtual vec3f computeGradient(const vec3f &pos) const = 0;
+	};
 
-    /*! the actual C++ implementation of an ospray bricktree volume type 
+	/*! \brief The actual C++ implementation of an ospray bricktree volume
+	 *  type
+	 *
+	 *  note this only maintains all kind of ospray state fo rthis
+	 *  object; the actual sampling is done in the sampler defined in
+	 *  the implementation file 
+	 */
+	struct BrickTreeVolume : public ospray::Volume
+	{
+	    BrickTreeVolume();
+
+	    //! \brief common function to help printf-debugging 
+	    virtual std::string toString() const { 
+		return "ospray::bt::BrickTreeVolume"; 
+	    }
+
+	    //! Allocate storage and populate the volume.
+	    virtual void commit();
+
+	    //! Copy voxels into the volume at the given index 
+	    //  (non-zero return value indicates success).
+	    virtual int setRegion
+		(const void *source, const vec3i &index, const vec3i &count)
+		override;
+
+	    /*! create specialization of sampler for given type and brick size
+	     */
+	    template<typename T, int N>
+		ScalarVolumeSampler *createSamplerTN();
+	    /*! create specialization of sampler for given type */
+	    template<typename T>
+		ScalarVolumeSampler *createSamplerT();
+	    /*! create specialization of sampler given values for brick size
+	     *  an dtype 
+	     */
+	    ScalarVolumeSampler *createSampler();
+	    ScalarVolumeSampler *sampler;
       
-      note this only maintains all kind of ospray state fo rthis
-      object; the actual sampling is done in the sampler defined in
-      the implementation file */
-    struct BrickTreeVolume : public ospray::Volume
-    {
-      BrickTreeVolume();
-
-      //! \brief common function to help printf-debugging 
-      virtual std::string toString() const { return "ospray::bt::BrickTreeVolume"; }
-
-      //! Allocate storage and populate the volume.
-      virtual void commit();
-
-      //! Copy voxels into the volume at the given index (non-zero return value indicates success).
-      virtual int setRegion(const void *source, const vec3i &index, const vec3i &count) override;
-
-      /*! create specialization of sampler for given type and brick size */
-      template<typename T, int N>
-      ScalarVolumeSampler *createSamplerTN();
-      /*! create specialization of sampler for given type */
-      template<typename T>
-      ScalarVolumeSampler *createSamplerT();
-      /*! create specialization of sampler given values for brick size an dtype */
-      ScalarVolumeSampler *createSampler();
-
-
-      ScalarVolumeSampler *sampler;
-      
-      vec3i       gridSize;
-      vec3i       validSize;
-      vec3f       validFractionOfRootGrid;
-      int         depth;
-      int         brickSize;
-      int         blockWidth;
-      std::string fileName;
-      std::string format;
-      OSPDataType voxelType;
-    };
-    
-  }
+	    vec3i       gridSize;
+	    vec3i       validSize;
+	    vec3f       validFractionOfRootGrid;
+	    int         depth;
+	    int         brickSize;
+	    int         blockWidth;
+	    std::string fileName;
+	    std::string format;
+	    OSPDataType voxelType;
+	};    
+    }
 }
 

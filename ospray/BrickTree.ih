@@ -22,25 +22,26 @@
 #include "ospray/geometry/Geometry.ih"
 
 struct range1f {
-  float lo, hi;
+    float lo, hi;
 };
 
-/*! ispc-side implementation of the bricktree object 
-
-  note we don't actually do anything serious on the ispc side fo this
-  object, yet, but the rest of ospray requires some ispc side object
-  to exist for any of its actors; so this 'dummy' exists mainly to be
-  able to plug it into ospray - it will actually call back to the
-  scalar c++ implementation for each sample */
+/*! \brief ispc-side implementation of the bricktree object 
+ *
+ * note we don't actually do anything serious on the ispc side fo this
+ * object, yet, but the rest of ospray requires some ispc side object
+ * to exist for any of its actors; so this 'dummy' exists mainly to be
+ * able to plug it into ospray - it will actually call back to the
+ * scalar c++ implementation for each sample 
+*/
 struct BrickTreeVolume {
-  //! inherited from superclass
-  Volume    super;
+    //! inherited from superclass
+    Volume    super;
   
-  //! pointer to the c++-side object (since we do everything scalar for now)
-  void     *cppObject;
+    //! pointer to the c++-side object (since we do everything scalar for now)
+    void     *cppObject;
   
-  //! pointer to a c++-side sampler object (maintained on cpp side
-  void     *cppSampler; 
+    //! pointer to a c++-side sampler object (maintained on cpp side
+    void     *cppSampler; 
 };
 
 

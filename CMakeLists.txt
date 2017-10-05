@@ -17,7 +17,7 @@
 #CONFIGURE_OSPRAY()
 
 # mini-scene graph viewer for _geometry_ (intentionally simple)
-OPTION(OSPRAY_MODULE_BRICKTREE "BrickTree (testing)" ON)
+OPTION(OSPRAY_MODULE_BRICKTREE "BrickTree (testing)" OFF)
 
 IF (OSPRAY_MODULE_BRICKTREE)
   FIND_PACKAGE(HDF5 REQUIRED)

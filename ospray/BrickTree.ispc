@@ -18,26 +18,26 @@
 #include "ospray/math/vec.ih"
 #include "ospray/math/AffineSpace.ih"
 #include "ospray/common/Ray.ih"
-#include "ospray/geometry/Geometry.ih"
 #include "ospray/common/Model.ih"
+#include "ospray/geometry/Geometry.ih"
 #include "ospray/transferFunction/LinearTransferFunction.ih"
 // this module
 #include "BrickTree.ih"
 // embree
 #include "embree2/rtcore.isph"
 
-
 //! Find the next hit point in the volume for ray casting based renderers.
 static void BrickTreeVolume_intersect(void *uniform _self, 
-                                      varying Ray &ray)
+                                      varying Ray &ray,
+				      const varying float samplingRate)
 {
-  BrickTreeVolume *uniform self = (BrickTreeVolume *uniform) _self;
+    BrickTreeVolume *uniform self = (BrickTreeVolume *uniform) _self;
   
-  // TODO: clean this up, properly implemnt an integrator with
-  // variable step size...
-  const uniform float step
-    = self->super.samplingStep / self->super.samplingRate;
-  ray.t0 += step;
+    // TODO: clean this up, properly implemnt an integrator with
+    // variable step size...
+    const varying float step
+	= self->super.samplingStep / samplingRate;
+    ray.t0 += step;
 }
 
 extern "C" unmasked uniform float BrickTree_scalar_computeSample(void *uniform cppObject,
@@ -45,13 +45,13 @@ extern "C" unmasked uniform float BrickTree_scalar_computeSample(void *uniform c
 
 static float BrickTreeVolume_computeSample(void *uniform _self, const vec3f &samplePos)
 {
-  BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
-  uniform vec3f uSamplePos[programCount];
-  uniform float uReturnValue[programCount];
-  uSamplePos[programIndex] = samplePos;
-  foreach_active(lane)
-    uReturnValue[lane] = BrickTree_scalar_computeSample(self->cppSampler,uSamplePos[lane]);
-  return uReturnValue[programIndex];
+    BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
+    uniform vec3f uSamplePos[programCount];
+    uniform float uReturnValue[programCount];
+    uSamplePos[programIndex] = samplePos;
+    foreach_active(lane)
+	uReturnValue[lane] = BrickTree_scalar_computeSample(self->cppSampler,uSamplePos[lane]);
+    return uReturnValue[programIndex];
 }
 
 extern "C" unmasked uniform vec3f BrickTree_scalar_computeGradient(void *uniform cppObject,
@@ -59,22 +59,22 @@ extern "C" unmasked uniform vec3f BrickTree_scalar_computeGradient(void *uniform
 
 static vec3f BrickTreeVolume_computeGradient(void *uniform _self, const vec3f &samplePos)
 {
-  BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
-  uniform vec3f uSamplePos[programCount];
-  uniform vec3f uReturnValue[programCount];
-  uSamplePos[programIndex] = samplePos;
-  foreach_active(lane)
-    uReturnValue[lane] = BrickTree_scalar_computeGradient(self->cppSampler,uSamplePos[lane]);
-  return uReturnValue[programIndex];
+    BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
+    uniform vec3f uSamplePos[programCount];
+    uniform vec3f uReturnValue[programCount];
+    uSamplePos[programIndex] = samplePos;
+    foreach_active(lane)
+	uReturnValue[lane] = BrickTree_scalar_computeGradient(self->cppSampler,uSamplePos[lane]);
+    return uReturnValue[programIndex];
 }
 
 
 export void *uniform BrickTreeVolume_create(void *uniform cppEquivalent) 
 {
-  BrickTreeVolume *uniform self = uniform new uniform BrickTreeVolume;
-  Volume_Constructor(&self->super,cppEquivalent);
+    BrickTreeVolume *uniform self = uniform new uniform BrickTreeVolume;
+    Volume_Constructor(&self->super,cppEquivalent);
   
-  return self;
+    return self;
 };
  
 export void BrickTreeVolume_set(void *uniform _self,
@@ -84,37 +84,34 @@ export void BrickTreeVolume_set(void *uniform _self,
                                 void *uniform cppObject,
                                 void *uniform cppSampler)
 {
-  BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
-  assert(self);
+    BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
+    assert(self);
   
-  self->super.boundingBox.lower = make_vec3f(0.f);
-  self->super.boundingBox.upper = make_vec3f(validSize);
+    self->super.boundingBox.lower = make_vec3f(0.f);
+    self->super.boundingBox.upper = make_vec3f(validSize);
 
-  self->super.volumeClippingBox.lower = make_vec3f(0.f);
-  self->super.volumeClippingBox.upper = make_vec3f(validSize);
-  print("#osp:bricktree: bounds\n%\n%\n%\n%\n%\n%\n",
-        self->super.boundingBox.lower.x,
-        self->super.boundingBox.lower.y,
-        self->super.boundingBox.lower.z,
-        self->super.boundingBox.upper.x,
-        self->super.boundingBox.upper.y,
-        self->super.boundingBox.upper.z);
+    self->super.volumeClippingBox.lower = make_vec3f(0.f);
+    self->super.volumeClippingBox.upper = make_vec3f(validSize);
+    print("#osp:bricktree: bounds\n%\n%\n%\n%\n%\n%\n",
+	  self->super.boundingBox.lower.x,
+	  self->super.boundingBox.lower.y,
+	  self->super.boundingBox.lower.z,
+	  self->super.boundingBox.upper.x,
+	  self->super.boundingBox.upper.y,
+	  self->super.boundingBox.upper.z);
   
-  self->super.computeGradient = &BrickTreeVolume_computeGradient;
+    self->super.computeGradient = &BrickTreeVolume_computeGradient;
   
-  self->super.samplingRate = 1.f;//samplingRate;
-  self->super.samplingStep = .1f;
+    self->super.samplingRate = 1.f;//samplingRate;
+    self->super.samplingStep = .1f;
   
-  self->super.gradientShadingEnabled = 0;
+    self->super.gradientShadingEnabled = 0;
   
-  self->super.transferFunction = (TransferFunction *uniform)_xf;
+    self->super.transferFunction = (TransferFunction *uniform)_xf;
 
-  self->super.intersect        = &BrickTreeVolume_intersect;
-  self->super.computeSample    = &BrickTreeVolume_computeSample;
+    self->super.stepRay          = &BrickTreeVolume_intersect;
+    self->super.sample           = &BrickTreeVolume_computeSample;
 
-  self->cppObject              = cppObject;
-  self->cppSampler             = cppSampler;
+    self->cppObject              = cppObject;
+    self->cppSampler             = cppSampler;
 }
-
-
-
