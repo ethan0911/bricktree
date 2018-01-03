@@ -31,7 +31,7 @@ namespace ospray {
     struct ScalarVolumeSampler
     {
       /*! compute sample at given position */
-      virtual float computeSample(const vec3f &pos) const = 0;
+      virtual float sample(const vec3f &pos) const = 0;
       
       /*! compute gradient at given position */
       virtual vec3f computeGradient(const vec3f &pos) const = 0;

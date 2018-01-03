@@ -28,29 +28,30 @@
 
 
 //! Find the next hit point in the volume for ray casting based renderers.
-static void BrickTreeVolume_intersect(void *uniform _self, 
-                                      varying Ray &ray)
+static void BrickTreeVolume_stepRay(void *uniform _self, 
+                                      varying Ray &ray,
+                                      const varying float samplingRate)
 {
   BrickTreeVolume *uniform self = (BrickTreeVolume *uniform) _self;
   
   // TODO: clean this up, properly implemnt an integrator with
   // variable step size...
-  const uniform float step
-    = self->super.samplingStep / self->super.samplingRate;
+  const float step
+    = self->super.samplingStep / samplingRate; //self->super.samplingRate;
   ray.t0 += step;
 }
 
-extern "C" unmasked uniform float BrickTree_scalar_computeSample(void *uniform cppObject,
+extern "C" unmasked uniform float BrickTree_scalar_sample(void *uniform cppObject,
                                                                  uniform vec3f &samplePos);
 
-static float BrickTreeVolume_computeSample(void *uniform _self, const vec3f &samplePos)
+static float BrickTreeVolume_sample(void *uniform _self, const vec3f &samplePos)
 {
   BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
   uniform vec3f uSamplePos[programCount];
   uniform float uReturnValue[programCount];
   uSamplePos[programIndex] = samplePos;
   foreach_active(lane)
-    uReturnValue[lane] = BrickTree_scalar_computeSample(self->cppSampler,uSamplePos[lane]);
+    uReturnValue[lane] = BrickTree_scalar_sample(self->cppSampler,uSamplePos[lane]);
   return uReturnValue[programIndex];
 }
 
@@ -109,8 +110,8 @@ export void BrickTreeVolume_set(void *uniform _self,
   
   self->super.transferFunction = (TransferFunction *uniform)_xf;
 
-  self->super.intersect        = &BrickTreeVolume_intersect;
-  self->super.computeSample    = &BrickTreeVolume_computeSample;
+  self->super.stepRay          = &BrickTreeVolume_stepRay;
+  self->super.sample           = &BrickTreeVolume_sample;
 
   self->cppObject              = cppObject;
   self->cppSampler             = cppSampler;

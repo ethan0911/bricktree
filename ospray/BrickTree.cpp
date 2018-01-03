@@ -53,7 +53,7 @@ namespace ospray {
       }
       
       /*! compute sample at given position */
-      virtual float computeSample(const vec3f &pos) const override
+      virtual float sample(const vec3f &pos) const override
       { PING; return 0; }
       
       /*! compute gradient at given position */
@@ -66,11 +66,11 @@ namespace ospray {
     
     BrickTreeVolume::BrickTreeVolume()
       : Volume(),
+        sampler(NULL),
         gridSize(-1),
         validSize(-1),
         brickSize(-1),
-        fileName("<none>"),
-        sampler(NULL)
+        fileName("<none>")
     {
       ispcEquivalent = ispc::BrickTreeVolume_create(this);
     }
@@ -82,10 +82,10 @@ namespace ospray {
 
     /*! callback function called by ispc sampling code to compute a
         gradient at given sample pos in this (c++-only) module */
-    extern "C" float BrickTree_scalar_computeSample(ScalarVolumeSampler *cppSampler,
+    extern "C" float BrickTree_scalar_sample(ScalarVolumeSampler *cppSampler,
                                                     const vec3f &samplePos)
     {
-      return cppSampler->computeSample(samplePos);
+      return cppSampler->sample(samplePos);
     }
 
     /*! callback function called by ispc sampling code to compute a
