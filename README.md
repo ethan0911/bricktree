@@ -88,10 +88,10 @@ build a bricktree with N=4, T=float, and depth=4 (ie, 256^3 blocks)
 for the 512^3 float magnetic data set, without any sort of data
 conversion or compression, use the following command:
 
-  ./ospRaw2Bricks \
-    --format float -dims 512 512 512 \
-    ../../../data/magnetic-512-volume/magnetic-512-volume.raw \
-    -bs 4 --depth 4 -t 0.028 \
+  ./ospRaw2Bricks
+    --format float -dims 512 512 512 
+    ../../../data/magnetic-512-volume/magnetic-512-volume.raw 
+    -bs 4 --depth 4 -t 0.028 
     -o ../../../data/magnetic-512-volume/magnetic-bt-t0028/magnetic-bt
 
   make -f ../../../data/magnetic-512-volume/magnetic-bt-t0028/magnetic-bt.mak
@@ -140,10 +140,10 @@ To render a bricktree, use "ospBrickBench" or "ospBrickWidget" tool.
 Transferfunction value range need to be set and the transferfunction is
 hard coded in impiTFN.h right now if you use "ospBrickBench" tool. 
 
-  ./ospBrickBench \
-    ../../../data/magnetic-512-volume/magnetic-bt-t0028/magnetic-bt.osp \
+  ./ospBrickBench 
+    ../../../data/magnetic-512-volume/magnetic-bt-t0028/magnetic-bt.osp 
     -valueRange 0 1.5 -vp 819.971 691.151 422.003 -vi 0 0 0 -vu -0.0141113 0.949951 -0.0297289 -o bt-t-0028 
-/*Is not yet implemented. SOme of the boilerplate code for loading scne
-/*graph nodes is alreay available, but does not do anything yet.
+#Is not yet implemented. SOme of the boilerplate code for loading scne
+#graph nodes is alreay available, but does not do anything yet.
 
 
