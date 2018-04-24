@@ -175,22 +175,22 @@ namespace ospray {
             }
       }
       // now, compute average of this node - we need this even if the node gets killed...
-      avg = db.computeWeightedAverage(begin,levelWidth,input->size());        
+      avg = db.computeWeightedAverage(begin,levelWidth,input->size());
 
-      if ((range.upper - range.lower) <= threshold)
-        {
-          // do not set any fields - kill that brick
-        } 
-      else {
+      if ((range.upper - range.lower) <= threshold) {
+        // float r = range.upper - range.lower;
+        // std::cout<<"t: " <<threshold << " r: "<<r<<std::endl;
+        // do not set any fields - kill that brick
+      } else {
         // need to actually create this brick:
-        for (int iz=0;iz<N;iz++)
-          for (int iy=0;iy<N;iy++)
-            for (int ix=0;ix<N;ix++) {
-              const vec3i cellID = N*begin + vec3i(ix,iy,iz);
-              if (cellID.x*cellSize < input->size().x &&
-                  cellID.y*cellSize < input->size().y &&
-                  cellID.z*cellSize < input->size().z) {
-                this->set(cellID,level,db.value[iz][iy][ix]);
+        for (int iz = 0; iz < N; iz++)
+          for (int iy = 0; iy < N; iy++)
+            for (int ix = 0; ix < N; ix++) {
+              const vec3i cellID = N * begin + vec3i(ix, iy, iz);
+              if (cellID.x * cellSize < input->size().x &&
+                  cellID.y * cellSize < input->size().y &&
+                  cellID.z * cellSize < input->size().z) {
+                this->set(cellID, level, db.value[iz][iy][ix]);
               }
             }
       }
@@ -218,7 +218,9 @@ namespace ospray {
       int blockWidth = 1;
       for (int i=0;i<blockDepth;i++)
         blockWidth *= N;
+      PRINT(blockWidth);
       const vec3i rootGridSize = divRoundUp(input->size(),vec3i((int)blockWidth));
+      PRINT(rootGridSize);
       const size_t numBlocks = rootGridSize.product();
       if (numBlocks >= 1000000)
         throw std::runtime_error("too many blocks ... consider changing bricksisze or block depth");

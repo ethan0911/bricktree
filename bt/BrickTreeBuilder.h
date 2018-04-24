@@ -58,10 +58,20 @@ namespace ospray {
 
       /*! be done with the build, and save all value to the xml/bin
         file of 'fileName' and 'filename+"bin"' */
-      // virtual void save(const std::string &ospFileName, const vec3i &validSize) const override;
+      // virtual void save(const std::string &ospFileName, const vec3i
+      // &validSize) const override;
 
       int maxLevel;
     };
 
-  } // ::ospray::bt
-} // ::ospray
+    template <int N>
+    inline int brickSizeOf(int level)
+    {
+      int bs = N;
+      for (int i = 0; i < level; i++)
+        bs *= N;
+      return bs;
+    }
+
+  }  // namespace bt
+}  // namespace ospray

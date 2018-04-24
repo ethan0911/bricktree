@@ -16,7 +16,8 @@
 
 // own
 #include "BrickTree.h"
-#include "common/xml/XML.h"
+#include "ospcommon/xml/XML.h"
+#include "BrickTreeBuilder.h"
 
 // stdlib, for mmap
 #include <sys/types.h>
@@ -79,21 +80,29 @@ namespace ospray {
       std::shared_ptr<xml::XMLDoc> doc = xml::readXML(blockFileName);
       if (!doc)
         throw std::runtime_error("could not read brick tree .osp file '"+std::string(blockFileName)+"'");
-      std::shared_ptr<xml::Node> osprayNode = doc->child[0];
+      std::shared_ptr<xml::Node> osprayNode = std::make_shared<xml::Node>(doc->child[0]);
       assert(osprayNode->name == "ospray");
       
-      std::shared_ptr<xml::Node> brickTreeNode = osprayNode->child[0];
+      std::shared_ptr<xml::Node> brickTreeNode = std::make_shared<xml::Node>(osprayNode->child[0]);
       assert(brickTreeNode->name == "BrickTree");
 
-      std::shared_ptr<xml::Node> indexBricksNode  = brickTreeNode->child[0];
-      std::shared_ptr<xml::Node> valueBricksNode  = brickTreeNode->child[1];
-      std::shared_ptr<xml::Node> indexBrickOfNode = brickTreeNode->child[2];
+      avgValue = std::stof(brickTreeNode->getProp("averageValue"));
+      sscanf(brickTreeNode->getProp("valueRange").c_str(),"%f %f",&valueRange.x,&valueRange.y);
+      nBrickSize = std::stoi(brickTreeNode->getProp("brickSize"));
+      sscanf(brickTreeNode->getProp("validSize").c_str(),"%i %i %i",&validSize.x,&validSize.y,&validSize.z);
 
-      size_t indexBricksNum  = std::stoll(indexBricksNode->getProp("num"));
+      std::shared_ptr<xml::Node> indexBricksNode  = std::make_shared<xml::Node>(brickTreeNode->child[0]);
+      std::shared_ptr<xml::Node> valueBricksNode  = std::make_shared<xml::Node>(brickTreeNode->child[1]);
+      std::shared_ptr<xml::Node> indexBrickOfNode = std::make_shared<xml::Node>(brickTreeNode->child[2]);
+
+      //size_t indexBricksNum  = std::stoll(indexBricksNode->getProp("num"));
+      numIndexBricks = std::stoll(indexBricksNode->getProp("num"));
       size_t indexBricksOfs  = std::stoll(indexBricksNode->getProp("ofs"));
-      size_t valueBricksNum  = std::stoll(valueBricksNode->getProp("num"));
+      //size_t valueBricksNum  = std::stoll(valueBricksNode->getProp("num"));
+      numValueBricks = std::stoll(valueBricksNode->getProp("num"));
       size_t valueBricksOfs  = std::stoll(valueBricksNode->getProp("ofs"));
-      size_t indexBrickOfNum = std::stoll(indexBrickOfNode->getProp("num"));
+      //size_t indexBrickOfNum = std::stoll(indexBrickOfNode->getProp("num"));
+      numBrickInfos= std::stoll(indexBrickOfNode->getProp("num"));
       size_t indexBrickOfOfs = std::stoll(indexBrickOfNode->getProp("ofs"));
 
       // mmap the binary file
@@ -115,7 +124,67 @@ namespace ospray {
       indexBrick = (IndexBrick*)(mem+indexBricksOfs);
       brickInfo  = (BrickInfo*)(mem+indexBrickOfOfs);
     }
+
+
+    template<int N, typename T>
+    const typename BrickTree<N,T>::ValueBrick * 
+    BrickTree<N,T>::findValueBrick(const vec3i &coord,int blockWidth)
+    {
+      // start with the root brick
+      int brickSize = blockWidth;
+
+      assert(reduce_max(coord) < brickSize);
+      int32_t brickID = 0; 
+      while (brickSize > N) {
+        int cellSize = brickSize / N;
+
+        assert(brickID < numValueBricks);
+        assert(brickID < numIndexBricks);
+        IndexBrick ib = indexBrick[brickInfo[brickID].indexBrickID];
+        assert(ib);
+        int cx = (coord.x % brickSize) / cellSize;
+        int cy = (coord.y % brickSize) / cellSize;
+        int cz = (coord.z % brickSize) / cellSize;
+        assert(cx < N);
+        assert(cy < N);
+        assert(cz < N);
+        // brickID = ib.childID[cz][cy][cx];
+        // assert(brickID == -1 || brickID < numValueBricks);
+        // if (brickID == BrickTree<N,T>::invalidID()) {
+        //   std::cout<<"this brick dosen't have child!"<<std::endl;
+        // }
+        int32_t childBrickID = ib.childID[cz][cy][cx];
+        if (childBrickID == BrickTree<N, T>::invalidID()) {
+          break;
+        } else {
+          brickID = childBrickID;
+        }
+
+        assert(brickID < numValueBricks);
+        brickSize = cellSize;
+      }
       
+      assert(brickID < numValueBricks);
+      return (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
+    }
+
+    template <int N, typename T>
+    const T BrickTree<N, T>::findValue(const vec3i &coord, int blockWidth)
+    {
+      const ValueBrick *vb = findValueBrick(coord, blockWidth);
+      if (!vb)
+        throw std::runtime_error("Could find value brick");
+
+      int cx = coord.x % N;
+      int cy = coord.y % N;
+      int cz = coord.z % N;
+      // int cx = (coord.x % (N * N)) / N;
+      // int cy = (coord.x % (N * N)) / N;
+      // int cz = (coord.x % (N * N)) / N;
+
+      return vb->value[cz][cy][cx];
+    }
+
     template<int N, typename T>
     double BrickTree<N,T>::ValueBrick::computeWeightedAverage(// coordinates of lower-left-front
                                                              // voxel, in resp level

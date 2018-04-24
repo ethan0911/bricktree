@@ -52,6 +52,10 @@ namespace ospray {
       size_t numValueBricks;
       size_t numIndexBricks;
       size_t numBrickInfos;
+      float avgValue;
+      vec2f valueRange;
+      int nBrickSize; 
+      vec3i validSize;
       vec3i rootGridDims;
       vec3f validFractionOfRootGrid;
     };
@@ -134,6 +138,9 @@ namespace ospray {
 
       /*! map this one from a binary dump that was created by the bricktreebuilder/raw2bricks tool */
       void map(const FileName &brickFileBase, size_t treeID, const vec3i &treeIdx);
+
+      const typename BrickTree<N,T>::ValueBrick * findValueBrick(const vec3i &coord,int blockWidth);
+      const T findValue(const vec3i &coord,int blockWidth);
       
       /* gives, for each root cell / tree in the root grid, the ID of
          the first index brick in the (shared) value brick array */

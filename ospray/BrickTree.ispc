@@ -35,7 +35,7 @@ static void BrickTreeVolume_stepRay(void *uniform _self,
   
   // TODO: clean this up, properly implemnt an integrator with
   // variable step size...
-  const float step
+  const float step// = self->super.samplingRate;
     = self->super.samplingStep / samplingRate; //self->super.samplingRate;
   ray.t0 += step;
 }
@@ -92,18 +92,19 @@ export void BrickTreeVolume_set(void *uniform _self,
 
     self->super.volumeClippingBox.lower = make_vec3f(0.f);
     self->super.volumeClippingBox.upper = make_vec3f(validSize);
-    print("#osp:bricktree: bounds\n%\n%\n%\n%\n%\n%\n",
-	  self->super.boundingBox.lower.x,
-	  self->super.boundingBox.lower.y,
-	  self->super.boundingBox.lower.z,
-	  self->super.boundingBox.upper.x,
-	  self->super.boundingBox.upper.y,
-	  self->super.boundingBox.upper.z);
+    // print("#osp:bricktree: bounds\n%\n%\n%\n%\n%\n%\n",
+	//   self->super.boundingBox.lower.x,
+	//   self->super.boundingBox.lower.y,
+	//   self->super.boundingBox.lower.z,
+	//   self->super.boundingBox.upper.x,
+	//   self->super.boundingBox.upper.y,
+	//   self->super.boundingBox.upper.z);
   
     self->super.computeGradient = &BrickTreeVolume_computeGradient;
+    //self->super.adaptiveSampling = true;
   
-    self->super.samplingRate = 1.f;//samplingRate;
-    self->super.samplingStep = .1f;
+    self->super.samplingRate = 0.125f;//samplingRate;
+    self->super.samplingStep = 0.5f;
   
     self->super.gradientShadingEnabled = 0;
   

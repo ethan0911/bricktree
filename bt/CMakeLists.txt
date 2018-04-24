@@ -6,7 +6,6 @@ OSPRAY_CREATE_LIBRARY(ospray_bricktree
   BrickTreeBuilder.cpp
   LINK
   ospray_common
-  ospray_xml
   ospray  
   )
 

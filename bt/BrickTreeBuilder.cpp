@@ -24,13 +24,7 @@ namespace ospray {
     using std::endl;
     using std::flush;
 
-    template<int N>
-    inline int brickSizeOf(int level)
-    { 
-      int bs = N;
-      for (int i=0;i<level;i++) bs *= N;
-      return bs;
-    }
+
 
     // -------------------------------------------------------
     // SINGLE sum builder
