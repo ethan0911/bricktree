@@ -128,7 +128,7 @@ namespace ospray {
 
     template<int N, typename T>
     const typename BrickTree<N,T>::ValueBrick * 
-    BrickTree<N,T>::findValueBrick(const vec3i &coord,int blockWidth)
+    BrickTree<N,T>::findValueBrick(const vec3i &coord,int blockWidth,int xIdx, int yIdx, int zIdx)
     {
       // start with the root brick
       int brickSize = blockWidth;
@@ -153,6 +153,10 @@ namespace ospray {
         // if (brickID == BrickTree<N,T>::invalidID()) {
         //   std::cout<<"this brick dosen't have child!"<<std::endl;
         // }
+
+        xIdx = cx;
+        yIdx = cy;
+        zIdx = cz;
         int32_t childBrickID = ib.childID[cz][cy][cx];
         if (childBrickID == BrickTree<N, T>::invalidID()) {
           break;
@@ -168,20 +172,67 @@ namespace ospray {
       return (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
     }
 
+    // template <int N, typename T>
+    // const T BrickTree<N, T>::findValue(const vec3i &coord, int blockWidth)
+    // {
+    //   int xIdx, yIdx, zIdx;
+    //   const ValueBrick *vb =
+    //       findValueBrick(coord, blockWidth, xIdx, yIdx, zIdx);
+    //   if (!vb)
+    //     throw std::runtime_error("Could find value brick");
+
+    //   int cx = coord.x % N;
+    //   int cy = coord.y % N;
+    //   int cz = coord.z % N;
+    //   // int cx = (coord.x % (N * N)) / N;
+    //   // int cy = (coord.x % (N * N)) / N;
+    //   // int cz = (coord.x % (N * N)) / N;
+
+    //   return vb->value[zIdx][yIdx][xIdx];
+    // }
+
     template <int N, typename T>
     const T BrickTree<N, T>::findValue(const vec3i &coord, int blockWidth)
     {
-      const ValueBrick *vb = findValueBrick(coord, blockWidth);
-      if (!vb)
-        throw std::runtime_error("Could find value brick");
+           // start with the root brick
+      int brickSize = blockWidth;
+      ValueBrick* vb = NULL;
 
-      int cx = coord.x % N;
-      int cy = coord.y % N;
-      int cz = coord.z % N;
-      // int cx = (coord.x % (N * N)) / N;
-      // int cy = (coord.x % (N * N)) / N;
-      // int cz = (coord.x % (N * N)) / N;
+      assert(reduce_max(coord) < brickSize);
+      int32_t brickID = 0; 
+      int cx(0);
+      int cy(0);
+      int cz(0);
+      while (brickSize > N) {
+        int cellSize = brickSize / N;
 
+        assert(brickID < numValueBricks);
+        assert(brickID < numIndexBricks);
+        IndexBrick ib = indexBrick[brickInfo[brickID].indexBrickID];
+        assert(ib);
+        cx = (coord.x % brickSize) / cellSize;
+        cy = (coord.y % brickSize) / cellSize;
+        cz = (coord.z % brickSize) / cellSize;
+        assert(cx < N);
+        assert(cy < N);
+        assert(cz < N);
+
+        int32_t childBrickID = ib.childID[cz][cy][cx];
+        if (childBrickID == BrickTree<N, T>::invalidID()) {
+          vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
+          return vb->value[cz][cy][cx];
+        } else {
+          brickID = childBrickID;
+        }
+
+        assert(brickID < numValueBricks);
+        brickSize = cellSize;
+      }
+      assert(brickID < numValueBricks);
+      vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
+      cx = coord.x % brickSize;
+      cy = coord.y % brickSize;
+      cz = coord.z % brickSize;
       return vb->value[cz][cy][cx];
     }
 

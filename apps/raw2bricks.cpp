@@ -178,8 +178,6 @@ namespace ospray {
       avg = db.computeWeightedAverage(begin,levelWidth,input->size());
 
       if ((range.upper - range.lower) <= threshold) {
-        // float r = range.upper - range.lower;
-        // std::cout<<"t: " <<threshold << " r: "<<r<<std::endl;
         // do not set any fields - kill that brick
       } else {
         // need to actually create this brick:
