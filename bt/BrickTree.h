@@ -139,7 +139,7 @@ namespace ospray {
       /*! map this one from a binary dump that was created by the bricktreebuilder/raw2bricks tool */
       void map(const FileName &brickFileBase, size_t treeID, const vec3i &treeIdx);
 
-      const typename BrickTree<N,T>::ValueBrick * findValueBrick(const vec3i &coord,int blockWidth,int xIdx, int yIdx, int zIdx);
+      // const typename BrickTree<N,T>::ValueBrick * findValueBrick(const vec3i &coord,int blockWidth,int xIdx, int yIdx, int zIdx);
       const T findValue(const vec3i &coord,int blockWidth);
       
       /* gives, for each root cell / tree in the root grid, the ID of

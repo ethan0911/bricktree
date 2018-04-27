@@ -125,26 +125,14 @@ namespace ospray {
                            factor.y);
         } else {
           float neighborValue[2][2][2];
-          // array3D::for_each(vec3i(2), [&](const vec3i &idx) {
-          //   size_t blockId = btv->getBlockID(low + idx);
-          //   if (blockId >= btv->gridSize.product())
-          //     throw std::runtime_error("Overflow the block tree vector!!");
-          //   auto bt = forest->tree[blockId];
-          //   neighborValue[idx.z][idx.y][idx.x] =
-          //       bt.findValue(low + idx, btv->blockWidth);
-          // });
-          for (int i = 0; i < 2; i++) {
-            for (int j = 0; j < 2; j++) {
-              for (int k = 0; k < 2; k++) {
-                size_t blockId = btv->getBlockID(low + vec3i(k, j, i));
-                if (blockId >= btv->gridSize.product())
-                  throw std::runtime_error("Overflow the block tree vector!!");
-                auto bt = forest->tree[blockId];
-                neighborValue[i][j][k] =
-                    bt.findValue(low + vec3i(k, j, i), btv->blockWidth);
-              }
-            }
-          }
+          array3D::for_each(vec3i(2), [&](const vec3i &idx) {
+            size_t blockId = btv->getBlockID(low + idx);
+            if (blockId >= btv->gridSize.product())
+              throw std::runtime_error("Overflow the block tree vector!!");
+            auto bt = forest->tree[blockId];
+            neighborValue[idx.z][idx.y][idx.x] =
+                bt.findValue(low + idx, btv->blockWidth);
+          });
           v = lerp3<float>(neighborValue[0][0][0],
                            neighborValue[0][0][1],
                            neighborValue[0][1][0],

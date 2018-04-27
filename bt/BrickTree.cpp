@@ -126,70 +126,47 @@ namespace ospray {
     }
 
 
-    template<int N, typename T>
-    const typename BrickTree<N,T>::ValueBrick * 
-    BrickTree<N,T>::findValueBrick(const vec3i &coord,int blockWidth,int xIdx, int yIdx, int zIdx)
-    {
-      // start with the root brick
-      int brickSize = blockWidth;
-
-      assert(reduce_max(coord) < brickSize);
-      int32_t brickID = 0; 
-      while (brickSize > N) {
-        int cellSize = brickSize / N;
-
-        assert(brickID < numValueBricks);
-        assert(brickID < numIndexBricks);
-        IndexBrick ib = indexBrick[brickInfo[brickID].indexBrickID];
-        assert(ib);
-        int cx = (coord.x % brickSize) / cellSize;
-        int cy = (coord.y % brickSize) / cellSize;
-        int cz = (coord.z % brickSize) / cellSize;
-        assert(cx < N);
-        assert(cy < N);
-        assert(cz < N);
-        // brickID = ib.childID[cz][cy][cx];
-        // assert(brickID == -1 || brickID < numValueBricks);
-        // if (brickID == BrickTree<N,T>::invalidID()) {
-        //   std::cout<<"this brick dosen't have child!"<<std::endl;
-        // }
-
-        xIdx = cx;
-        yIdx = cy;
-        zIdx = cz;
-        int32_t childBrickID = ib.childID[cz][cy][cx];
-        if (childBrickID == BrickTree<N, T>::invalidID()) {
-          break;
-        } else {
-          brickID = childBrickID;
-        }
-
-        assert(brickID < numValueBricks);
-        brickSize = cellSize;
-      }
-      
-      assert(brickID < numValueBricks);
-      return (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
-    }
-
-    // template <int N, typename T>
-    // const T BrickTree<N, T>::findValue(const vec3i &coord, int blockWidth)
+    // template<int N, typename T>
+    // const typename BrickTree<N,T>::ValueBrick * 
+    // BrickTree<N,T>::findValueBrick(const vec3i &coord,int blockWidth,int xIdx, int yIdx, int zIdx)
     // {
-    //   int xIdx, yIdx, zIdx;
-    //   const ValueBrick *vb =
-    //       findValueBrick(coord, blockWidth, xIdx, yIdx, zIdx);
-    //   if (!vb)
-    //     throw std::runtime_error("Could find value brick");
+    //   // start with the root brick
+    //   int brickSize = blockWidth;
 
-    //   int cx = coord.x % N;
-    //   int cy = coord.y % N;
-    //   int cz = coord.z % N;
-    //   // int cx = (coord.x % (N * N)) / N;
-    //   // int cy = (coord.x % (N * N)) / N;
-    //   // int cz = (coord.x % (N * N)) / N;
+    //   assert(reduce_max(coord) < brickSize);
+    //   int32_t brickID = 0; 
+    //   while (brickSize > N) {
+    //     int cellSize = brickSize / N;
 
-    //   return vb->value[zIdx][yIdx][xIdx];
+    //     assert(brickID < numValueBricks);
+    //     assert(brickID < numIndexBricks);
+    //     IndexBrick ib = indexBrick[brickInfo[brickID].indexBrickID];
+    //     assert(ib);
+    //     int cx = (coord.x % brickSize) / cellSize;
+    //     int cy = (coord.y % brickSize) / cellSize;
+    //     int cz = (coord.z % brickSize) / cellSize;
+    //     assert(cx < N);
+    //     assert(cy < N);
+    //     assert(cz < N);
+
+    //     xIdx = cx;
+    //     yIdx = cy;
+    //     zIdx = cz;
+    //     int32_t childBrickID = ib.childID[cz][cy][cx];
+    //     if (childBrickID == BrickTree<N, T>::invalidID()) {
+    //       break;
+    //     } else {
+    //       brickID = childBrickID;
+    //     }
+
+    //     assert(brickID < numValueBricks);
+    //     brickSize = cellSize;
+    //   }
+      
+    //   assert(brickID < numValueBricks);
+    //   return (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
     // }
+
 
     template <int N, typename T>
     const T BrickTree<N, T>::findValue(const vec3i &coord, int blockWidth)
@@ -208,8 +185,7 @@ namespace ospray {
 
         assert(brickID < numValueBricks);
         assert(brickID < numIndexBricks);
-        IndexBrick ib = indexBrick[brickInfo[brickID].indexBrickID];
-        assert(ib);
+
         cx = (coord.x % brickSize) / cellSize;
         cy = (coord.y % brickSize) / cellSize;
         cz = (coord.z % brickSize) / cellSize;
@@ -217,14 +193,21 @@ namespace ospray {
         assert(cy < N);
         assert(cz < N);
 
-        int32_t childBrickID = ib.childID[cz][cy][cx];
-        if (childBrickID == BrickTree<N, T>::invalidID()) {
+        int32_t ibID = brickInfo[brickID].indexBrickID;
+        if (ibID == BrickTree<N, T>::invalidID()) {
           vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
           return vb->value[cz][cy][cx];
         } else {
-          brickID = childBrickID;
+          IndexBrick ib = indexBrick[ibID];
+          assert(ib);
+          int32_t childBrickID = ib.childID[cz][cy][cx];
+          if (childBrickID == BrickTree<N, T>::invalidID()) {
+            vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
+            return vb->value[cz][cy][cx];
+          } else {
+            brickID = childBrickID;
+          }
         }
-
         assert(brickID < numValueBricks);
         brickSize = cellSize;
       }
