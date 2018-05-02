@@ -21,9 +21,11 @@
 #include "ospcommon/box.h"
 // ospcommon
 #include "ospcommon/FileName.h"
+#include "mpiCommon/MPICommon.h"
 // std
 #include <iostream>
 #include <vector>
+#include <map>
 
 namespace ospray {
   namespace bt {
@@ -160,27 +162,90 @@ namespace ospray {
       BrickTreeForest(const vec3i &forestSize,
                       const vec3i &originalVolumeSize,
                       const FileName &brickFileBase)
-        : forestSize(forestSize),
-          originalVolumeSize(originalVolumeSize),
-          brickFileBase(brickFileBase)
+          : forestSize(forestSize),
+            originalVolumeSize(originalVolumeSize),
+            brickFileBase(brickFileBase)
       {
         int numTrees = forestSize.product();
         assert(numTrees > 0);
-        tree.resize(numTrees);
-        array3D::for_each(forestSize,[&](const vec3i &treeCoord){
-            size_t treeID = array3D::longIndex(treeCoord,forestSize);
-            tree[treeID].map(brickFileBase,treeID,treeCoord);
+
+        if (!mpicommon::isMpiParallel()) {
+          // tree.resize(numTrees);
+
+          array3D::for_each(forestSize, [&](const vec3i &treeCoord) {
+            size_t treeID = array3D::longIndex(treeCoord, forestSize);
+            BrickTree<N, T> aTree;
+            aTree.map(brickFileBase, treeID, treeCoord);
+            tree.insert(std::make_pair(treeID, aTree));
+            forestBounds = box3f(vec3f(0.f), vec3f(originalVolumeSize));
+            // tree[treeID].map(brickFileBase, treeID, treeCoord);
           });
+        } else {
+          auto numRanks = static_cast<float>(mpicommon::numGlobalRanks());
+          auto myRank   = mpicommon::globalRank();
+          const vec3i decomposeGrid = computeGrid(numRanks);
+          const vec3i brickDims      = originalVolumeSize / decomposeGrid;
+          const vec3i brickId(myRank % decomposeGrid.x,
+                               (myRank / decomposeGrid.x) % decomposeGrid.y,
+                               myRank / (decomposeGrid.x * decomposeGrid.y));
+          const vec3f gridOrigin = vec3f(brickId) * vec3f(brickDims);
+          forestBounds = box3f(gridOrigin, gridOrigin + vec3f(brickDims));
+
+          const vec3i blockWidth = originalVolumeSize / forestSize;
+
+          array3D::for_each(forestSize, [&](const vec3i &treeCoord) {
+            box3f blockBounds = box3f(treeCoord * blockWidth,
+                                      treeCoord * blockWidth + blockWidth);
+            if (touchingOrOverlapping(forestBounds, blockBounds)) {
+              size_t treeID = array3D::longIndex(treeCoord, forestSize);
+              BrickTree<N, T> aTree;
+              aTree.map(brickFileBase, treeID, treeCoord);
+              tree.insert(std::make_pair(treeID, aTree));
+            }
+          });
+        }
+      }
+
+      bool inline computeDivisor(int x, int &divisor)
+      {
+        int upperBound = std::sqrt(x);
+        for (int i = 2; i <= upperBound; ++i) {
+          if (x % i == 0) {
+            divisor = i;
+            return true;
+          }
+        }
+        return false;
+      }
+
+      vec3i inline computeGrid(int num)
+      {
+        vec3i grid(1);
+        int axis    = 0;
+        int divisor = 0;
+        while (computeDivisor(num, divisor)) {
+          grid[axis] *= divisor;
+          num /= divisor;
+          axis = (axis + 1) % 3;
+        }
+        if (num != 1) {
+          grid[axis] *= num;
+        }
+        return grid;
       }
 
       const vec3i forestSize;
       const vec3i originalVolumeSize;
       const FileName &brickFileBase;
-      
-      std::vector<BrickTree<N,T> > tree;
+
+      box3f forestBounds; 
+
+      std::map<size_t, BrickTree<N,T>> tree;
+
+      //std::vector<BrickTree<N, T>> tree;
     };
 
-      // =======================================================
+    // =======================================================
     // INLINE IMPLEMENTATION SECTION 
     // =======================================================
     

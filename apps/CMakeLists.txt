@@ -57,6 +57,7 @@ if (OSPRAY_MODULE_BRICKTREE_WIDGET)
     LINK
     ospray
     ospray_common
+    ospray_mpi_common
     ospray_imgui
     ospray_imgui3d_sg
     ${HDF5_C_LIBRARIES}
@@ -82,6 +83,7 @@ if(OSPRAY_MODULE_BRICKTREE_BENCH)
     LINK
     ospray
     ospray_common
+    ospray_mpi_common
     ospray_bricktree)
   set_target_properties(ospBrickBench
     PROPERTIES 

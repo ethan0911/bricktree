@@ -169,14 +169,14 @@ struct TfnProp
             aptr               = std::vector<float>(a);
             OSPData colorsData = ospNewData(c.size() / 3, OSP_FLOAT3, c.data());
             ospCommit(colorsData);
-            std::vector<float> o(a.size()/2);
-            for (int i = 0; i < a.size()/2; ++i) {
-              //o[i] = a[2 * i + 1];
+            std::vector<float> o(a.size() / 2);
+            for (int i = 0; i < a.size() / 2; ++i) {
+              // o[i] = a[2 * i + 1];
               o[i] = a[2 * i + 1];
-              //std::cout<<"opacity:"<<o[i]<<std::endl;
+              // std::cout<<"opacity:"<<o[i]<<std::endl;
             }
             OSPData opacitiesData = ospNewData(o.size(), OSP_FLOAT, o.data());
-            
+
             ospCommit(opacitiesData);
             ospSetData(ospTfn, "colors", colorsData);
             ospSetData(ospTfn, "opacities", opacitiesData);
@@ -413,6 +413,7 @@ void key_onpress_callback(
 {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, GL_TRUE);
+    exit(0);
   }
   if (!ImGui::GetIO().WantCaptureKeyboard) {
     if (key == GLFW_KEY_LEFT_ALT) {

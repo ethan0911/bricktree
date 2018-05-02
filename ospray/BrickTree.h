@@ -35,6 +35,7 @@ namespace ospray {
       /*! compute gradient at given position */
       virtual vec3f computeGradient(const vec3f &pos) const = 0;
     };
+    
 
     /*! \brief The actual C++ implementation of an ospray bricktree volume
      *  type
@@ -89,6 +90,141 @@ namespace ospray {
       std::string fileName;
       std::string format;
       OSPDataType voxelType;
+      // //actual volume bounds for distributed parallel rendering
+      //box3f volBounds;
     };
+
+
+    /*! the actual sampler code for a bricktree; to be specialized for
+      bricksize, voxel type, etcpp */
+    template <typename T, int N>
+    struct BrickTreeForestSampler : public ScalarVolumeSampler
+    {
+      BrickTreeForestSampler(BrickTreeVolume *btv) : btv(btv)
+      {
+        //PING;
+        forest = std::make_shared<bt::BrickTreeForest<N, T>>(
+            btv->gridSize, btv->validSize, FileName(btv->fileName).dropExt());
+
+        // if(forest != NULL){
+        //   btv->volumeBounds = forest->forestBounds;
+        // }
+
+        PRINT(forest->forestBounds);
+        //exit(0);
+      }
+
+      /*! compute sample at given position */
+      virtual float sample(const vec3f &pos) const override
+      {
+        //PING;
+        vec3f coord = pos; //* btv->validSize;
+
+        vec3i low    = (vec3i)coord;
+        vec3i upper  = low + vec3i(1);
+        vec3f factor = coord - low;
+
+        float v;
+#if 0
+        size_t blockId = btv->getBlockID(low);
+        //auto bt = forest->tree[blockId];
+        auto bt = forest->tree.find(blockId);
+        v = bt->second.findValue(low, btv->blockWidth);
+#else
+        if (low.x == btv->validSize.x - 1) {
+          float neighborValue[2][2];
+          for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+              size_t blockId = btv->getBlockID(low + vec3i(0, j, i));
+              if (blockId >= btv->gridSize.product())
+                throw std::runtime_error("Overflow the block tree vector!!");
+              //auto bt = forest->tree[blockId];
+              auto bt = forest->tree.find(blockId);
+              neighborValue[i][j] =
+                  bt->second.findValue(low + vec3i(0, j, j), btv->blockWidth);
+            }
+          }
+          v = lerp2<float>(neighborValue[0][0],
+                           neighborValue[0][1],
+                           neighborValue[1][0],
+                           neighborValue[1][1],
+                           factor.y,
+                           factor.z);
+        } else if (low.y == btv->validSize.y - 1) {
+          float neighborValue[2][2];
+          for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+              size_t blockId = btv->getBlockID(low + vec3i(j, 0, i));
+              if (blockId >= btv->gridSize.product())
+                throw std::runtime_error("Overflow the block tree vector!!");
+              //auto bt = forest->tree[blockId];
+              auto bt = forest->tree.find(blockId);
+              neighborValue[i][j] =
+                  bt->second.findValue(low + vec3i(j, 0, i), btv->blockWidth);
+            }
+          }
+          v = lerp2<float>(neighborValue[0][0],
+                           neighborValue[0][1],
+                           neighborValue[1][0],
+                           neighborValue[1][1],
+                           factor.x,
+                           factor.z);
+        } else if (low.z == btv->validSize.z - 1) {
+          float neighborValue[2][2];
+          for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+              size_t blockId = btv->getBlockID(low + vec3i(j, i, 0));
+              if (blockId >= btv->gridSize.product())
+                throw std::runtime_error("Overflow the block tree vector!!");
+              //auto bt = forest->tree[blockId];
+              auto bt = forest->tree.find(blockId);
+              neighborValue[i][j] =
+                  bt->second.findValue(low + vec3i(j, i, 0), btv->blockWidth);
+            }
+          }
+          v = lerp2<float>(neighborValue[0][0],
+                           neighborValue[0][1],
+                           neighborValue[1][0],
+                           neighborValue[1][1],
+                           factor.x,
+                           factor.y);
+        } else {
+          float neighborValue[2][2][2];
+          array3D::for_each(vec3i(2), [&](const vec3i &idx) {
+            size_t blockId = btv->getBlockID(low + idx);
+            if (blockId >= btv->gridSize.product())
+              throw std::runtime_error("Overflow the block tree vector!!");
+            //auto bt = forest->tree[blockId];
+            auto bt = forest->tree.find(blockId);
+            neighborValue[idx.z][idx.y][idx.x] =
+                bt->second.findValue(low + idx, btv->blockWidth);
+          });
+          v = lerp3<float>(neighborValue[0][0][0],
+                           neighborValue[0][0][1],
+                           neighborValue[0][1][0],
+                           neighborValue[0][1][1],
+                           neighborValue[1][0][0],
+                           neighborValue[1][0][1],
+                           neighborValue[1][1][0],
+                           neighborValue[1][1][1],
+                           factor.x,
+                           factor.y,
+                           factor.z);
+        }
+#endif
+        return v;
+      }
+
+      /*! compute gradient at given position */
+      virtual vec3f computeGradient(const vec3f &pos) const override
+      {
+        // PING;
+        return vec3f(1, 0, 0);
+      }
+
+      std::shared_ptr<bt::BrickTreeForest<N, T>> forest;
+      BrickTreeVolume *btv;
+    };
+
   }  // namespace bt
 }  // namespace ospray

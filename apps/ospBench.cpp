@@ -18,6 +18,7 @@
 //#include "loader/meshloader.h"
 #include "ospCommandLine.h"
 #include "sgBrickTree.h"
+#include "../ospray/BrickTree.h"
 
 #ifdef __unix__
 #include <unistd.h>
@@ -113,6 +114,8 @@ int main(int ac, const char **av)
   bricktreeVolume->setFromXML(args.inputFiles[0]);
   bricktreeVolume->createBtVolume(transferFcn);
   ospAddVolume(world,bricktreeVolume->ospVolume);
+  ospray::bt::BrickTreeVolume* btVolume = (ospray::bt::BrickTreeVolume*)bricktreeVolume->ospVolume;
+  // PRINT(btVolume->volumeBounds);
 
 #else
   const std::string hacked_volume_path = "/home/sci/feng/Desktop/ws/data/magnetic-512-volume/magnetic-512-volume.raw";
