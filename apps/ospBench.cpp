@@ -114,8 +114,8 @@ int main(int ac, const char **av)
   bricktreeVolume->setFromXML(args.inputFiles[0]);
   bricktreeVolume->createBtVolume(transferFcn);
   ospAddVolume(world,bricktreeVolume->ospVolume);
-  ospray::bt::BrickTreeVolume* btVolume = (ospray::bt::BrickTreeVolume*)bricktreeVolume->ospVolume;
-  // PRINT(btVolume->volumeBounds);
+  ospray::bt::BrickTreeVolume *btVolume = (ospray::bt::BrickTreeVolume *)bricktreeVolume->ospVolume;
+  PRINT(btVolume->volBounds)
 
 #else
   const std::string hacked_volume_path = "/home/sci/feng/Desktop/ws/data/magnetic-512-volume/magnetic-512-volume.raw";

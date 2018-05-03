@@ -91,7 +91,7 @@ namespace ospray {
       std::string format;
       OSPDataType voxelType;
       // //actual volume bounds for distributed parallel rendering
-      //box3f volBounds;
+      box3f volBounds;
     };
 
 
@@ -106,11 +106,9 @@ namespace ospray {
         forest = std::make_shared<bt::BrickTreeForest<N, T>>(
             btv->gridSize, btv->validSize, FileName(btv->fileName).dropExt());
 
-        // if(forest != NULL){
-        //   btv->volumeBounds = forest->forestBounds;
-        // }
-
-        PRINT(forest->forestBounds);
+        if(forest != NULL){
+          btv->volBounds = forest->forestBounds;
+        }
         //exit(0);
       }
 
@@ -212,6 +210,7 @@ namespace ospray {
                            factor.z);
         }
 #endif
+
         return v;
       }
 
