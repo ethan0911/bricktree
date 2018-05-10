@@ -127,7 +127,7 @@ namespace ospray {
         size_t blockId = btv->getBlockID(low);
         //auto bt = forest->tree[blockId];
         auto bt = forest->tree.find(blockId);
-        v = bt->second.findValue(low, btv->blockWidth);
+        v = bt->second.avgValue;//second.findValue(low, btv->blockWidth);
 #else
         if (low.x == btv->validSize.x - 1) {
           float neighborValue[2][2];

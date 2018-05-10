@@ -38,9 +38,7 @@ namespace ospray {
     using std::flush;
     using std::ostream;
 
-    static bool flag = true;
-
-
+    //static bool flag = true;
 
     BrickTreeVolume::BrickTreeVolume()
         : Volume(),

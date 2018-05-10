@@ -26,14 +26,24 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <thread>
 
 namespace ospray {
   namespace bt {
 
     using namespace ospcommon;
 
-    template<typename T>
+    template <typename T>
     const char *typeToString();
+
+    /*! the superblock we'll store at the end of the binary
+    memory/file region for a binary bricktree */
+    struct BinaryFileSuperBlock
+    {
+      size_t indexBricksOfs;
+      size_t valueBricksOfs;
+      size_t indexBrickOfOfs;
+    };
 
     struct BrickTreeBase {
       virtual std::string voxelType() const = 0;
@@ -54,6 +64,8 @@ namespace ospray {
       size_t numValueBricks;
       size_t numIndexBricks;
       size_t numBrickInfos;
+      BinaryFileSuperBlock binBlockInfo;
+
       float avgValue;
       vec2f valueRange;
       int nBrickSize; 
@@ -62,13 +74,7 @@ namespace ospray {
       vec3f validFractionOfRootGrid;
     };
 
-    /*! the superblock we'll store at the end of the binary
-        memory/file region for a binary bricktree */
-    struct BinaryFileSuperBlock {
-      size_t valueBricksOfs;
-      size_t indexBricksOfs;
-      size_t childBricksOfs;
-    };
+
 
     /* hierarchical tree of bricks. if N is the template parameter,
        this tree will encode bricks of NxNxN cells (a so-called value
@@ -85,6 +91,9 @@ namespace ospray {
        in the index brick is 'invalidID'  */
     template<int N, typename T=float>
     struct BrickTree : public BrickTreeBase {
+      
+      BrickTree();
+
       static inline int invalidID() { return -1; }
 
       virtual std::string voxelType() const override { return typeToString<T>(); };
@@ -139,7 +148,8 @@ namespace ospray {
       virtual vec3i getRootGridDims() const override { return rootGridDims; }
 
       /*! map this one from a binary dump that was created by the bricktreebuilder/raw2bricks tool */
-      void map(const FileName &brickFileBase, size_t treeID, const vec3i &treeIdx);
+      void mapOSP(const FileName &brickFileBase, size_t treeID, const vec3i &treeIdx);
+      void mapOspBin(const FileName &brickFileBase, size_t treeID);
 
       // const typename BrickTree<N,T>::ValueBrick * findValueBrick(const vec3i &coord,int blockWidth,int xIdx, int yIdx, int zIdx);
       const T findValue(const vec3i &coord,int blockWidth);
@@ -154,11 +164,27 @@ namespace ospray {
       /* gives, for each root cell / tree in the root grid, the ID of
          the first value brick in the (shared) value brick array */
       const int32_t *firstValueBrickOfTree;
+
+      bool isLoaded;
     };
 
+    
     /* a entire *FOREST* of bricktrees */
-    template<int N, typename T=float>
-    struct BrickTreeForest {
+    template <int N, typename T = float>
+    struct BrickTreeForest
+    {
+      void loadBrickTreeData( const FileName &brickFileBase)
+      {
+        //const FileName &brickFileBase = "/usr/sci/data/ospray/dns/dns-t01-d5/dns-bt";
+        typename std::map<size_t, BrickTree<N, T>>::iterator it;
+        for (it = tree.begin(); it != tree.end(); it++) {
+          if (!it->second.isLoaded) {
+            it->second.mapOspBin(brickFileBase, it->first);
+            it->second.isLoaded = true;
+          }
+        }
+      }
+
       BrickTreeForest(const vec3i &forestSize,
                       const vec3i &originalVolumeSize,
                       const FileName &brickFileBase)
@@ -172,11 +198,19 @@ namespace ospray {
         array3D::for_each(forestSize, [&](const vec3i &treeCoord) {
           size_t treeID = array3D::longIndex(treeCoord, forestSize);
           BrickTree<N, T> aTree;
-          aTree.map(brickFileBase, treeID, treeCoord);
+          aTree.mapOSP(brickFileBase, treeID, treeCoord);
+          //aTree.mapOspBin(brickFileBase, treeID);
           tree.insert(std::make_pair(treeID, aTree));
           forestBounds = box3f(vec3f(0.f), vec3f(originalVolumeSize));
-          // tree[treeID].map(brickFileBase, treeID, treeCoord);
         });
+
+        PRINT(tree.size());
+
+        //apply another thread to load the binary data.(*.ospbin)
+        loadBrickTreeThread = std::thread([&](const FileName& filebase) { 
+          loadBrickTreeData(filebase); 
+        },this->brickFileBase);
+
 
         // if (!mpicommon::isMpiParallel()) {
         //   // tree.resize(numTrees);
@@ -245,9 +279,17 @@ namespace ospray {
       //   return grid;
       // }
 
+      ~BrickTreeForest()
+      {
+        loadBrickTreeThread.join();
+        tree.clear();
+      }
+
       const vec3i forestSize;
       const vec3i originalVolumeSize;
       const FileName &brickFileBase;
+
+      std::thread loadBrickTreeThread;
 
       box3f forestBounds; 
 
