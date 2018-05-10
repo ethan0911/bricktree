@@ -115,8 +115,8 @@ int main(int ac, const char **av)
   bricktreeVolume->createBtVolume(transferFcn);
   ospAddVolume(world,bricktreeVolume->ospVolume);
   ospray::bt::BrickTreeVolume *btVolume = (ospray::bt::BrickTreeVolume *)bricktreeVolume->ospVolume;
-  PRINT(btVolume->volBounds)
-
+  
+  box3f worldBounds(vec3f(0), vec3f(btVolume->validSize) - vec3f(1));
 #else
   const std::string hacked_volume_path = "/home/sci/feng/Desktop/ws/data/magnetic-512-volume/magnetic-512-volume.raw";
   const std::string hacked_volume_type = "float";
@@ -197,6 +197,7 @@ int main(int ac, const char **av)
   ospSet1f(renderer, "epsilon", 0.001f);
   ospSet1f(renderer, "minContribution", 0.001f);
   ospCommit(renderer);
+  
 
 
 #if USE_VIEWER

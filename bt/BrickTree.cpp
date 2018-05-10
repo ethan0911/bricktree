@@ -51,6 +51,10 @@ namespace ospray {
     template<>
     const char *typeToString<double>() { return "double"; };
 
+    template<int N, typename T>
+    BrickTree<N,T>::BrickTree(){
+      isLoaded = false;
+    }
 
 
     template<int N, typename T>
@@ -72,7 +76,7 @@ namespace ospray {
 
     /*! map this one from a binary dump that was created by the bricktreebuilder/raw2bricks tool */
     template<int N, typename T>
-    void BrickTree<N,T>::map(const FileName &brickFileBase, size_t blockID, const vec3i &treeCoords)
+    void BrickTree<N,T>::mapOSP(const FileName &brickFileBase, size_t blockID, const vec3i &treeCoords)
     {
       char blockFileName[10000];
       sprintf(blockFileName,"%s-brick%06i.osp",brickFileBase.str().c_str(),(int)blockID);
@@ -97,15 +101,25 @@ namespace ospray {
 
       //size_t indexBricksNum  = std::stoll(indexBricksNode->getProp("num"));
       numIndexBricks = std::stoll(indexBricksNode->getProp("num"));
-      size_t indexBricksOfs  = std::stoll(indexBricksNode->getProp("ofs"));
+      //size_t indexBricksOfs  = std::stoll(indexBricksNode->getProp("ofs"));
+      binBlockInfo.indexBricksOfs = std::stoll(indexBricksNode->getProp("ofs"));
+
       //size_t valueBricksNum  = std::stoll(valueBricksNode->getProp("num"));
       numValueBricks = std::stoll(valueBricksNode->getProp("num"));
-      size_t valueBricksOfs  = std::stoll(valueBricksNode->getProp("ofs"));
+      //size_t valueBricksOfs  = std::stoll(valueBricksNode->getProp("ofs"));
+      binBlockInfo.valueBricksOfs = std::stoll(valueBricksNode->getProp("ofs"));
+
       //size_t indexBrickOfNum = std::stoll(indexBrickOfNode->getProp("num"));
       numBrickInfos= std::stoll(indexBrickOfNode->getProp("num"));
-      size_t indexBrickOfOfs = std::stoll(indexBrickOfNode->getProp("ofs"));
+      //size_t indexBrickOfOfs = std::stoll(indexBrickOfNode->getProp("ofs"));
+      binBlockInfo.indexBrickOfOfs = std::stoll(indexBrickOfNode->getProp("ofs"));
+    }
 
-      // mmap the binary file
+    template<int N, typename T>
+    void BrickTree<N,T>::mapOspBin(const FileName &brickFileBase, size_t blockID)
+    {
+      //mmap the binary file
+      char blockFileName[10000];
       sprintf(blockFileName,"%s-brick%06i.ospbin",brickFileBase.str().c_str(),(int)blockID);
       FILE *file = fopen(blockFileName,"rb");
       if (!file)
@@ -119,10 +133,11 @@ namespace ospray {
       
       unsigned char *mem = (unsigned char *)mmap(NULL,actualFileSize,PROT_READ,MAP_SHARED,fd,0);
       assert(mem != NULL && (long long)mem != -1LL);
+      madvise(mem,actualFileSize,MADV_WILLNEED);
 
-      valueBrick = (ValueBrick*)(mem+valueBricksOfs);
-      indexBrick = (IndexBrick*)(mem+indexBricksOfs);
-      brickInfo  = (BrickInfo*)(mem+indexBrickOfOfs);
+      valueBrick = (ValueBrick*)(mem+binBlockInfo.valueBricksOfs);
+      indexBrick = (IndexBrick*)(mem+binBlockInfo.indexBricksOfs);
+      brickInfo  = (BrickInfo*)(mem+binBlockInfo.indexBrickOfOfs);
     }
 
 
@@ -171,6 +186,8 @@ namespace ospray {
     template <int N, typename T>
     const T BrickTree<N, T>::findValue(const vec3i &coord, int blockWidth)
     {
+       if(!this->isLoaded)
+         return this->avgValue;
            // start with the root brick
       int brickSize = blockWidth;
       ValueBrick* vb = NULL;
