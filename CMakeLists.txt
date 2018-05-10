@@ -17,7 +17,7 @@
 #CONFIGURE_OSPRAY()
 
 # mini-scene graph viewer for _geometry_ (intentionally simple)
-OPTION(OSPRAY_MODULE_BRICKTREE "BrickTree (testing)" ON)
+OPTION(OSPRAY_MODULE_BRICKTREE "BrickTree (testing)" OFF)
 OPTION(OSPRAY_MODULE_BRICKTREE_BENCH
   "Build the benchmarker for bricktree volume" ON)
 OPTION(OSPRAY_MODULE_BRICKTREE_WIDGET
