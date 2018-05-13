@@ -170,11 +170,7 @@ struct TfnProp
             OSPData colorsData = ospNewData(c.size() / 3, OSP_FLOAT3, c.data());
             ospCommit(colorsData);
             std::vector<float> o(a.size() / 2);
-            for (int i = 0; i < a.size() / 2; ++i) {
-              // o[i] = a[2 * i + 1];
-              o[i] = a[2 * i + 1];
-              // std::cout<<"opacity:"<<o[i]<<std::endl;
-            }
+            for (int i = 0; i < a.size() / 2; ++i) { o[i] = a[2 * i + 1]; }
             OSPData opacitiesData = ospNewData(o.size(), OSP_FLOAT, o.data());
 
             ospCommit(opacitiesData);
@@ -230,6 +226,7 @@ namespace viewer {
     osprayStop   = false;
     osprayThread = new std::thread([=] {
       while (!osprayStop) {
+        // commit ospray changes
         if (osprayCommit) {
           std::cout << "commit" << std::endl;
           for (auto &g : geoPropList) {
@@ -243,10 +240,11 @@ namespace viewer {
             l.Commit();
           }
           ospSetData(ospRen, "lights", lights);
-          renderProp.Commit();
+          renderProp.Commit();          
           osprayCommit = false;
           osprayClear  = true;
         }
+        // render
         if (osprayClear) {
           framebuffer.Clear();
           osprayClear = false;
@@ -408,8 +406,8 @@ void key_onhold_callback(GLFWwindow *window)
     ClearOSPRay();
   }
 }
-void key_onpress_callback(
-    GLFWwindow *window, int key, int scancode, int action, int mods)
+void key_onpress_callback(GLFWwindow *window, int key, 
+                          int scancode, int action, int mods)
 {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
     glfwSetWindowShouldClose(window, GL_TRUE);

@@ -24,6 +24,7 @@ OPTION(OSPRAY_MODULE_BRICKTREE_WIDGET
   "Build the viewer for bricktree volume" ON)
 
 IF (OSPRAY_MODULE_BRICKTREE)
+
   FIND_PACKAGE(HDF5 REQUIRED)
   IF (HDF5_FOUND)
     INCLUDE_DIRECTORIES(${HDF5_INCLUDE_DIRS})
@@ -31,21 +32,21 @@ IF (OSPRAY_MODULE_BRICKTREE)
   ENDIF()
 
   SET(OSPRAY_DEFAULT_COMPONENT mpi)
-
   OSPRAY_CONFIGURE_MPI()
-
   OSPRAY_BUILD_COMPONENT(mpiCommon)
   OSPRAY_BUILD_COMPONENT(mpiMessageLayer)
   
-  INCLUDE_DIRECTORIES(${EMBREE_INCLUDE_DIRS})
   INCLUDE_DIRECTORIES_ISPC(${EMBREE_INCLUDE_DIRS})
+  INCLUDE_DIRECTORIES(${EMBREE_INCLUDE_DIRS})
 
-  INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/ospray/include)
-  INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/)
-  INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/apps)
-  INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/apps/qtViewer)
   INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+  INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR})
+  INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/ospray/include)
+  INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/apps)
 
+  # -------------------------------------------------------
+  # bricktree kernel
+  # -------------------------------------------------------
   ADD_SUBDIRECTORY(bt)
 
   # -------------------------------------------------------
@@ -54,10 +55,6 @@ IF (OSPRAY_MODULE_BRICKTREE)
   ADD_SUBDIRECTORY(ospray)
   
   IF(NOT THIS_IS_MIC)
-    # -----------------------------------------------------
-    # scene graph plugin
-    # -----------------------------------------------------
-    # ADD_SUBDIRECTORY(sg)    
     # -----------------------------------------------------
     # converter tools
     # -----------------------------------------------------
