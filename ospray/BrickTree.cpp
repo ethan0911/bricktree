@@ -123,7 +123,7 @@ namespace ospray {
       //PRINT(format);
       if (format == "float")
         return createSamplerT<float>();
-      throw std::runtime_error("BrickTree: unsupported format '" + format +"'");
+      throw std::runtime_error("BrickTree: unsupported format '"+format +"'");
     }
 
     //! Allocate storage and populate the volume.
@@ -137,8 +137,8 @@ namespace ospray {
       Ref<TransferFunction> xf =
           (TransferFunction *)getParamObject("transferFunction");
       if (!xf)
-        throw std::runtime_error(
-            "#osp:bt: bricktree volume does not have a transfer function");
+        throw std::runtime_error("#osp:bt: bricktree volume does not have a "
+                                 "transfer function");
 
       gridSize   = getParam3i("gridSize", vec3i(-1));
       brickSize  = getParam1i("brickSize", -1);
@@ -147,7 +147,7 @@ namespace ospray {
       format     = getParamString("format", "<not specified>");
       validSize  = getParam3i("validSize",vec3i(-1));
       PRINT(gridSize);
-      validFractionOfRootGrid = vec3f(validSize) / vec3f(gridSize * blockWidth);
+      validFractionOfRootGrid = vec3f(validSize) / vec3f(gridSize*blockWidth);
 
       sampler = createSampler();
 
