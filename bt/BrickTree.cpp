@@ -121,6 +121,7 @@ namespace ospray {
       //mmap the binary file
       char blockFileName[10000];
       sprintf(blockFileName,"%s-brick%06i.ospbin",brickFileBase.str().c_str(),(int)blockID);
+      //PRINT(blockFileName);
       FILE *file = fopen(blockFileName,"rb");
       if (!file)
         throw std::runtime_error("could not open brick bin file "+std::string(blockFileName));

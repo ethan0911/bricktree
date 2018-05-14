@@ -22,7 +22,7 @@
 // bt base
 #include "../bt/BrickTree.h"
 // hack for lerp3
-#ifndef lerp3
+//#ifndef lerp3
 namespace ospcommon {
 template<typename T>
 __forceinline T lerp3(const float x0, const float x1, const float x2, const float x3,
@@ -31,7 +31,7 @@ __forceinline T lerp3(const float x0, const float x1, const float x2, const floa
   return (1.0f - i) * lerp2<T>(x0,x1,x2,x3,u,v) + i * lerp2<T>(x4,x5,x6,x7,u,v);
 }
 };
-#endif
+//#endif
 
 
 #include <mutex>
