@@ -21,6 +21,9 @@
 // bt base
 #include "../bt/BrickTree.h"
 
+#include <mutex>
+#include <thread>
+
 namespace ospray {
   namespace bt {
 
@@ -35,7 +38,8 @@ namespace ospray {
       /*! compute gradient at given position */
       virtual vec3f computeGradient(const vec3f &pos) const = 0;
     };
-    
+
+    static std::mutex mtx;
 
     /*! \brief The actual C++ implementation of an ospray bricktree volume
      *  type
@@ -192,10 +196,20 @@ namespace ospray {
             size_t blockId = btv->getBlockID(low + idx);
             if (blockId >= btv->gridSize.product())
               throw std::runtime_error("Overflow the block tree vector!!");
-            //auto bt = forest->tree[blockId];
+            // auto bt = forest->tree[blockId];
             auto bt = forest->tree.find(blockId);
-            neighborValue[idx.z][idx.y][idx.x] =
-                bt->second.findValue(low + idx, btv->blockWidth);
+            if (!bt->second.isLoaded) {
+              neighborValue[idx.z][idx.y][idx.x] = bt->second.avgValue;
+              auto btRequested                   = forest->treeBinDataRequested;
+              // mtx.lock();
+              // if (btRequested.find(blockId) != btRequested.end()) {
+              //   forest->treeBinDataRequested.insert(blockId);
+              // }
+              // mtx.unlock();
+            } else {
+              neighborValue[idx.z][idx.y][idx.x] =
+                  bt->second.findValue(low + idx, btv->blockWidth);
+            }
           });
           v = lerp3<float>(neighborValue[0][0][0],
                            neighborValue[0][0][1],
@@ -220,6 +234,8 @@ namespace ospray {
         // PING;
         return vec3f(1, 0, 0);
       }
+
+
 
       std::shared_ptr<bt::BrickTreeForest<N, T>> forest;
       BrickTreeVolume *btv;

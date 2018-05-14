@@ -27,6 +27,7 @@
 #include <vector>
 #include <map>
 #include <thread>
+#include <set>
 
 namespace ospray {
   namespace bt {
@@ -175,7 +176,6 @@ namespace ospray {
     {
       void loadBrickTreeData( const FileName &brickFileBase)
       {
-        //const FileName &brickFileBase = "/usr/sci/data/ospray/dns/dns-t01-d5/dns-bt";
         typename std::map<size_t, BrickTree<N, T>>::iterator it;
         for (it = tree.begin(); it != tree.end(); it++) {
           if (!it->second.isLoaded) {
@@ -183,6 +183,16 @@ namespace ospray {
             it->second.isLoaded = true;
           }
         }
+        // std::set<size_t>::iterator it = treeBinDataRequested.begin();
+        // while (it != treeBinDataRequested.end()) {
+        //   size_t blockID = *it;
+        //   auto bt        = tree.find(blockID);
+        //   if (!bt->second.isLoaded) {
+        //     bt->second.mapOspBin(brickFileBase, bt->first);
+        //     bt->second.isLoaded = true;
+        //     treeBinDataRequested.erase(it);
+        //   }
+        // }
       }
 
       BrickTreeForest(const vec3i &forestSize,
@@ -211,6 +221,7 @@ namespace ospray {
           loadBrickTreeData(filebase); 
         },this->brickFileBase);
 
+        loadBrickTreeThread.detach();
 
         // if (!mpicommon::isMpiParallel()) {
         //   // tree.resize(numTrees);
@@ -294,6 +305,7 @@ namespace ospray {
       box3f forestBounds; 
 
       std::map<size_t, BrickTree<N,T>> tree;
+      std::set<size_t> treeBinDataRequested; 
 
       //std::vector<BrickTree<N, T>> tree;
     };
