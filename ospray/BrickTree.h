@@ -17,9 +17,22 @@
 #pragma once
 
 // ospray
+#include "ospcommon/math.h"
 #include "ospray/volume/Volume.h"
 // bt base
 #include "../bt/BrickTree.h"
+// hack for lerp3
+#ifndef lerp3
+namespace ospcommon {
+template<typename T>
+__forceinline T lerp3(const float x0, const float x1, const float x2, const float x3,
+                      const float x4, const float x5, const float x6, const float x7,
+                      const T &u, const T &v, const T &i) {
+  return (1.0f - i) * lerp2<T>(x0,x1,x2,x3,u,v) + i * lerp2<T>(x4,x5,x6,x7,u,v);
+}
+};
+#endif
+
 
 #include <mutex>
 #include <thread>
@@ -124,7 +137,7 @@ namespace ospray {
 
         vec3i low    = (vec3i)coord;
         vec3i upper  = low + vec3i(1);
-        vec3f factor = coord - low;
+        vec3f factor = coord - (vec3f)low;
 
         float v;
 #if 0
@@ -137,7 +150,7 @@ namespace ospray {
           float neighborValue[2][2];
           for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 2; j++) {
-              size_t blockId = btv->getBlockID(low + vec3i(0, j, i));
+              size_t blockId = btv->getBlockID((vec3f)(low + vec3i(0, j, i)));
               if (blockId >= btv->gridSize.product())
                 throw std::runtime_error("Overflow the block tree vector!!");
               //auto bt = forest->tree[blockId];
@@ -156,7 +169,7 @@ namespace ospray {
           float neighborValue[2][2];
           for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 2; j++) {
-              size_t blockId = btv->getBlockID(low + vec3i(j, 0, i));
+              size_t blockId = btv->getBlockID((vec3f)(low + vec3i(j, 0, i)));
               if (blockId >= btv->gridSize.product())
                 throw std::runtime_error("Overflow the block tree vector!!");
               //auto bt = forest->tree[blockId];
@@ -175,7 +188,7 @@ namespace ospray {
           float neighborValue[2][2];
           for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 2; j++) {
-              size_t blockId = btv->getBlockID(low + vec3i(j, i, 0));
+              size_t blockId = btv->getBlockID((vec3f)(low + vec3i(j, i, 0)));
               if (blockId >= btv->gridSize.product())
                 throw std::runtime_error("Overflow the block tree vector!!");
               //auto bt = forest->tree[blockId];
@@ -193,7 +206,7 @@ namespace ospray {
         } else {
           float neighborValue[2][2][2];
           array3D::for_each(vec3i(2), [&](const vec3i &idx) {
-            size_t blockId = btv->getBlockID(low + idx);
+            size_t blockId = btv->getBlockID((vec3f)(low + idx));
             if (blockId >= btv->gridSize.product())
               throw std::runtime_error("Overflow the block tree vector!!");
             // auto bt = forest->tree[blockId];
