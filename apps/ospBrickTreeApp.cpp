@@ -2,31 +2,29 @@
 // Copyright SCI Institute, University of Utah, 2018
 // ======================================================================== //
 
-
 #include "ospray/ospray.h"
-
 #include "ospcommon/AffineSpace.h"
 #include "ospcommon/LinearSpace.h"
 #include "ospcommon/box.h"
 #include "ospcommon/range.h"
 #include "ospcommon/vec.h"
-#include <vector>
 
-#include "ospHelper.h"
-//#include "impiReader.h"
-#include "impiTFN.h"  // where the TFN color and opacity are defined
-//#include "loader/meshloader.h"
-#include "ospCommandLine.h"
-#include "sgBrickTree.h"
 #include "../ospray/BrickTree.h"
 
-#ifdef __unix__
-#include <unistd.h>
-#endif
+#include "ospHelper.h"
+#include "ospCommandLine.h"
+#include "ospBrickTreeTools.h"
+
 #if USE_VIEWER
 #include "opengl/viewer.h"
 #endif
 
+#include "tfn_definition.h"  // where the TFN color and opacity are defined
+
+#ifdef __unix__
+# include <unistd.h>
+#endif
+#include <vector>
 
 using namespace ospcommon;
 
@@ -107,30 +105,35 @@ int main(int ac, const char **av)
     ospSetVec2f(transferFcn, "valueRange", (const osp::vec2f &)args.valueRange);
   }
   ospCommit(transferFcn);
-  // ospRelease(cData);
-  // ospRelease(oData);
-#if 1
+  ospRelease(cData);
+  ospRelease(oData);
+
+  // create volume
+#define HACKED_VOLUME 1
+#if !(HACKED_VOLUME)
+  std::cout << "[app] Using BrickTree Volume" << std::endl;
   std::shared_ptr<ospray::BrickTree> bricktreeVolume = std::make_shared<ospray::BrickTree>();
   bricktreeVolume->setFromXML(args.inputFiles[0]);
   bricktreeVolume->createBtVolume(transferFcn);
   ospAddVolume(world,bricktreeVolume->ospVolume);
-  ospray::bt::BrickTreeVolume *btVolume = (ospray::bt::BrickTreeVolume *)bricktreeVolume->ospVolume;
-  
+  ospray::bt::BrickTreeVolume *btVolume = (ospray::bt::BrickTreeVolume *)bricktreeVolume->ospVolume;  
   box3f worldBounds(vec3f(0), vec3f(btVolume->validSize) - vec3f(1));
 #else
-  const std::string hacked_volume_path = "/home/sci/feng/Desktop/ws/data/magnetic-512-volume/magnetic-512-volume.raw";
+  std::cout << "[app] Using Hacked Volume" << std::endl;
+  const std::string hacked_volume_path = 
+    "/home/sci/feng/Desktop/ws/data/magnetic-512-volume/magnetic-512-volume.raw";
   const std::string hacked_volume_type = "float";
   const size_t hacked_dtype_size = 4;
   const ospcommon::vec3i hacked_dims(512);
   FILE *f = fopen(hacked_volume_path.c_str(), "rb");
   std::vector<char> volume_data(hacked_dims.x * hacked_dims.y * hacked_dims.z * hacked_dtype_size, 0);
-  size_t voxelsRead = fread(volume_data.data(), hacked_dtype_size, hacked_dims.x * hacked_dims.y * hacked_dims.z, f);
+  size_t voxelsRead = 
+    fread(volume_data.data(), hacked_dtype_size, hacked_dims.x * hacked_dims.y * hacked_dims.z, f);
   if (voxelsRead != hacked_dims.x * hacked_dims.y * hacked_dims.z) {
     throw std::runtime_error("Failed to read all voxles");
   }
   fclose(f);
-  OSPVolume hacked_vol = ospNewVolume("block_bricked_volume");
-  
+  OSPVolume hacked_vol = ospNewVolume("block_bricked_volume");  
   ospSet2f(hacked_vol, "voxelRange", 0, 1.5);  
   ospSetString(hacked_vol, "voxelType", hacked_volume_type.c_str());
   ospSetVec3i(hacked_vol, "dimensions", (osp::vec3i&)hacked_dims);
@@ -139,6 +142,7 @@ int main(int ac, const char **av)
   ospCommit(hacked_vol);
   ospAddVolume(world, hacked_vol);
 #endif
+
   // setup camera
   OSPCamera camera = ospNewCamera("perspective");
   vec3f vd         = args.vi - args.vp;
@@ -198,8 +202,6 @@ int main(int ac, const char **av)
   ospSet1f(renderer, "minContribution", 0.001f);
   ospCommit(renderer);
   
-
-
 #if USE_VIEWER
 
   viewer::Handler(camera,
@@ -209,12 +211,15 @@ int main(int ac, const char **av)
 
   viewer::Handler(transferFcn, args.valueRange.x, args.valueRange.y);
   viewer::Handler(world, renderer);
+#if !(HACKED_VOLUME)
   viewer::Handler(bricktreeVolume->ospVolume);
-  //viewer::Handler(hacked_vol);
-
+#else
+  viewer::Handler(hacked_vol);
+#endif
   viewer::Render(window);
 
 #else
+
   // setup framebuffer
   std::cout << std::endl;
   OSPFrameBuffer fb = ospNewFrameBuffer(
@@ -246,6 +251,7 @@ int main(int ac, const char **av)
   ospUnmapFrameBuffer(buffer, fb);
   std::cout << "#osp:bench: save image to " << args.outputImageName + ".ppm"
             << std::endl;
+
 #endif
 
   return 0;

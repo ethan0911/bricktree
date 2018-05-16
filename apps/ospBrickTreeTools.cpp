@@ -1,4 +1,4 @@
-#include "sgBrickTree.h"
+#include "ospBrickTreeTools.h"
 #include "ospray/common/OSPCommon.h"
 
 namespace ospray{
