@@ -109,9 +109,9 @@ int main(int ac, const char **av)
   ospRelease(oData);
 
   // create volume
-#define HACKED_VOLUME 1
+#define HACKED_VOLUME 0
 #if !(HACKED_VOLUME)
-  std::cout << "[app] Using BrickTree Volume" << std::endl;
+  std::cout << "#osp:bench using BrickTree volume" << std::endl;
   std::shared_ptr<ospray::BrickTree> bricktreeVolume = std::make_shared<ospray::BrickTree>();
   bricktreeVolume->setFromXML(args.inputFiles[0]);
   bricktreeVolume->createBtVolume(transferFcn);
@@ -119,7 +119,7 @@ int main(int ac, const char **av)
   ospray::bt::BrickTreeVolume *btVolume = (ospray::bt::BrickTreeVolume *)bricktreeVolume->ospVolume;  
   box3f worldBounds(vec3f(0), vec3f(btVolume->validSize) - vec3f(1));
 #else
-  std::cout << "[app] Using Hacked Volume" << std::endl;
+  std::cout << "#osp:bench using hacked volume" << std::endl;
   const std::string hacked_volume_path = 
     "/home/sci/feng/Desktop/ws/data/magnetic-512-volume/magnetic-512-volume.raw";
   const std::string hacked_volume_type = "float";
