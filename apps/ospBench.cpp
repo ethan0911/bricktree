@@ -188,12 +188,12 @@ int main(int ac, const char **av)
   ospSetObject(renderer, "camera", camera);
   ospSet1i(renderer, "shadowsEnabled", 1);
   ospSet1i(renderer, "oneSidedLighting", 1);
-  ospSet1i(renderer, "maxDepth", 100);
+  ospSet1i(renderer, "maxDepth", 5);
   ospSet1i(renderer, "spp", 1);
   ospSet1i(renderer, "autoEpsilon", 1);
   ospSet1i(renderer, "aoSamples", 1);
-  ospSet1i(renderer, "aoTransparencyEnabled", 1);
-  ospSet1f(renderer, "aoDistance", 10000.0f);
+  ospSet1i(renderer, "aoTransparencyEnabled", 0);
+  ospSet1f(renderer, "aoDistance", 1000.0f);
   ospSet1f(renderer, "epsilon", 0.001f);
   ospSet1f(renderer, "minContribution", 0.001f);
   ospCommit(renderer);
