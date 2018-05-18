@@ -22,12 +22,15 @@
 // ospcommon
 #include "ospcommon/FileName.h"
 #include "mpiCommon/MPICommon.h"
+#include "ospcommon/tasking/parallel_for.h"
 // std
 #include <iostream>
 #include <vector>
 #include <map>
 #include <thread>
 #include <set>
+#include <mutex>
+#include <thread>
 
 namespace ospray {
   namespace bt {
@@ -36,6 +39,8 @@ namespace ospray {
 
     template <typename T>
     const char *typeToString();
+
+    static std::mutex binDataReadMtx;
 
     /*! the superblock we'll store at the end of the binary
     memory/file region for a binary bricktree */
@@ -142,15 +147,16 @@ namespace ospray {
       // virtual const void *valueBrickPtr()  const override { return valueBrick; }
       // virtual const void *indexBrickPtr() const override { return indexBrick; }
 
-      const ValueBrick *valueBrick;
-      const IndexBrick *indexBrick;
-      const BrickInfo  *brickInfo;
+      ValueBrick *valueBrick;
+      IndexBrick *indexBrick;
+      BrickInfo  *brickInfo;
       
       virtual vec3i getRootGridDims() const override { return rootGridDims; }
 
       /*! map this one from a binary dump that was created by the bricktreebuilder/raw2bricks tool */
       void mapOSP(const FileName &brickFileBase, size_t treeID, const vec3i &treeIdx);
       void mapOspBin(const FileName &brickFileBase, size_t treeID);
+      void loadOspBin(const FileName &brickFileBase, size_t treeID);
 
       // const typename BrickTree<N,T>::ValueBrick * findValueBrick(const vec3i &coord,int blockWidth,int xIdx, int yIdx, int zIdx);
       const T findValue(const vec3i &coord,int blockWidth);
@@ -166,33 +172,47 @@ namespace ospray {
          the first value brick in the (shared) value brick array */
       const int32_t *firstValueBrickOfTree;
 
-      bool isLoaded;
+      bool isLoaded;//check if data has been paged in
+      bool isRequested; //check if the binary block has been requested
     };
+
 
     
     /* a entire *FOREST* of bricktrees */
     template <int N, typename T = float>
     struct BrickTreeForest
     {
+
       void loadBrickTreeData( const FileName &brickFileBase)
       {
-        typename std::map<size_t, BrickTree<N, T>>::iterator it;
-        for (it = tree.begin(); it != tree.end(); it++) {
-          if (!it->second.isLoaded) {
-            it->second.mapOspBin(brickFileBase, it->first);
-            it->second.isLoaded = true;
-          }
-        }
-        // std::set<size_t>::iterator it = treeBinDataRequested.begin();
-        // while (it != treeBinDataRequested.end()) {
-        //   size_t blockID = *it;
-        //   auto bt        = tree.find(blockID);
-        //   if (!bt->second.isLoaded) {
-        //     bt->second.mapOspBin(brickFileBase, bt->first);
-        //     bt->second.isLoaded = true;
-        //     treeBinDataRequested.erase(it);
+        // typename std::map<size_t, BrickTree<N, T>>::iterator it;
+        // for (it = tree.begin(); it != tree.end(); it++) {
+        //   if (!it->second.isLoaded) {
+        //     it->second.mapOspBin(brickFileBase, it->first);
+        //     it->second.isLoaded = true;
         //   }
         // }
+        //PRINT(treeBinDataRequested.size());
+        while (treeLoaded.size() != tree.size()) {
+          // typename std::map<size_t, BrickTree<N, T>>::iterator it;
+          // for (it = tree.begin(); it != tree.end(); it++) {
+          //   if (!it->second.isLoaded && it->second.isRequested) {
+          //     it->second.mapOspBin(brickFileBase, it->first);
+          //     it->second.isLoaded = true;
+          //   }
+          // }
+          for (size_t idx = 0; idx < treeBinDataRequested.size(); idx++) {
+            if (treeBinDataRequested[idx] == 0)
+              continue;
+            if (!tree[idx].isLoaded) {
+              tree[idx].mapOspBin(brickFileBase, idx);
+              tree[idx].isLoaded = true;
+              treeLoaded.push_back(idx);
+              // std::cout<<"block:" << idx<< " loaded!"<<std::endl;
+              // PRINT(treeLoaded.size());
+            }
+          }
+        }
       }
 
       BrickTreeForest(const vec3i &forestSize,
@@ -205,6 +225,8 @@ namespace ospray {
         int numTrees = forestSize.product();
         assert(numTrees > 0);
 
+        treeBinDataRequested.resize(numTrees,0);
+
         array3D::for_each(forestSize, [&](const vec3i &treeCoord) {
           size_t treeID = array3D::longIndex(treeCoord, forestSize);
           BrickTree<N, T> aTree;
@@ -214,9 +236,15 @@ namespace ospray {
           forestBounds = box3f(vec3f(0.f), vec3f(originalVolumeSize));
         });
 
+        // ospcommon::tasking::parallel_for(numTrees, [&](size_t treeID) {
+        //   BrickTree<N, T> aTree;
+        //   aTree.mapOSP(brickFileBase, treeID, vec3i(0));
+        //   tree.insert(std::make_pair(treeID, aTree));
+        // });
+
         PRINT(tree.size());
 
-        //apply another thread to load the binary data.(*.ospbin)
+        //set another thread to load the binary data.(*.ospbin)
         loadBrickTreeThread = std::thread([&](const FileName& filebase) { 
           loadBrickTreeData(filebase); 
         },this->brickFileBase);
@@ -305,7 +333,9 @@ namespace ospray {
       box3f forestBounds; 
 
       std::map<size_t, BrickTree<N,T>> tree;
-      std::set<size_t> treeBinDataRequested; 
+      //identify if the current tree is re
+      std::vector<size_t> treeBinDataRequested; 
+      std::vector<size_t> treeLoaded;
 
       //std::vector<BrickTree<N, T>> tree;
     };

@@ -54,6 +54,7 @@ namespace ospray {
     template<int N, typename T>
     BrickTree<N,T>::BrickTree(){
       isLoaded = false;
+      isRequested = false;
     }
 
 
@@ -122,15 +123,21 @@ namespace ospray {
       char blockFileName[10000];
       sprintf(blockFileName,"%s-brick%06i.ospbin",brickFileBase.str().c_str(),(int)blockID);
       //PRINT(blockFileName);
-      FILE *file = fopen(blockFileName,"rb");
+
+      valueBrick = (ValueBrick*) malloc(sizeof(ValueBrick) * numValueBricks);
+      indexBrick = (IndexBrick*) malloc(sizeof(IndexBrick) * numIndexBricks);
+      brickInfo = (BrickInfo*) malloc(sizeof(BrickInfo) * numBrickInfos);
+
+      FILE *file = fopen(blockFileName, "rb");
       if (!file)
-        throw std::runtime_error("could not open brick bin file "+std::string(blockFileName));
+        throw std::runtime_error("could not open brick bin file " +
+                                 std::string(blockFileName));
+#if 0
       fseek(file,0,SEEK_END);
-      size_t actualFileSize = ftell(file);
-      fclose(file);
-      
+      size_t actualFileSize = ftell(file);return
       int fd = ::open(blockFileName, O_LARGEFILE | O_RDONLY);
       assert(fd >= 0);
+      fclose(file);
       
       unsigned char *mem = (unsigned char *)mmap(NULL,actualFileSize,PROT_READ,MAP_SHARED,fd,0);
       assert(mem != NULL && (long long)mem != -1LL);
@@ -139,6 +146,47 @@ namespace ospray {
       valueBrick = (ValueBrick*)(mem+binBlockInfo.valueBricksOfs);
       indexBrick = (IndexBrick*)(mem+binBlockInfo.indexBricksOfs);
       brickInfo  = (BrickInfo*)(mem+binBlockInfo.indexBrickOfOfs);
+#else
+      fseek(file, binBlockInfo.indexBricksOfs, SEEK_SET);
+      size_t indexBrickRead =
+          fread(indexBrick, sizeof(IndexBrick), numIndexBricks, file);
+      fseek(file, binBlockInfo.valueBricksOfs, SEEK_SET);
+      size_t valueBrickRead =
+          fread(valueBrick, sizeof(ValueBrick), numValueBricks, file);
+      fseek(file, binBlockInfo.indexBrickOfOfs, SEEK_SET);
+      size_t brickInfoRead =
+          fread(brickInfo, sizeof(BrickInfo), numBrickInfos, file);
+      fclose(file);
+#endif
+    }
+
+    template<int N, typename T>
+    void BrickTree<N,T>::loadOspBin(const FileName &brickFileBase, size_t blockID)
+    {
+            //mmap the binary file
+      char blockFileName[10000];
+      sprintf(blockFileName,"%s-brick%06i.ospbin",brickFileBase.str().c_str(),(int)blockID);
+      //PRINT(blockFileName);
+
+      valueBrick = (ValueBrick*) malloc(sizeof(ValueBrick) * numValueBricks);
+      indexBrick = (IndexBrick*) malloc(sizeof(IndexBrick) * numIndexBricks);
+      brickInfo = (BrickInfo*) malloc(sizeof(BrickInfo) * numBrickInfos);
+
+      FILE *file = fopen(blockFileName, "rb");
+      if (!file)
+        throw std::runtime_error("could not open brick bin file " +
+                                 std::string(blockFileName));
+
+      fseek(file, binBlockInfo.indexBricksOfs, SEEK_SET);
+      size_t indexBrickRead =
+          fread(indexBrick, sizeof(IndexBrick), numIndexBricks, file);
+      fseek(file, binBlockInfo.valueBricksOfs, SEEK_SET);
+      size_t valueBrickRead =
+          fread(valueBrick, sizeof(ValueBrick), numValueBricks, file);
+      fseek(file, binBlockInfo.indexBrickOfOfs, SEEK_SET);
+      size_t brickInfoRead =
+          fread(brickInfo, sizeof(BrickInfo), numBrickInfos, file);
+      fclose(file);
     }
 
 
