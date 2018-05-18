@@ -2,7 +2,8 @@
 // Copyright SCI Institute, University of Utah, 2018
 // ======================================================================== //
 #pragma once
-
+#ifndef OSPRAY_WIDGET_H
+#define OSPRAY_WIDGET_H
 #include "viewer.h"
 #include "common.h"
 #include <imgui.h>
@@ -145,7 +146,8 @@ struct TfnProp
               const std::array<float, 2> &r) {
             cptr               = std::vector<float>(c);
             aptr               = std::vector<float>(a);
-            OSPData colorsData = ospNewData(c.size() / 3, OSP_FLOAT3, c.data());
+            OSPData colorsData = 
+              ospNewData(c.size() / 3, OSP_FLOAT3, c.data());
             ospCommit(colorsData);
             std::vector<float> o(a.size() / 2);
             for (int i = 0; i < a.size() / 2; ++i) { o[i] = a[2 * i + 1]; }
@@ -158,7 +160,7 @@ struct TfnProp
             ospCommit(ospTfn);
             ospRelease(colorsData);
             ospRelease(opacitiesData);
-            ClearOSPRay();
+            //ClearOSPRay();
           });
       tfnWidget->setDefaultRange(tfnValueRange[0], tfnValueRange[1]);
     }
@@ -192,3 +194,4 @@ struct TfnProp
   }
 };
 };
+#endif//OSPRAY_WIDGET_H

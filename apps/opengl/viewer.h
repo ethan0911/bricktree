@@ -17,12 +17,12 @@ namespace viewer {
 	       const float vmin = 0.f, const float vmax = -1.f);
 
   void Handler(OSPVolume v);
-  void StartOSPRay();
-  void StopOSPRay();
-  void ClearOSPRay();
-  void CommitOSPRay();
-  void ResizeOSPRay(int width, int height);
-  void UploadOSPRay();
+  /* void StartOSPRay(); */
+  /* void StopOSPRay(); */
+  /* void ClearOSPRay(); */
+  /* void CommitOSPRay(); */
+  /* void ResizeOSPRay(int width, int height); */
+  /* void UploadOSPRay(); */
 };
 
 #endif//OSPRAY_VIEWER_H

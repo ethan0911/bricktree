@@ -3,66 +3,138 @@
 #define OSPRAY_FRAMEBUFFER_H
 
 #include "common.h"
+// ospcommon
+#include "ospray/ospray.h"
+#include "ospcommon/vec.h"
+#include "ospcommon/box.h"
+#include "ospcommon/AsyncLoop.h"
+#include "ospcommon/utility/CodeTimer.h"
+#include "ospcommon/utility/DoubleBufferedValue.h"
+#include "ospcommon/utility/TransactionalValue.h"
+// std
+#include <thread>
+#include <atomic>
+#include <mutex>
+#include <vector>
+#include <memory>
 
-class Framebuffer {
-private:
-  OSPFrameBuffer ospFB  = nullptr;
-  OSPRenderer    ospRen = nullptr;
-  uint32_t      *mapFB;
-  //GLuint texID;
-  //GLuint fboID;
-  size_t W, H;
-public:
-  OSPFrameBuffer OSPRayPtr() { return ospFB; }
-  uint32_t* GetBuffer() { return mapFB; }
-  void Init(size_t width, size_t height, OSPRenderer ren) 
-  { 
-    /* glGenFramebuffers(1, &fboID); */
-    /* glGenTextures(1, &texID); */
-    /* glBindTexture(GL_TEXTURE_2D, texID); */
-    /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER); */
-    /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER); */
-    /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); */
-    /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); */
-    /* glBindTexture(GL_TEXTURE_2D, 0); */
-    /* glBindTexture(GL_TEXTURE_2D, texID); */
-    /* glBindFramebuffer(GL_FRAMEBUFFER, fboID); */
-    /* glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texID, 0); */
-    /* glBindFramebuffer(GL_FRAMEBUFFER, 0); */
-    /* glBindTexture(GL_TEXTURE_2D, 0); */
-    Resize(width, height); 
-    ospRen = ren;
-  }
-  void Resize(size_t width, size_t height) 
-  {
-    W = width;
-    H = height;
-    Clean();
-    ospFB = ospNewFrameBuffer(osp::vec2i{(int) W, (int) H}, OSP_FB_SRGBA, OSP_FB_COLOR | OSP_FB_ACCUM);
-    ospFrameBufferClear(ospFB, OSP_FB_COLOR | OSP_FB_ACCUM);
-    mapFB = (uint32_t *) ospMapFrameBuffer(ospFB, OSP_FB_COLOR);
-    //glBindTexture(GL_TEXTURE_2D, texID);
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-    //glBindTexture(GL_TEXTURE_2D, 0);
-  }
-  void Clean() 
-  {
-    if (ospFB != nullptr) { ospUnmapFrameBuffer(mapFB, ospFB); ospFreeFrameBuffer(ospFB); }
-    ospFB = nullptr;
-  }
-  void Render() 
-  {
-    ospRenderFrame(ospFB, ospRen, OSP_FB_COLOR | OSP_FB_ACCUM);
-  }
-  void Display() 
-  {
-    /* glBindTexture(GL_TEXTURE_2D, texID); */
-    /* glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, W, H, GL_RGBA, GL_UNSIGNED_BYTE, mapFB); */
-    /* glBindFramebuffer(GL_READ_FRAMEBUFFER, fboID); */
-    /* glBlitFramebuffer(0, 0, W, H, 0, 0, W, H, GL_COLOR_BUFFER_BIT, GL_NEAREST); */
-    /* glBindTexture(GL_TEXTURE_2D, 0); */
-  }
-  void Clear() { ospFrameBufferClear(ospFB, OSP_FB_COLOR | OSP_FB_ACCUM); }
+namespace viewer {
+  class AsyncFramebuffer {
+  public:
+    enum ExecState {STOPPED, RUNNING, INVALID};
+  private:
+    std::unique_ptr<std::thread> fbThread;
+    std::atomic<ExecState>       fbState{ExecState::INVALID};
+    std::mutex                   fbMutex;
+    std::atomic<bool>            fbHasNewFrame{false};
+    std::atomic<bool>            fbClear{false};
+    ospcommon::utility::TransactionalValue<vec2i>
+      fbSize;
+    ospcommon::utility::DoubleBufferedValue<std::vector<uint32_t>> 
+      fbBuffers;
+    int fbNumPixels{0};
+  private:
+    uint32_t      *ospFBPtr;
+    OSPFrameBuffer ospFB  = nullptr;
+    OSPRenderer    ospRen = nullptr;
+
+  public:
+    void Validate()
+    {
+      if (fbState == ExecState::INVALID)
+        fbState = ExecState::STOPPED;
+    }
+    void Start() {
+      // avoid multiple start
+      if (fbState == ExecState::RUNNING)
+        return;
+      // start the thread
+      fbState = ExecState::RUNNING;
+      fbThread = std::make_unique<std::thread>([&] {
+          while (fbState != ExecState::STOPPED) {
+            // check if we need to resize
+            if (fbSize.update()) {
+              //std::cout << "resize" << std::endl;
+              // resize buffer
+              ospcommon::vec2i size = fbSize.get();
+              fbNumPixels = size.x * size.y;
+              fbBuffers.front().resize(fbNumPixels);
+              fbBuffers.back().resize(fbNumPixels);
+              //std::cout << "new size " << fbNumPixels << std::endl;
+              // resize ospray framebuffer
+              if (ospFB != nullptr) {
+                ospUnmapFrameBuffer(ospFBPtr, ospFB);
+                ospFreeFrameBuffer(ospFB);
+                ospFB = nullptr;
+              }
+              //std::cout << "clean" << std::endl;
+              ospFB = ospNewFrameBuffer((osp::vec2i&)size, 
+                                        OSP_FB_SRGBA, 
+                                        OSP_FB_COLOR | OSP_FB_ACCUM);
+              //std::cout << "create" << std::endl;
+              ospFrameBufferClear(ospFB, OSP_FB_COLOR | OSP_FB_ACCUM);
+              ospFBPtr = (uint32_t *) ospMapFrameBuffer(ospFB, OSP_FB_COLOR);
+            }
+            // clear a frame
+            if (fbClear) {
+              fbClear = false;
+              ospFrameBufferClear(ospFB, OSP_FB_COLOR | OSP_FB_ACCUM);
+            }
+            // render a frame
+            ospRenderFrame(ospFB, ospRen, OSP_FB_COLOR | OSP_FB_ACCUM);
+            // map
+            auto *srcPB = (uint32_t*)ospFBPtr;
+            auto *dstPB = (uint32_t*)fbBuffers.back().data();
+            memcpy(dstPB, srcPB, fbNumPixels * sizeof(uint32_t));
+            // swap
+            if (fbMutex.try_lock()) {
+              fbBuffers.swap();
+              fbHasNewFrame = true;
+              fbMutex.unlock();
+            }
+          }
+        });
+    }
+    void Stop() {
+      if (fbState != ExecState::RUNNING)
+        return;      
+      fbState = ExecState::STOPPED;
+      fbThread->join();
+      fbThread.reset();
+    }
+    bool HasNewFrame() { return fbHasNewFrame; };
+    const std::vector<uint32_t> &MapFramebuffer()
+    {
+      fbMutex.lock();
+      fbHasNewFrame = false;
+      return fbBuffers.front();
+    }
+    void UnmapFramebuffer()
+    {
+      fbMutex.unlock();
+    }
+    void Resize(size_t width, size_t height) 
+    {
+      fbSize = ospcommon::vec2i(width, height);
+    }
+    void Init(size_t width, size_t height, OSPRenderer ren) 
+    { 
+      Resize(width, height); 
+      ospRen = ren;
+    }
+    void Clear() 
+    {
+      fbClear = true;
+    }
+    void Delete() 
+    {
+      if (ospFB != nullptr) {
+        ospUnmapFrameBuffer(ospFBPtr, ospFB); 
+        ospFreeFrameBuffer(ospFB);
+        ospFB = nullptr;
+      }
+    }
+
+  };
 };
-
 #endif //OSPRAY_FRAMEBUFFER_H

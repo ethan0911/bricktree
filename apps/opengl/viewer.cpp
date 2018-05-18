@@ -1,15 +1,15 @@
 // ======================================================================== //
 // Copyright SCI Institute, University of Utah, 2018
 // ======================================================================== //
-#include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #ifdef _WIN32
-#undef APIENTRY
-#define GLFW_EXPOSE_NATIVE_WIN32
-#define GLFW_EXPOSE_NATIVE_WGL
-#include <GLFW/glfw3native.h>
+# undef APIENTRY
+# define GLFW_EXPOSE_NATIVE_WIN32
+# define GLFW_EXPOSE_NATIVE_WGL
+# include <GLFW/glfw3native.h>
 #endif
+#include <iostream>
 //! @name error check helper from EPFL ICG class
 static inline const char *ErrorString(GLenum error) {
   const char *msg;
@@ -31,7 +31,8 @@ static inline void _glCheckError
   (const char *file, int line, const char *comment) {
   GLenum error;
   while ((error = glGetError()) != GL_NO_ERROR) {
-    fprintf(stderr, "ERROR: %s (file %s, line %i: %s).\n", comment, file, line, ErrorString(error));
+    fprintf(stderr, "ERROR: %s (file %s, line %i: %s).\n", 
+            comment, file, line, ErrorString(error));
   }
 }
 #ifndef NDEBUG
@@ -46,8 +47,9 @@ static inline void _glCheckError
 #include "camera.h"
 #include "framebuffer.h"
 #include "widgets.h"
-#include <thread>
-#include <atomic>
+//#include <thread>
+//#include <atomic>
+
 
 // ======================================================================== //
 using namespace viewer;
@@ -56,11 +58,10 @@ static affine3f Identity(vec3f(1, 0, 0),
                          vec3f(0, 0, 1),
                          vec3f(0, 0, 0));
 static std::vector<GLFWwindow *> windowmap;
-
+static std::vector<uint32_t> displaybuffer;
 // ======================================================================== //
-static Camera camera;
-static Framebuffer framebuffer;
-
+static AsyncFramebuffer framebuffer;
+static Camera           camera;
 static OSPCamera             ospCam;
 static OSPModel              ospMod;
 static OSPRenderer           ospRen;
@@ -84,63 +85,63 @@ static std::atomic<bool> osprayStop(false);
 static std::atomic<bool> osprayClear(false);
 static std::atomic<bool> osprayCommit(true);
 namespace viewer {
-  void StartOSPRay()
-  {
-    osprayStop   = false;
-    osprayThread = new std::thread([=] {
-      while (!osprayStop) {
-        // commit ospray changes
-        if (osprayCommit) {
-          std::cout << "commit" << std::endl;
-          for (auto &g : geoPropList) {
-            g.Commit();
-          }
-          for (auto &v : volumePropList) {
-            v.Commit();
-          }
-          ospCommit(ospMod);
-          for (auto &l : lightPropList) {
-            l.Commit();
-          }
-          ospSetData(ospRen, "lights", ospLightData);
-          rendererProp.Commit();          
-          osprayCommit = false;
-          osprayClear  = true;
-        }
-        // render
-        if (osprayClear) {
-          framebuffer.Clear();
-          osprayClear = false;
-        }
-        sphere.Update(camera.CameraFocus(), ospMod);
-        framebuffer.Render();
-      }
-    });
-  }
-  void StopOSPRay()
-  {
-    osprayStop = true;
-    osprayThread->join();
-    delete osprayThread;
-  }
-  void ClearOSPRay()
-  {
-    osprayClear = true;
-  }
-  void CommitOSPRay()
-  {
-    osprayCommit = true;
-  }
-  void ResizeOSPRay(int width, int height)
-  {
-    StopOSPRay();
-    framebuffer.Resize((size_t)width, (size_t)height);
-    StartOSPRay();
-  }
-  void UploadOSPRay()
-  {
-    framebuffer.Display();
-  }
+  // void StartOSPRay()
+  // {
+  //   osprayStop   = false;
+  //   osprayThread = new std::thread([=] {
+  //     while (!osprayStop) {
+  //       // commit ospray changes
+  //       if (osprayCommit) {
+  //         std::cout << "commit" << std::endl;
+  //         for (auto &g : geoPropList) {
+  //           g.Commit();
+  //         }
+  //         for (auto &v : volumePropList) {
+  //           v.Commit();
+  //         }
+  //         ospCommit(ospMod);
+  //         for (auto &l : lightPropList) {
+  //           l.Commit();
+  //         }
+  //         ospSetData(ospRen, "lights", ospLightData);
+  //         rendererProp.Commit();          
+  //         osprayCommit = false;
+  //         osprayClear  = true;
+  //       }
+  //       // render
+  //       if (osprayClear) {
+  //         framebuffer.Clear();
+  //         osprayClear = false;
+  //       }
+  //       sphere.Update(camera.CameraFocus(), ospMod);
+  //       framebuffer.Render();
+  //     }
+  //   });
+  // }
+  // void StopOSPRay()
+  // {
+  //   osprayStop = true;
+  //   osprayThread->join();
+  //   delete osprayThread;
+  // }
+  // void ClearOSPRay()
+  // {
+  //   osprayClear = true;
+  // }
+  // void CommitOSPRay()
+  // {
+  //   osprayCommit = true;
+  // }
+  // void ResizeOSPRay(int width, int height)
+  // {
+  //   StopOSPRay();
+  //   framebuffer.Resize((size_t)width, (size_t)height);
+  //   StartOSPRay();
+  // }
+  // void UploadOSPRay()
+  // {
+  //   framebuffer.Display();
+  // }
 };  // namespace viewer
 
 // ======================================================================== //
@@ -162,7 +163,8 @@ namespace viewer {
     lightPropList.emplace_back("DirectionalLight", ospRen, ospLightList);
     lightPropList.emplace_back("AmbientLight", ospRen, ospLightList);
     ospLightData = ospNewData
-      (ospLightList.size(), OSP_OBJECT, ospLightList.data(), OSP_DATA_SHARED_BUFFER);
+      (ospLightList.size(), OSP_OBJECT, ospLightList.data(), 
+       OSP_DATA_SHARED_BUFFER);
     ospCommit(ospLightData);
     ospSetData(ospRen, "lights", ospLightData);
     ospCommit(ospRen);
@@ -232,7 +234,8 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMoveNZ(0.01f * camera.CameraFocalLength());
     }
-    ClearOSPRay();
+    //ClearOSPRay();
+    framebuffer.Clear();
   } else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
     /* DOWN: backward */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -240,7 +243,8 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMoveNZ(-0.01f * camera.CameraFocalLength());
     }
-    ClearOSPRay();
+    //ClearOSPRay();
+    framebuffer.Clear();
   } else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
     /* A: left */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -248,7 +252,8 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMovePX(0.01f * camera.CameraFocalLength());
     }
-    ClearOSPRay();
+    //ClearOSPRay();
+    framebuffer.Clear();
   } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
     /* D: right */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -256,7 +261,8 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMovePX(-0.01f * camera.CameraFocalLength());
     }
-    ClearOSPRay();
+    //ClearOSPRay();
+    framebuffer.Clear();
   } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
     /* S: down */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -264,7 +270,8 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMovePY(0.01f * camera.CameraFocalLength());
     }
-    ClearOSPRay();
+    //ClearOSPRay();
+    framebuffer.Clear();
   } else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
     /* W: up */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -272,27 +279,32 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMovePY(-0.01f * camera.CameraFocalLength());
     }
-    ClearOSPRay();
+    //ClearOSPRay();
+    framebuffer.Clear();
   }
 }
 void key_onpress_callback(GLFWwindow *window, int key, 
                           int scancode, int action, int mods)
 {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-    StopOSPRay();
+    //StopOSPRay();
+    //framebuffer.stop();
     glfwSetWindowShouldClose(window, GL_TRUE);
-    exit(0);
+    //exit(0);
   }
   if (!ImGui::GetIO().WantCaptureKeyboard) {
     if (key == GLFW_KEY_LEFT_ALT) {
-      StopOSPRay();
+      //StopOSPRay();
+      framebuffer.Stop();
       if (action == GLFW_PRESS) {
         sphere.Add(ospMod);
       } else if (action == GLFW_RELEASE) {
         sphere.Remove(ospMod);
       }
-      ClearOSPRay();
-      StartOSPRay();
+      framebuffer.Clear();
+      framebuffer.Start();
+      //ClearOSPRay();
+      //StartOSPRay();
     }
     if (key == GLFW_KEY_P && action == GLFW_PRESS) {
       transferFcn.Print();
@@ -317,13 +329,15 @@ void cursor_position_callback(GLFWwindow *window, double xpos, double ypos)
     int right_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
     if (left_state == GLFW_PRESS) {
       camera.CameraDrag((float)xpos, (float)ypos);
-      ClearOSPRay();
+      //ClearOSPRay();
+      framebuffer.Clear();
     } else {
       camera.CameraBeginDrag((float)xpos, (float)ypos);
     }
     if (right_state == GLFW_PRESS) {
       camera.CameraZoom((float)xpos, (float)ypos);
-      ClearOSPRay();
+      //ClearOSPRay();
+      framebuffer.Clear();
     } else {
       camera.CameraBeginZoom((float)xpos, (float)ypos);
     }
@@ -331,13 +345,17 @@ void cursor_position_callback(GLFWwindow *window, double xpos, double ypos)
 }
 void window_size_callback(GLFWwindow *window, int width, int height)
 {
+  // resize opengl
   glViewport(0, 0, width, height);
   glBindTexture(GL_TEXTURE_2D, texID);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 
+               0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
   glBindTexture(GL_TEXTURE_2D, 0);
+  // resize ospray objects
   camera.CameraUpdateProj((size_t)width, (size_t)height);
-  ResizeOSPRay(width, height);
-
+  framebuffer.Resize(width, height);
+  // resize screen buffer
+  displaybuffer.resize(camera.CameraWidth() * camera.CameraHeight());
 }
 
 // ======================================================================== //
@@ -346,25 +364,41 @@ void window_size_callback(GLFWwindow *window, int width, int height)
 void RenderWindow(GLFWwindow *window)
 {
   // Init
+  displaybuffer.resize(camera.CameraWidth() * camera.CameraHeight(), 0);
   ImGui_Impi_Init(window, false);
   transferFcn.Init();
+
   // Start
-  StartOSPRay();
+  // StartOSPRay();
+  framebuffer.Start();
+    
   while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     {
       key_onhold_callback(window);
-
+      
+      if (framebuffer.HasNewFrame()) {
+        auto &mapped = framebuffer.MapFramebuffer();
+        if (mapped.size() == displaybuffer.size()) {
+          auto *srcPixels = mapped.data();
+          auto *dstPixels = displaybuffer.data();
+          memcpy(dstPixels, srcPixels,
+                 displaybuffer.size() * sizeof(uint32_t));
+        }
+        framebuffer.UnmapFramebuffer();
+      }
+      
       glBindTexture(GL_TEXTURE_2D, texID);
-      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, camera.CameraWidth(), camera.CameraHeight(), 
-                      GL_RGBA, GL_UNSIGNED_BYTE, framebuffer.GetBuffer());
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 
+                      camera.CameraWidth(), camera.CameraHeight(), 
+                      GL_RGBA, GL_UNSIGNED_BYTE,
+                      displaybuffer.data());
       glBindFramebuffer(GL_READ_FRAMEBUFFER, fboID);
       glBlitFramebuffer(0, 0, camera.CameraWidth(), camera.CameraHeight(), 
                         0, 0, camera.CameraWidth(), camera.CameraHeight(),
                         GL_COLOR_BUFFER_BIT, GL_NEAREST);
       glBindTexture(GL_TEXTURE_2D, 0);
-      
-      UploadOSPRay();
+
 
       ImGui_Impi_NewFrame();
       transferFcn.Draw();
@@ -378,7 +412,7 @@ void RenderWindow(GLFWwindow *window)
           l.Draw();
         }
         if (ImGui::Button("Commit")) {
-          CommitOSPRay();
+          //CommitOSPRay();
         };
       }
       ImGui::End();
@@ -388,7 +422,8 @@ void RenderWindow(GLFWwindow *window)
     glfwPollEvents();
   }
   // ShutDown
-  StopOSPRay();
+  framebuffer.Stop();
+  //StopOSPRay();
   {
     ImGui_Impi_Shutdown();
   }
@@ -445,7 +480,8 @@ GLFWwindow *CreateWindow()
                camera.CameraWidth(), camera.CameraHeight(), 
                0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texID, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                         GL_TEXTURE_2D, texID, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glBindTexture(GL_TEXTURE_2D, 0);
   return window;
