@@ -21,19 +21,20 @@
 #include "ospray/volume/Volume.h"
 // bt base
 #include "../bt/BrickTree.h"
+
 // hack for lerp3
-//#ifndef lerp3
 namespace ospcommon {
 template<typename T>
-__forceinline T lerp3(const float x0, const float x1, const float x2, const float x3,
-                      const float x4, const float x5, const float x6, const float x7,
-                      const T &u, const T &v, const T &i) {
-  return (1.0f - i) * lerp2<T>(x0,x1,x2,x3,u,v) + i * lerp2<T>(x4,x5,x6,x7,u,v);
-}
+  __forceinline T lerp3(const float x0, const float x1, const float x2,
+                        const float x3, const float x4, const float x5,
+                        const float x6, const float x7,
+                        const T &u, const T &v, const T &i) {
+    return (1.0f - i) * lerp2<T>(x0,x1,x2,x3,u,v) + 
+           i * lerp2<T>(x4,x5,x6,x7,u,v);
+   }
 };
-//#endif
 
-
+// other headers
 #include <mutex>
 #include <thread>
 
@@ -107,10 +108,9 @@ namespace ospray {
       std::string fileName;
       std::string format;
       OSPDataType voxelType;
-      // //actual volume bounds for distributed parallel rendering
+      // actual volume bounds for distributed parallel rendering
       box3f volBounds;
     };
-
 
     /*! the actual sampler code for a bricktree; to be specialized for
       bricksize, voxel type, etcpp */
