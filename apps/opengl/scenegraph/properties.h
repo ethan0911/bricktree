@@ -15,9 +15,14 @@
 
 #include <vector>
 
-#define Setter(fvar, nvar, t) \
-  void Set##nvar (const t& v) { this->fvar = v; }
 #define TValue ospcommon::utility::TransactionalValue
+#define Setter(fvar, nvar, t)                           \
+  private:                                              \
+  TValue<t> fvar;                                       \
+  t         imgui_##fvar;                               \
+  public:                                               \
+  void Set##nvar (const t& v) { this->fvar = v; }
+
 
 namespace viewer {
 
@@ -33,27 +38,22 @@ namespace viewer {
     enum Type { Perspective, Orthographic, Panoramic } type;
   private:
     OSPCamera self = nullptr;
-    // ==== camera ===== //
-    TValue<ospcommon::vec3f> pos, dir, up;
-    TValue<float> aspect;
-    TValue<float> nearClip;                        /* OPT */
-    TValue<ospcommon::vec2f> imageStart, imageEnd; /* OPT */
-    TValue<float> shutterOpen, shutterClose;
-    // ==== perspective camera ===== //
-    TValue<float> fovy;
-    TValue<float> apertureRadius;                  /* OPT */
-    TValue<float> focusDistance;                   /* OPT */
-    TValue<bool>  architectural;                   /* OPT */
-    TValue<int>   stereoMode;                      /* OPT */
-    TValue<float> interpupillaryDistance;          /* OPT */
-    // ==== orthographic camera ===== //
-    TValue<float> height;
+    /* // ==== camera ===== // */
+    /* TValue<ospcommon::vec3f> pos, dir, up; */
+    /* TValue<float> aspect; */
+    /* TValue<float> nearClip;                        /\* OPT *\/ */
+    /* TValue<ospcommon::vec2f> imageStart, imageEnd; /\* OPT *\/ */
+    /* TValue<float> shutterOpen, shutterClose; */
+    /* // ==== perspective camera ===== // */
+    /* TValue<float> fovy; */
+    /* TValue<float> apertureRadius;                  /\* OPT *\/ */
+    /* TValue<float> focusDistance;                   /\* OPT *\/ */
+    /* TValue<bool>  architectural;                   /\* OPT *\/ */
+    /* TValue<int>   stereoMode;                      /\* OPT *\/ */
+    /* TValue<float> interpupillaryDistance;          /\* OPT *\/ */
+    /* // ==== orthographic camera ===== // */
+    /* TValue<float> height; */
   public:
-    // ==== Constructor ===== //
-    CameraProp(const Type& t);
-    OSPCamera& operator*() { return self; }
-    // ==== Init ===== //
-    void Init(OSPCamera camera);
     // ==== Set ===== //
     /* camera */
     Setter(pos, Pos, ospcommon::vec3f);
@@ -74,6 +74,12 @@ namespace viewer {
     Setter(interpupillaryDistance, InterpupillaryDistance, float);
     /* orthographic camera */
     Setter(height, Height, float);
+  public:
+    // ==== Constructor ===== //
+    CameraProp(const Type& t);
+    OSPCamera& operator*() { return self; }
+    // ==== Init ===== //
+    void Init(OSPCamera camera);
     // ==== Draw & Commit ===== //
     void Draw();
     bool Commit();
