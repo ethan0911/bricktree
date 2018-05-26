@@ -45,9 +45,7 @@ static inline void _glCheckError
 #include "viewer.h"
 #include "common.h"
 #include "camera.h"
-
 #include "engine.h"
-
 #include "widgets.h"
 
 // ======================================================================== //
@@ -59,17 +57,15 @@ static affine3f Identity(vec3f(1, 0, 0),
 static std::vector<GLFWwindow *> windowmap;
 static std::vector<uint32_t> displaybuffer;
 // ======================================================================== //
-static OSPCamera             ospCam;
 static OSPModel              ospMod;
 static OSPRenderer           ospRen;
 static OSPData               ospLightData;
 static std::vector<OSPLight> ospLightList;
 
-static CameraProp cameraProp(viewer::CameraProp::Perspective);
-static std::vector<LightProp>  lightPropList;
-
+static CameraProp cameraProp;
 static RendererProp rendererProp;
-static TfnProp transferFcn;
+static TransferFunctionProp tfnProp;
+static std::vector<LightProp>  lightPropList;
 
 static Engine framebuffer;
 static Camera camera(cameraProp);
@@ -78,7 +74,7 @@ bool viewer::widgets::Commit() {
   bool update = false;
   if (cameraProp.Commit()) { update = true; }
   if (rendererProp.Commit()) { update = true; }
-  if (transferFcn.Commit()) { update = true; }
+  if (tfnProp.Commit()) { update = true; }
   return update;
 }
 
@@ -116,27 +112,26 @@ namespace viewer {
     framebuffer.Init(camera.CameraWidth(), camera.CameraHeight(), ospRen);
     RenderWindow(windowmap[id]);
   };
-  void Handler(OSPCamera c,
+  void Handler(OSPCamera c, const std::string& type,
                const osp::vec3f &vp,
                const osp::vec3f &vu,
                const osp::vec3f &vi)
   {
-    ospCam = c;
     camera.SetViewPort(vec3f(vp.x, vp.y, vp.z),
                        vec3f(vu.x, vu.y, vu.z),
                        vec3f(vi.x, vi.y, vi.z),
                        60.f);
-    camera.Init(ospCam);
-  };
-  void Handler(OSPTransferFunction t, const float &a, const float &b)
-  {
-    transferFcn.Init(t, a, b);
+    camera.Init(c, type);
   };
   void Handler(OSPModel m, OSPRenderer r)
   {
     ospMod = m;
     ospRen = r;
-    rendererProp.Init(r);
+    rendererProp.Init(r, viewer::RendererProp::Scivis);
+  };
+  void Handler(OSPTransferFunction t, const float &a, const float &b)
+  {
+    tfnProp.Create(t, a, b);
   };
 };  // namespace viewer
 
@@ -168,8 +163,6 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMoveNZ(0.01f * camera.CameraFocalLength());
     }
-    //ClearOSPRay();
-    framebuffer.Clear();
   } else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
     /* DOWN: backward */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -177,8 +170,6 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMoveNZ(-0.01f * camera.CameraFocalLength());
     }
-    //ClearOSPRay();
-    framebuffer.Clear();
   } else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
     /* A: left */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -186,8 +177,6 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMovePX(0.01f * camera.CameraFocalLength());
     }
-    //ClearOSPRay();
-    framebuffer.Clear();
   } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
     /* D: right */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -195,8 +184,6 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMovePX(-0.01f * camera.CameraFocalLength());
     }
-    //ClearOSPRay();
-    framebuffer.Clear();
   } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
     /* S: down */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -204,8 +191,6 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMovePY(0.01f * camera.CameraFocalLength());
     }
-    //ClearOSPRay();
-    framebuffer.Clear();
   } else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
     /* W: up */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -213,22 +198,16 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMovePY(-0.01f * camera.CameraFocalLength());
     }
-    //ClearOSPRay();
-    framebuffer.Clear();
   }
 }
 void key_onpress_callback(GLFWwindow *window, int key, 
                           int scancode, int action, int mods)
 {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-    //StopOSPRay();
-    //framebuffer.stop();
     glfwSetWindowShouldClose(window, GL_TRUE);
-    //exit(0);
   }
   if (!ImGui::GetIO().WantCaptureKeyboard) {
     if (key == GLFW_KEY_LEFT_ALT) {
-      //StopOSPRay();
       framebuffer.Stop();
       if (action == GLFW_PRESS) {
         sphere.Add(ospMod);
@@ -237,11 +216,9 @@ void key_onpress_callback(GLFWwindow *window, int key,
       }
       framebuffer.Clear();
       framebuffer.Start();
-      //ClearOSPRay();
-      //StartOSPRay();
     }
     if (key == GLFW_KEY_P && action == GLFW_PRESS) {
-      transferFcn.Print();
+      tfnProp.Print();
     } else if (key == GLFW_KEY_V && action == GLFW_PRESS) {
       const auto vi = camera.CameraFocus();
       const auto vp = camera.CameraPos();
@@ -263,15 +240,11 @@ void cursor_position_callback(GLFWwindow *window, double xpos, double ypos)
     int right_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
     if (left_state == GLFW_PRESS) {
       camera.CameraDrag((float)xpos, (float)ypos);
-      //ClearOSPRay();
-      framebuffer.Clear();
     } else {
       camera.CameraBeginDrag((float)xpos, (float)ypos);
     }
     if (right_state == GLFW_PRESS) {
       camera.CameraZoom((float)xpos, (float)ypos);
-      //ClearOSPRay();
-      framebuffer.Clear();
     } else {
       camera.CameraBeginZoom((float)xpos, (float)ypos);
     }
@@ -300,12 +273,9 @@ void RenderWindow(GLFWwindow *window)
   // Init
   displaybuffer.resize(camera.CameraWidth() * camera.CameraHeight(), 0);
   ImGui_Impi_Init(window, false);
-  transferFcn.Init();
-
+  tfnProp.Init();
   // Start
-  // StartOSPRay();
-  framebuffer.Start();
-    
+  framebuffer.Start();    
   while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     {
@@ -335,7 +305,7 @@ void RenderWindow(GLFWwindow *window)
 
 
       ImGui_Impi_NewFrame();
-      transferFcn.Draw();
+      tfnProp.Draw();
       ImGui::Begin("Rendering Properties");
       {
         rendererProp.Draw();

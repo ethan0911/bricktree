@@ -15,51 +15,11 @@ using namespace ospcommon;
 // ======================================================================== //
 //
 // ======================================================================== //
-viewer::CameraProp::CameraProp(const CameraProp::Type& t)
-  :
-  type(t),
-  /* camera */
-  pos(vec3f(0.f)),
-  dir(vec3f(0.f, 0.f, 1.f)),
-  up(vec3f(0.f, 1.f, 0.f)),
-  nearClip(1e-6f), 
-  imageStart(vec2f(0.f)),
-  imageEnd(vec2f(1.f)),
-  shutterOpen(0.f),
-  shutterClose(0.f),
-  aspect(1.f),
-  /* perspective camera */
-  fovy(60.f),
-  apertureRadius(0.f),
-  focusDistance(1.f),
-  architectural(false),
-  stereoMode(0),
-  interpupillaryDistance(0.0635f),
-  /* orthographic camera */
-  height(1.f)
+viewer::CameraProp::CameraProp() {}
+void viewer::CameraProp::Init(OSPCamera camera, 
+                              const viewer::CameraProp::Type& t) 
 {
-  /* camera */
-  pos.update();
-  dir.update();
-  up.update();
-  nearClip.update();
-  imageStart.update();
-  imageEnd.update();
-  shutterOpen.update();
-  shutterClose.update();
-  aspect.update();
-  /* perspective camera */
-  fovy.update();
-  apertureRadius.update();
-  focusDistance.update();
-  architectural.update();
-  stereoMode.update();
-  interpupillaryDistance.update();
-  /* orthographic camera */
-  height.update();
-}
-void viewer::CameraProp::Init(OSPCamera camera) 
-{
+  type = t;
   if (camera == nullptr) { throw std::runtime_error("empty camera found"); }
   self = camera;
 }
@@ -104,53 +64,11 @@ bool viewer::CameraProp::Commit()
 // ======================================================================== //
 //
 // ======================================================================== //
-viewer::RendererProp::RendererProp() 
-  :
-  /* ospray */
-  autoEpsilon(true),
-  epsilon(1e-6f),
-  spp(1),
-  maxDepth(20),
-  minContribution(0.001f),
-  varianceThreshold(0.f),
-  bgColor(vec4f(0.f)),
-  shadowsEnabled(false),
-  aoSamples(0),
-  aoDistance(1e20f),
-  aoWeight(0.f),
-  aoTransparencyEnabled(false),
-  oneSidedLighting(true)
+viewer::RendererProp::RendererProp() {}
+void viewer::RendererProp::Init(OSPRenderer renderer, 
+                                const viewer::RendererProp::Type& t) 
 {
-  autoEpsilon.update();
-  epsilon.update();
-  spp.update();
-  maxDepth.update();
-  minContribution.update();
-  varianceThreshold.update();
-  bgColor.update();
-  shadowsEnabled.update();
-  aoSamples.update();
-  aoDistance.update();
-  aoWeight.update();
-  aoTransparencyEnabled.update();
-  oneSidedLighting.update();
-  /* imgui */
-  imgui_autoEpsilon = autoEpsilon.ref();
-  imgui_epsilon = epsilon.ref();
-  imgui_spp = spp.ref();
-  imgui_maxDepth = maxDepth.ref();
-  imgui_minContribution = minContribution.ref();
-  imgui_varianceThreshold = varianceThreshold.ref();
-  imgui_bgColor = bgColor.ref();
-  imgui_shadowsEnabled = shadowsEnabled.ref();
-  imgui_aoSamples = aoSamples.ref();
-  imgui_aoDistance = aoDistance.ref();
-  imgui_aoWeight = aoWeight.ref();
-  imgui_aoTransparencyEnabled = aoTransparencyEnabled.ref();
-  imgui_oneSidedLighting = oneSidedLighting.ref();
-}
-void viewer::RendererProp::Init(OSPRenderer renderer) 
-{
+  type = t;
   self = renderer;
 }
 void viewer::RendererProp::Draw()
@@ -204,38 +122,55 @@ bool viewer::RendererProp::Commit()
     ospSet1i(self, "aoTransparencyEnabled", aoTransparencyEnabled.ref());
     update = true;
   }
-  ospSet1i(self, "spp", 1);
-  ospSet1i(self, "autoEpsilon", 1);
-  ospSet1f(self, "epsilon", 0.001f);
-  ospSet1f(self, "minContribution", 0.001f);
+  if (spp.update()) {
+    ospSet1i(self, "spp", spp.ref());
+    update = true;
+  }
+  if (autoEpsilon.update()) {
+    ospSet1i(self, "autoEpsilon", autoEpsilon.ref());
+    update = true;
+  }
+  if (epsilon.update()) {
+    ospSet1f(self, "epsilon", epsilon.ref());
+    update = true;
+  }
+  if (minContribution.update()) {
+    ospSet1f(self, "minContribution", minContribution.ref());
+    update = true;
+  }
   ospCommit(self);
   return update;
 }
 
 // ======================================================================== //
-void viewer::TfnProp::Init()
+//
+// ======================================================================== //
+viewer::TransferFunctionProp::TransferFunctionProp() {}
+void viewer::TransferFunctionProp::Init()
 {
+  using tfn::tfn_widget::TransferFunctionWidget;
   if (self != nullptr) {
-    tfnWidget = std::make_shared<tfn::tfn_widget::TransferFunctionWidget>
+    widget = std::make_shared<TransferFunctionWidget>
       ([&](const std::vector<float> &c,
            const std::vector<float> &a,
-           const std::array<float, 2> &r) {
-        tfnMutex.lock();
-        cptr = std::vector<float>(c);
-        aptr = std::vector<float>(a);
-        valueRange.x = r[0];
-        valueRange.y = r[1];
-        hasNewValue = true;
-        tfnMutex.unlock();
-      });
-    tfnWidget->setDefaultRange(tfnValueRange[0], tfnValueRange[1]);
+           const std::array<float, 2> &r) 
+       {
+         lock.lock();
+         colors = std::vector<float>(c);
+         alphas = std::vector<float>(a);
+         valueRange = vec2f(r[0], r[1]);
+         doUpdate = true;
+         lock.unlock();
+       });
+    widget->setDefaultRange(valueRange_default[0],
+                            valueRange_default[1]);
   }
 }
-void viewer::TfnProp::Print()
+void viewer::TransferFunctionProp::Print()
 {
-  if ((!cptr.empty()) && !(aptr.empty())) {
-    const std::vector<float> &c = cptr;
-    const std::vector<float> &a = aptr;
+  if ((!colors.empty()) && !(alphas.empty())) {
+    const std::vector<float> &c = colors;
+    const std::vector<float> &a = alphas;
     std::cout << std::endl
               << "static std::vector<float> colors = {" << std::endl;
     for (int i = 0; i < c.size() / 3; ++i) {
@@ -250,35 +185,36 @@ void viewer::TfnProp::Print()
     std::cout << "};" << std::endl << std::endl;
   }
 }
-void viewer::TfnProp::Draw()
+void viewer::TransferFunctionProp::Draw()
 {
   if (self != nullptr) {
-    if (tfnWidget->drawUI()) {
-      tfnWidget->render(128);
-    };
+    if (widget->drawUI()) { widget->render(128); };
   }
 }
-bool viewer::TfnProp::Commit()
+bool viewer::TransferFunctionProp::Commit()
 {
   bool update = false;
-  if (hasNewValue && tfnMutex.try_lock()) {
-    hasNewValue = false;
-    OSPData colorsData = ospNewData(cptr.size() / 3, 
+  if (doUpdate && lock.try_lock()) {
+    doUpdate = false;
+    OSPData colorsData = ospNewData(colors.size() / 3, 
                                     OSP_FLOAT3, 
-                                    cptr.data());
+                                    colors.data());
     ospCommit(colorsData);
-    std::vector<float> o(aptr.size() / 2);
-    for (int i = 0; i < aptr.size() / 2; ++i) { o[i] = aptr[2 * i + 1]; }
+    std::vector<float> o(alphas.size() / 2);
+    for (int i = 0; i < alphas.size() / 2; ++i) {
+      o[i] = alphas[2 * i + 1]; 
+    }
     OSPData opacitiesData = ospNewData(o.size(), OSP_FLOAT, o.data());   
     ospCommit(opacitiesData);
     ospSetData(self, "colors", colorsData);
     ospSetData(self, "opacities", opacitiesData);
-    ospSetVec2f(self, "valueRange", (osp::vec2f&)valueRange);
+    if (valueRange.update())
+      ospSetVec2f(self, "valueRange", (osp::vec2f&)valueRange.ref());
     ospCommit(self);
     ospRelease(colorsData);
     ospRelease(opacitiesData);
-    update= true;
-    tfnMutex.unlock();
+    lock.unlock();
+    update = true;
   }
   return update;
 }

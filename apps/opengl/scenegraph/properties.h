@@ -5,166 +5,148 @@
 #ifndef OSPRAY_PROPERTIES_H
 #define OSPRAY_PROPERTIES_H
 
+/* ospray */
 #include "ospray/ospray.h"
 #include "ospcommon/vec.h"
 #include "ospcommon/utility/TransactionalValue.h"
-
+/* imgui */
 #include <imgui.h>
 #include <imgui_glfw_impi.h>
 #include "widgets/TransferFunctionWidget.h"
-
+/* stl */
 #include <vector>
 
+// ======================================================================== //
+//
+// ======================================================================== //
 #define TValue ospcommon::utility::TransactionalValue
-#define Setter(fvar, nvar, t)                           \
-  private:                                              \
-  TValue<t> fvar;                                       \
-  t         imgui_##fvar;                               \
-  public:                                               \
-  void Set##nvar (const t& v) { this->fvar = v; }
-
+#define Setter(field, name, type, value)                 \
+  private:                                               \
+  TValue<type> field{value};                             \
+  type imgui_##field = field.ref();                      \
+public:                                                  \
+  void Set##name (const type& v) { this->field = v; }
 
 namespace viewer {
 
+  // ====================================================================== //
+  //
   // ====================================================================== //
   struct Prop { 
     virtual void Draw() = 0; 
     virtual bool Commit() = 0; 
   };
+
+  // ====================================================================== //
+  //
   // ====================================================================== //
   class CameraProp : public Prop
   {
-  public:
-    enum Type { Perspective, Orthographic, Panoramic } type;
   private:
     OSPCamera self = nullptr;
-    /* // ==== camera ===== // */
-    /* TValue<ospcommon::vec3f> pos, dir, up; */
-    /* TValue<float> aspect; */
-    /* TValue<float> nearClip;                        /\* OPT *\/ */
-    /* TValue<ospcommon::vec2f> imageStart, imageEnd; /\* OPT *\/ */
-    /* TValue<float> shutterOpen, shutterClose; */
-    /* // ==== perspective camera ===== // */
-    /* TValue<float> fovy; */
-    /* TValue<float> apertureRadius;                  /\* OPT *\/ */
-    /* TValue<float> focusDistance;                   /\* OPT *\/ */
-    /* TValue<bool>  architectural;                   /\* OPT *\/ */
-    /* TValue<int>   stereoMode;                      /\* OPT *\/ */
-    /* TValue<float> interpupillaryDistance;          /\* OPT *\/ */
-    /* // ==== orthographic camera ===== // */
-    /* TValue<float> height; */
+  public:
+    enum Type { Perspective, Orthographic, Panoramic } type;
   public:
     // ==== Set ===== //
     /* camera */
-    Setter(pos, Pos, ospcommon::vec3f);
-    Setter(dir, Dir, ospcommon::vec3f);
-    Setter(up, Up, ospcommon::vec3f);
-    Setter(nearClip, NearClip, float);
-    Setter(imageStart, ImageStart, ospcommon::vec2f);
-    Setter(imageEnd, ImageEnd, ospcommon::vec2f);
-    Setter(shutterOpen, ShutterOpen, float);
-    Setter(shutterClose, ShutterClose, float);
-    Setter(aspect, Aspect, float);
+    Setter(pos, Pos, ospcommon::vec3f, ospcommon::vec3f(0.f));
+    Setter(dir, Dir, ospcommon::vec3f, ospcommon::vec3f(0.f, 0.f, 1.f));
+    Setter(up, Up, ospcommon::vec3f, ospcommon::vec3f(0.f, 1.f, 0.f));
+    Setter(nearClip, NearClip, float, 1e-6f);
+    Setter(imageStart, ImageStart, ospcommon::vec2f, ospcommon::vec2f(0.f));
+    Setter(imageEnd, ImageEnd, ospcommon::vec2f, ospcommon::vec2f(0.f));
+    Setter(shutterOpen, ShutterOpen, float, 0.f);
+    Setter(shutterClose, ShutterClose, float, 0.f);
+    Setter(aspect, Aspect, float, 1.f);
     /* perspective camera */
-    Setter(fovy, Fovy, float);
-    Setter(apertureRadius, ApertureRadius, float);
-    Setter(focusDistance, FocusDistance, float);
-    Setter(architectural, Architectural, bool);
-    Setter(stereoMode, StereoMode, int);
-    Setter(interpupillaryDistance, InterpupillaryDistance, float);
+    Setter(fovy, Fovy, float, 60.f);
+    Setter(apertureRadius, ApertureRadius, float, 0.f);
+    Setter(focusDistance, FocusDistance, float, 1.f);
+    Setter(architectural, Architectural, bool, false);
+    Setter(stereoMode, StereoMode, int, 0);
+    Setter(interpupillaryDistance, InterpupillaryDistance, float, 0.0635f);
     /* orthographic camera */
-    Setter(height, Height, float);
+    Setter(height, Height, float, 1.f);
   public:
-    // ==== Constructor ===== //
-    CameraProp(const Type& t);
+    CameraProp();
     OSPCamera& operator*() { return self; }
-    // ==== Init ===== //
-    void Init(OSPCamera camera);
-    // ==== Draw & Commit ===== //
+    void Init(OSPCamera camera, const Type& t);
     void Draw();
     bool Commit();
   };
 
+  // ====================================================================== //
+  //
   // ====================================================================== //
   class RendererProp : public Prop
   {
   private:
     OSPRenderer self = nullptr;
-    // ==== renderer ===== //
-    TValue<bool> autoEpsilon;
-    TValue<float> epsilon;
-    TValue<int> spp;
-    TValue<int> maxDepth;
-    TValue<float> minContribution;
-    TValue<float> varianceThreshold;
-    TValue<ospcommon::vec4f> bgColor;    
-    // ==== scivis renderer ===== //
-    TValue<bool> shadowsEnabled;
-    TValue<int> aoSamples;
-    TValue<float> aoDistance;
-    TValue<float> aoWeight;
-    TValue<bool> aoTransparencyEnabled;
-    TValue<bool> oneSidedLighting;
-  private:
-    // ==== renderer ===== //
-    bool  imgui_autoEpsilon;
-    float imgui_epsilon;
-    int   imgui_spp;
-    int   imgui_maxDepth;
-    float imgui_minContribution;
-    float imgui_varianceThreshold;
-    ospcommon::vec4f imgui_bgColor;    
-    // ==== scivis renderer ===== //
-    bool  imgui_shadowsEnabled;
-    int   imgui_aoSamples;
-    float imgui_aoDistance;
-    float imgui_aoWeight;
-    bool  imgui_aoTransparencyEnabled;
-    bool  imgui_oneSidedLighting;
   public:
-    // ==== Constructor ===== //
+    enum Type { Scivis, Pathtracer } type;
+  public:
+    // ==== renderer ===== //
+    Setter(autoEpsilon, AutoEpsilon, bool, true);
+    Setter(epsilon, Epsilon, float, 1e-6f);
+    Setter(spp, Spp, int, 1);
+    Setter(maxDepth, MaxDepth, int, 20);
+    Setter(minContribution, MinContribution, float, 0.001f);
+    Setter(varianceThreshold, VarianceThreshold, float, 0.f);
+    Setter(bgColor, BgColor, ospcommon::vec4f, ospcommon::vec4f(0.f));
+    // ==== scivis renderer ===== //
+    Setter(shadowsEnabled, ShadowsEnabled, bool, false);
+    Setter(aoSamples, AoSamples, int, 0);
+    Setter(aoDistance, AoDistance, float, 1e20f);
+    Setter(aoWeight, AoWeight, float, 0.f);
+    Setter(aoTransparencyEnabled, AoTransparencyEnabled, bool, false);
+    Setter(oneSidedLighting, OneSidedLighting, bool, true);
+    // ==== pathtracer renderer ===== //
+    Setter(rouletteDepth, RouletteDepth, int, 5);
+    Setter(maxContribution, MaxContribution, float, ospcommon::inf);
+  public:
     RendererProp();
     OSPRenderer& operator*() { return self; }
-    // ==== Init ===== //
-    void Init(OSPRenderer renderer);
-    // ==== Draw & Commit ===== //
+    void Init(OSPRenderer renderer, const Type& t);
     void Draw();
     bool Commit();
   };
 
   // ====================================================================== //
-  class TfnProp : public Prop
+  //
+  // ====================================================================== //
+  class TransferFunctionProp : public Prop
   {
   private:
     OSPTransferFunction self;
-    std::shared_ptr<tfn::tfn_widget::TransferFunctionWidget> tfnWidget;
-    float tfnValueRange[2] = {0.f, 1.f};
-    ospcommon::vec2f valueRange;
-    std::vector<float> cptr;
-    std::vector<float> aptr;    
-    bool hasNewValue = true;
-    bool print = false;
-    std::mutex tfnMutex;
+    bool doUpdate = true;
+    std::shared_ptr<tfn::tfn_widget::TransferFunctionWidget> widget;
+    std::mutex lock;
+    std::vector<float> colors;
+    std::vector<float> alphas;
+    float valueRange_default[2] = {0.f, 1.f};
+    TValue<ospcommon::vec2f> valueRange;
   public:
-    void Init(OSPTransferFunction o, 
-              const float a = 0.f, 
-              const float b = 1.f)
+    TransferFunctionProp();
+    OSPTransferFunction& operator*() { return self; }
+    void Create(OSPTransferFunction o, 
+                const float a = 0.f, 
+                const float b = 1.f)
     {
       self             = o;
-      tfnValueRange[0] = a;
-      tfnValueRange[1] = b;
+      valueRange_default[0] = a;
+      valueRange_default[1] = b;
     }
     void Init();
-    void Print();
     void Draw();
     bool Commit();
+    void Print();
   };
 
-
-  using namespace ospcommon;
-
   // ====================================================================== //
-  class LightProp
+  //
+  // ====================================================================== //
+  using namespace ospcommon;
+  class LightProp 
   {
   public:
     OSPLight L;

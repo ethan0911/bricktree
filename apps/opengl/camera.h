@@ -14,14 +14,11 @@ private:
 private:
   size_t width, height;
   float aspect;
-  float zNear = 1.f, zFar = 50.f;
   float fovy;
   vec3f eye;   // this trackball requires camera to be
   vec3f focus; // initialized on negtive z axis with
   vec3f up;    // y axis as the initial up vector !!!!
   Trackball ball;
-  // OSPRay
-  //OSPCamera ospCamera = nullptr;
   viewer::CameraProp& prop;
 public:
   Camera(viewer::CameraProp& p) : prop(p) {}
@@ -32,7 +29,8 @@ public:
     aspect = (float) width / height;
   }
 
-  void SetViewPort(const vec3f& vp, const vec3f& vu, const vec3f& vi, const float& angle)
+  void SetViewPort(const vec3f& vp, const vec3f& vu, 
+                   const vec3f& vi, const float& angle)
   {
     eye = vp;
     up  = vu;
@@ -53,49 +51,41 @@ public:
   vec3f CameraUp() {
     return xfmVector(this->ball.Matrix().l, this->up);
   }
-
-  float CameraZNear() { return this->zNear; }
-  float CameraZFar() { return this->zFar; }
-
-  void CameraBeginZoom(const float& x, const float& y) {
+  void  CameraBeginZoom(const float& x, const float& y) {
     const vec2f p = mouse2screen(x, y, this->width, this->height);
     this->ball.BeginZoom(p.x, p.y);
   }
-
-  void CameraZoom(const float& x, const float& y) {
+  void  CameraZoom(const float& x, const float& y) {
     const vec2f p = mouse2screen(x, y, this->width, this->height);
     this->ball.Zoom(p.x, p.y);
     CameraUpdateView();
   }
-
-  void CameraBeginDrag(const float& x, const float& y) {
+  void  CameraBeginDrag(const float& x, const float& y) {
     const vec2f p = mouse2screen(x, y, this->width, this->height);
     this->ball.BeginDrag(p.x, p.y);
   }
-
-  void CameraDrag(const float& x, const float& y) {
+  void  CameraDrag(const float& x, const float& y) {
     const vec2f p = mouse2screen(x, y, this->width, this->height);
     this->ball.Drag(p.x, p.y);
     CameraUpdateView();
   }
-
-  void CameraMoveNZ(const float& v) {
-    const auto dir = -normalize(xfmVector(this->ball.Matrix().l, this->eye - this->focus));
+  void  CameraMoveNZ(const float& v) {
+    const auto dir = -normalize(xfmVector(this->ball.Matrix().l, 
+                                          this->eye - this->focus));
     focus += v * dir;
     eye   += v * dir;
     CameraUpdateView();
   }
-
-  void CameraMovePX(const float& v) {
-    const auto Z = normalize(xfmVector(this->ball.Matrix().l, this->eye - this->focus));
+  void  CameraMovePX(const float& v) {
+    const auto Z = normalize(xfmVector(this->ball.Matrix().l, 
+                                       this->eye - this->focus));
     const auto Y =  xfmVector(this->ball.Matrix().l, this->up);    
     const auto dir = cross(Y, Z);
     focus += v * dir;
     eye   += v * dir;
     CameraUpdateView();
   }
-
-  void CameraMovePY(const float& v) {
+  void  CameraMovePY(const float& v) {
     const auto dir =  xfmVector(this->ball.Matrix().l, this->up);    
     focus += v * dir;
     eye   += v * dir;
@@ -105,22 +95,14 @@ public:
   //--------------------------------------------------------
   // OSPRay related
   //--------------------------------------------------------
-  OSPCamera OSPRayPtr() { 
-    //return this->ospCamera; 
-    return *prop;
-  }
-
-  void Clean() 
+  void Init(OSPCamera camera, const std::string type) 
   {
-    //if (ospCamera != nullptr) { ospRelease(ospCamera); }
-    //ospCamera = nullptr;
-  }
-
-  void Init(OSPCamera camera) 
-  {
-    if (camera == nullptr) { throw std::runtime_error("empty camera found"); }
-    //ospCamera = camera;
-    prop.Init(camera);
+    if (camera == nullptr) { 
+      throw std::runtime_error("empty camera found"); 
+    }
+    if (type == "perspective") {
+      prop.Init(camera, viewer::CameraProp::Perspective);
+    }
     CameraUpdateView();
     CameraUpdateProj(this->width, this->height);
   }
