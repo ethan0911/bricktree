@@ -66,87 +66,28 @@ static OSPData               ospLightData;
 static std::vector<OSPLight> ospLightList;
 
 static CameraProp cameraProp(viewer::CameraProp::Perspective);
-static std::vector<IsoGeoProp> geoPropList;
-static std::vector<VolumeProp> volumePropList;
 static std::vector<LightProp>  lightPropList;
 
-static RendererProp rendererProp(ospRen);
+static RendererProp rendererProp;
 static TfnProp transferFcn;
 
 static Engine framebuffer;
 static Camera camera(cameraProp);
 
-void viewer::widgets::Commit() {
-  cameraProp.Commit();
+bool viewer::widgets::Commit() {
+  bool update = false;
+  if (cameraProp.Commit()) { update = true; }
+  if (rendererProp.Commit()) { update = true; }
+  if (transferFcn.Commit()) { update = true; }
+  return update;
 }
+
 // ======================================================================== //
 #include "others/navsphere.h"
 static Sphere sphere;
 
 // ======================================================================== //
-static std::thread *osprayThread = nullptr;
-static std::atomic<bool> osprayStop(false);
-static std::atomic<bool> osprayClear(false);
-static std::atomic<bool> osprayCommit(true);
-namespace viewer {
-  // void StartOSPRay()
-  // {
-  //   osprayStop   = false;
-  //   osprayThread = new std::thread([=] {
-  //     while (!osprayStop) {
-  //       // commit ospray changes
-  //       if (osprayCommit) {
-  //         std::cout << "commit" << std::endl;
-  //         for (auto &g : geoPropList) {
-  //           g.Commit();
-  //         }
-  //         for (auto &v : volumePropList) {
-  //           v.Commit();
-  //         }
-  //         ospCommit(ospMod);
-  //         for (auto &l : lightPropList) {
-  //           l.Commit();
-  //         }
-  //         ospSetData(ospRen, "lights", ospLightData);
-  //         rendererProp.Commit();          
-  //         osprayCommit = false;
-  //         osprayClear  = true;
-  //       }
-  //       // render
-  //       if (osprayClear) {
-  //         framebuffer.Clear();
-  //         osprayClear = false;
-  //       }
-  //       sphere.Update(camera.CameraFocus(), ospMod);
-  //       framebuffer.Render();
-  //     }
-  //   });
-  // }
-  // void StopOSPRay()
-  // {
-  //   osprayStop = true;
-  //   osprayThread->join();
-  //   delete osprayThread;
-  // }
-  // void ClearOSPRay()
-  // {
-  //   osprayClear = true;
-  // }
-  // void CommitOSPRay()
-  // {
-  //   osprayCommit = true;
-  // }
-  // void ResizeOSPRay(int width, int height)
-  // {
-  //   StopOSPRay();
-  //   framebuffer.Resize((size_t)width, (size_t)height);
-  //   StartOSPRay();
-  // }
-  // void UploadOSPRay()
-  // {
-  //   framebuffer.Display();
-  // }
-};  // namespace viewer
+namespace viewer {};  // namespace viewer
 
 // ======================================================================== //
 //
@@ -189,24 +130,13 @@ namespace viewer {
   };
   void Handler(OSPTransferFunction t, const float &a, const float &b)
   {
-    transferFcn.Create(t, a, b);
+    transferFcn.Init(t, a, b);
   };
   void Handler(OSPModel m, OSPRenderer r)
   {
     ospMod = m;
     ospRen = r;
-  };
-  void Handler(OSPGeometry g,
-               float &v,
-               const char *n,
-               const float vmin,
-               const float vmax)
-  {
-    geoPropList.emplace_back(g, v, vmin, vmax, n);
-  };
-  void Handler(OSPVolume v)
-  {
-    volumePropList.emplace_back(v);
+    rendererProp.Init(r);
   };
 };  // namespace viewer
 
@@ -409,9 +339,6 @@ void RenderWindow(GLFWwindow *window)
       ImGui::Begin("Rendering Properties");
       {
         rendererProp.Draw();
-        for (auto &g : geoPropList) {
-          g.Draw();
-        }
         for (auto &l : lightPropList) {
           l.Draw();
         }

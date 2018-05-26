@@ -16,6 +16,6 @@
 // ======================================================================== //
 using namespace ospcommon;
 namespace viewer {
-namespace widgets { void Commit(); };
+  namespace widgets { bool Commit(); };
 };
 #endif//OSPRAY_WIDGET_H

@@ -18,10 +18,6 @@ OSPRAY_CREATE_APPLICATION(ospRaw2Bricks
 ## ====================================================================== ##
 if (OSPRAY_MODULE_BRICKTREE_WIDGET)
   add_subdirectory(opengl)
-  # HDF5 
-  find_package(HDF5 REQUIRED)
-  include_directories(${HDF5_INCLUDE_DIRS})  
-  # build
   ospray_create_application(ospBrickWidget
     ospBrickTreeApp.cpp
     ospBrickTreeTools.cpp
@@ -32,8 +28,7 @@ if (OSPRAY_MODULE_BRICKTREE_WIDGET)
     ospray_imgui
     ospray_imgui3d_sg
     ospray_app_viewer
-    ${HDF5_C_LIBRARIES}
-    ${HDF5_C_HL_LIBRARIES})
+    ${HDF5_LIBRARIES})
   set_target_properties(ospBrickWidget
     PROPERTIES 
     CXX_STANDARD 14
