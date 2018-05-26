@@ -211,18 +211,29 @@ namespace ospray {
               throw std::runtime_error("Overflow the block tree vector!!");
             // auto bt = forest->tree[blockId];
             auto bt = forest->tree.find(blockId);
+
             if (!bt->second.isLoaded) {
+              // this block hasn't been loaded, return average value
               neighborValue[idx.z][idx.y][idx.x] = bt->second.avgValue;
-              auto btRequested                   = forest->treeBinDataRequested;
-              // mtx.lock();
-              // if (btRequested.find(blockId) != btRequested.end()) {
-              //   forest->treeBinDataRequested.insert(blockId);
-              // }
-              // mtx.unlock();
+              if (!bt->second.isRequested) {
+                // this block hasn't been requested
+                mtx.lock();
+                //forest->treeBinDataRequested.push_back(blockId);
+                forest->treeBinDataRequested[blockId] = 1;  
+                bt->second.isRequested = true;
+                mtx.unlock();
+              }
             } else {
               neighborValue[idx.z][idx.y][idx.x] =
                   bt->second.findValue(low + idx, btv->blockWidth);
             }
+
+            // if (!bt->second.isLoaded) {
+            //   neighborValue[idx.z][idx.y][idx.x] = bt->second.avgValue;
+            // } else {
+            //   neighborValue[idx.z][idx.y][idx.x] =
+            //       bt->second.findValue(low + idx, btv->blockWidth);
+            // }
           });
           v = lerp3<float>(neighborValue[0][0][0],
                            neighborValue[0][0][1],
