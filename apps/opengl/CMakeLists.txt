@@ -30,14 +30,16 @@ include_directories(
   ${TFN_MODULE_INCLUDE_DIR}
   ${OPENGL_INCLUDE_DIR})
 ospray_create_library(ospray_app_viewer
+  scenegraph/properties.cpp
   viewer.cpp
+  engine.cpp
+  widgets.cpp
   external/glad.c
   external/imgui_glfw_impi.cpp
   ${TFN_MODULE_SRC}
   LINK
   ospray
   ospray_common
-  ospray_mpi_common
   ospray_imgui
   ospray_imgui3d_sg
   ${OPENGL_LIBRARIES})

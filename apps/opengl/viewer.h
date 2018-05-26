@@ -1,3 +1,6 @@
+// ======================================================================== //
+// Copyright SCI Institute, University of Utah, 2018
+// ======================================================================== //
 #pragma once
 #ifndef OSPRAY_VIEWER_H
 #define OSPRAY_VIEWER_H

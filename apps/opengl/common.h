@@ -1,3 +1,7 @@
+// ======================================================================== //
+// Copyright SCI Institute, University of Utah, 2018
+// ======================================================================== //
+
 //!
 //! This file contains headers of all external libraries
 //!

@@ -45,7 +45,9 @@ static inline void _glCheckError
 #include "viewer.h"
 #include "common.h"
 #include "camera.h"
-#include "framebuffer.h"
+
+#include "engine.h"
+
 #include "widgets.h"
 
 // ======================================================================== //
@@ -71,9 +73,12 @@ static std::vector<LightProp>  lightPropList;
 static RendererProp rendererProp(ospRen);
 static TfnProp transferFcn;
 
-static AsyncFramebuffer framebuffer;
-static Camera           camera(cameraProp);
+static Engine framebuffer;
+static Camera camera(cameraProp);
 
+void viewer::widgets::Commit() {
+  cameraProp.Commit();
+}
 // ======================================================================== //
 #include "others/navsphere.h"
 static Sphere sphere;
