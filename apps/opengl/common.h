@@ -16,4 +16,7 @@
 //
 #include "ospray/ospray.h"
 #include "ospcommon/vec.h"
+#include "ospcommon/utility/TransactionalValue.h"
+using ospcommon::utility::TransactionalValue;
+
 #endif //OSPRAY_COMMON_H

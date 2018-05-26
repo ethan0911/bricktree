@@ -11,7 +11,86 @@
 #include "widgets/TransferFunctionWidget.h"
 
 // ======================================================================== //
+// This is the place where to involve ospray commits
+// ======================================================================== //
 namespace viewer {
+struct Prop { virtual void Commit() = 0; };
+static std::vector<Prop*> allProp;
+namespace widgets {
+void Commit() {
+  for (auto& p : allProp) {
+    p->Commit();
+  }
+}
+};
+struct CameraProp : public Prop
+{
+  OSPCamera self = nullptr;
+  enum Type { Perspective, Orthographic, Panoramic } type;
+  // ==== camera ===== //
+  TransactionalValue<vec3f> pos, dir, up;
+  TransactionalValue<float> aspect;
+  TransactionalValue<float> nearClip;               /* OPT */
+  TransactionalValue<vec3f> imageStart, imageEnd;   /* OPT */
+  // ==== perspective camera ===== //
+  TransactionalValue<float> fovy;
+  TransactionalValue<float> apertureRadius;         /* OPT */
+  TransactionalValue<float> focusDistance;          /* OPT */
+  TransactionalValue<bool> architectural;           /* OPT */
+  TransactionalValue<float> stereoMode;             /* OPT */
+  TransactionalValue<float> interpupillaryDistance; /* OPT */
+  // ==== orthographic camera ===== //
+  TransactionalValue<float> height;
+  CameraProp(const Type& t)
+    : type(t), nearClip(1000.f), imageStart(0.f), imageEnd(1.f)
+  {
+    allProp.push_back(this);
+  }
+  OSPCamera& operator*() { return self; }
+  // ==== Init ===== //
+  void Init(OSPCamera camera) 
+  {
+    if (camera == nullptr) { throw std::runtime_error("empty camera found"); }
+    self = camera;
+  }
+  // ==== Set ===== //
+  void SetPos(const vec3f& v) { pos = v; }
+  void SetDir(const vec3f& v) { dir = v; }
+  void SetUp(const vec3f& v) { up = v; }
+  void SetAspect(const float& v) { aspect = v; }
+  void SetNearClip(const float& v) { nearClip = v; }
+  void SetImageStart(const vec3f& v) { imageStart = v; }
+  void SetImageEnd(const vec3f& v) { imageEnd = v; }
+  void SetFovy(const float& v) { fovy = v; }
+  void SetApertureRadius(const float& v) { apertureRadius = v; }
+  void SetFocusDistance(const float& v) { focusDistance = v; }
+  void SetArchitectural(const bool& v) { architectural = v; }
+  void SetStereoMode(const float& v) { stereoMode = v; }
+  void SetInterpupillaryDistance(const float& v)
+  { interpupillaryDistance = v; }
+  void SetHeight(const float& v) { height = v; }
+  // ==== Commit ===== //
+  void Commit()
+  {
+    if (pos.update())
+      ospSetVec3f(self, "pos", (osp::vec3f &) pos.ref());
+    if (dir.update())
+      ospSetVec3f(self, "dir", (osp::vec3f &) dir.ref());
+    if (up.update())
+      ospSetVec3f(self, "up", (osp::vec3f &) up.ref());
+    if (aspect.update())
+      ospSet1f(self, "aspect", aspect.ref());
+    if (type == Perspective) {
+      if (fovy.update())
+        ospSet1f(self, "fovy", fovy.ref());
+    }
+    else if (type == Orthographic) {
+      if (height.update())
+        ospSet1f(self, "height", height.ref());
+    }
+    ospCommit(self);
+  }
+};
 struct IsoGeoProp
 {
   OSPGeometry geo;

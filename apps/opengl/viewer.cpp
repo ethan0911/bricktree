@@ -47,9 +47,6 @@ static inline void _glCheckError
 #include "camera.h"
 #include "framebuffer.h"
 #include "widgets.h"
-//#include <thread>
-//#include <atomic>
-
 
 // ======================================================================== //
 using namespace viewer;
@@ -60,14 +57,13 @@ static affine3f Identity(vec3f(1, 0, 0),
 static std::vector<GLFWwindow *> windowmap;
 static std::vector<uint32_t> displaybuffer;
 // ======================================================================== //
-static AsyncFramebuffer framebuffer;
-static Camera           camera;
 static OSPCamera             ospCam;
 static OSPModel              ospMod;
 static OSPRenderer           ospRen;
 static OSPData               ospLightData;
 static std::vector<OSPLight> ospLightList;
 
+static CameraProp cameraProp(viewer::CameraProp::Perspective);
 static std::vector<IsoGeoProp> geoPropList;
 static std::vector<VolumeProp> volumePropList;
 static std::vector<LightProp>  lightPropList;
@@ -75,8 +71,11 @@ static std::vector<LightProp>  lightPropList;
 static RendererProp rendererProp(ospRen);
 static TfnProp transferFcn;
 
+static AsyncFramebuffer framebuffer;
+static Camera           camera(cameraProp);
+
 // ======================================================================== //
-#include "navsphere.h"
+#include "others/navsphere.h"
 static Sphere sphere;
 
 // ======================================================================== //

@@ -75,6 +75,7 @@ namespace viewer {
               ospFrameBufferClear(ospFB, OSP_FB_COLOR | OSP_FB_ACCUM);
               ospFBPtr = (uint32_t *) ospMapFrameBuffer(ospFB, OSP_FB_COLOR);
             }
+            viewer::widgets::Commit();
             // clear a frame
             if (fbClear) {
               fbClear = false;

@@ -17,49 +17,23 @@ OSPRAY_CREATE_APPLICATION(ospRaw2Bricks
 ## Benchmarker Widget
 ## ====================================================================== ##
 if (OSPRAY_MODULE_BRICKTREE_WIDGET)
-  # transfer function widget
-  set(TFN_MODULE_DEFAULT_ROOT 
-      ${PROJECT_SOURCE_DIR}/apps/exampleViewer/widgets/TransferFunctionModule) 
-  if(TFN_MODULE_ROOT)
-    set(TFN_MODULE 1)
-  elseif (EXISTS ${TFN_MODULE_DEFAULT_ROOT})
-    set(TFN_MODULE_ROOT ${TFN_MODULE_DEFAULT_ROOT})
-    set(TFN_MODULE 1)
-  else ()
-    set(TFN_MODULE 0)
-  endif ()
-  if (TFN_MODULE)
-    set(TFN_MODULE_INCLUDE_DIR ${TFN_MODULE_ROOT}/src)
-    set(TFN_MODULE_SRC 
-      ${TFN_MODULE_ROOT}/src/TransferFunctionModule.cpp
-      ${TFN_MODULE_ROOT}/src/common/jsoncpp.cpp
-      ${TFN_MODULE_ROOT}/src/widgets/TransferFunctionWidget.cpp)
-  endif (TFN_MODULE)
+  add_subdirectory(opengl)
   # HDF5 
   find_package(HDF5 REQUIRED)
+  include_directories(${HDF5_INCLUDE_DIRS})  
   # build
-  include_directories(
-    ${HDF5_INCLUDE_DIRS}
-    opengl/external
-    ${PROJECT_SOURCE_DIR}/apps/exampleViewer/common/imgui
-    ${TFN_MODULE_INCLUDE_DIR}
-    ${OPENGL_INCLUDE_DIR})
   ospray_create_application(ospBrickWidget
     ospBrickTreeApp.cpp
     ospBrickTreeTools.cpp
-    opengl/viewer.cpp
-    opengl/external/glad.c
-    opengl/external/imgui_glfw_impi.cpp
-    ${TFN_MODULE_SRC}
     LINK
     ospray
     ospray_common
     ospray_mpi_common
     ospray_imgui
     ospray_imgui3d_sg
+    ospray_app_viewer
     ${HDF5_C_LIBRARIES}
-    ${HDF5_C_HL_LIBRARIES}
-    ${OPENGL_LIBRARIES})
+    ${HDF5_C_HL_LIBRARIES})
   set_target_properties(ospBrickWidget
     PROPERTIES 
     CXX_STANDARD 14
