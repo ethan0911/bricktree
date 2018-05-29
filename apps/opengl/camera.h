@@ -3,6 +3,7 @@
 #define OSPRAY_CAMERA_H
 #include "common.h"
 #include "trackball.h"
+#include "widgets.h"
 
 class Camera {
 private:
@@ -20,9 +21,10 @@ private:
   vec3f up;    // y axis as the initial up vector !!!!
   Trackball ball;
   // OSPRay
-  OSPCamera ospCamera = nullptr;
+  //OSPCamera ospCamera = nullptr;
+  viewer::CameraProp& prop;
 public:
-
+  Camera(viewer::CameraProp& p) : prop(p) {}
   void SetSize(const size_t& w, const size_t& h) 
   {
     width = w;
@@ -103,18 +105,22 @@ public:
   //--------------------------------------------------------
   // OSPRay related
   //--------------------------------------------------------
-  OSPCamera OSPRayPtr() { return this->ospCamera; }
+  OSPCamera OSPRayPtr() { 
+    //return this->ospCamera; 
+    return *prop;
+  }
 
   void Clean() 
   {
-    if (ospCamera != nullptr) { ospRelease(ospCamera); }
-    ospCamera = nullptr;
+    //if (ospCamera != nullptr) { ospRelease(ospCamera); }
+    //ospCamera = nullptr;
   }
 
   void Init(OSPCamera camera) 
   {
     if (camera == nullptr) { throw std::runtime_error("empty camera found"); }
-    ospCamera = camera;
+    //ospCamera = camera;
+    prop.Init(camera);
     CameraUpdateView();
     CameraUpdateProj(this->width, this->height);
   }
@@ -124,18 +130,23 @@ public:
     auto dir = -xfmVector(this->ball.Matrix().l, this->eye - this->focus);
     auto up  =  xfmVector(this->ball.Matrix().l, this->up);
     auto pos = (-dir + this->focus);
-    ospSetVec3f(ospCamera, "pos", (osp::vec3f &) pos);
-    ospSetVec3f(ospCamera, "dir", (osp::vec3f &) dir);
-    ospSetVec3f(ospCamera, "up", (osp::vec3f &) up);
-    ospCommit(ospCamera);
+    prop.SetPos(pos);
+    prop.SetDir(dir);
+    prop.SetUp(up);
+    //ospSetVec3f(ospCamera, "pos", (osp::vec3f &) pos);
+    //ospSetVec3f(ospCamera, "dir", (osp::vec3f &) dir);
+    //ospSetVec3f(ospCamera, "up", (osp::vec3f &) up);
+    //ospCommit(ospCamera);
   }
 
   void CameraUpdateProj(const size_t& width, const size_t& height) 
   {
     SetSize(width, height);
-    ospSetf(ospCamera, "aspect", this->aspect);
-    ospSetf(ospCamera, "fovy", this->fovy);
-    ospCommit(ospCamera);
+    prop.SetAspect(aspect);
+    prop.SetFovy(fovy);
+    //ospSetf(ospCamera, "aspect", this->aspect);
+    //ospSetf(ospCamera, "fovy", this->fovy);
+    //ospCommit(ospCamera);
   }
 
 };

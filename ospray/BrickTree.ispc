@@ -24,7 +24,7 @@
 // this module
 #include "BrickTree.ih"
 // embree
-#include "embree2/rtcore.isph"
+#include "rtcore.isph"
 
 //! Find the next hit point in the volume for ray casting based renderers.
 static void BrickTreeVolume_stepRay(void *uniform _self, 

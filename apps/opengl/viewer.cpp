@@ -1,284 +1,96 @@
 // ======================================================================== //
 // Copyright SCI Institute, University of Utah, 2018
 // ======================================================================== //
-#include "viewer.h"
-#include "camera.h"
-#include "common.h"
-#include "framebuffer.h"
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#ifdef _WIN32
+# undef APIENTRY
+# define GLFW_EXPOSE_NATIVE_WIN32
+# define GLFW_EXPOSE_NATIVE_WGL
+# include <GLFW/glfw3native.h>
+#endif
+#include <iostream>
+//! @name error check helper from EPFL ICG class
+static inline const char *ErrorString(GLenum error) {
+  const char *msg;
+  switch (error) {
+#define Case(Token)  case Token: msg = #Token; break;
+    Case(GL_INVALID_ENUM);
+    Case(GL_INVALID_VALUE);
+    Case(GL_INVALID_OPERATION);
+    Case(GL_INVALID_FRAMEBUFFER_OPERATION);
+    Case(GL_NO_ERROR);
+    Case(GL_OUT_OF_MEMORY);
+#undef Case
+  }
+  return msg;
+}
 
-#include <atomic>
-#include <thread>
-
-#include <imgui.h>
-#include <imgui_glfw_impi.h>
+//! @name check error
+static inline void _glCheckError
+  (const char *file, int line, const char *comment) {
+  GLenum error;
+  while ((error = glGetError()) != GL_NO_ERROR) {
+    fprintf(stderr, "ERROR: %s (file %s, line %i: %s).\n", 
+            comment, file, line, ErrorString(error));
+  }
+}
+#ifndef NDEBUG
+# define check_error_gl(x) _glCheckError(__FILE__, __LINE__, x)
+#else
+# define check_error_gl(x) ((void)0)
+#endif
 
 // ======================================================================== //
+#include "viewer.h"
+#include "common.h"
+#include "camera.h"
+
+#include "engine.h"
+
+#include "widgets.h"
+
+// ======================================================================== //
+using namespace viewer;
 static affine3f Identity(vec3f(1, 0, 0),
                          vec3f(0, 1, 0),
                          vec3f(0, 0, 1),
                          vec3f(0, 0, 0));
-using namespace viewer;
-// ======================================================================== //
 static std::vector<GLFWwindow *> windowmap;
-static Camera camera;
-static Framebuffer framebuffer;
-static OSPCamera ospCam;
-static OSPModel ospMod;
-static OSPRenderer ospRen;
+static std::vector<uint32_t> displaybuffer;
 // ======================================================================== //
-struct GeoProp
-{
-  OSPGeometry geo;
-  float &isoValue;
-  float vmin, vmax;
-  bool hasMinMax;
-  std::string name;
-  GeoProp(OSPGeometry g,
-          float &v,
-          const float v0,
-          const float v1,
-          const std::string n)
-      : geo(g), isoValue(v), vmin(v0), vmax(v1), name(n)
-  {
-    hasMinMax = vmin < vmax;
-  }
-  void Draw()
-  {
-    ImGui::Text(name.c_str());
-    if (hasMinMax) {
-      ImGui::SliderFloat(("IsoValue##" + name).c_str(), &isoValue, vmin, vmax);
-    } else {
-      ImGui::InputFloat(("IsoValue##" + name).c_str(), &isoValue);
-    }
-  }
-  void Commit()
-  {
-    ospSet1f(geo, "isoValue", isoValue);
-    ospCommit(geo);
-  }
-};
-static std::vector<GeoProp> geoPropList;
-// ======================================================================== //
-struct btVolumeProp
-{
-  OSPVolume volume;
+static OSPCamera             ospCam;
+static OSPModel              ospMod;
+static OSPRenderer           ospRen;
+static OSPData               ospLightData;
+static std::vector<OSPLight> ospLightList;
 
-  btVolumeProp(OSPVolume v) : volume(v) {}
+static CameraProp cameraProp(viewer::CameraProp::Perspective);
+static std::vector<LightProp>  lightPropList;
 
-  void Commit()
-  {
-    ospCommit(volume);
-  }
-};
-static std::vector<btVolumeProp> btVolumeList;
-// ======================================================================== //
-static std::vector<OSPLight> lightList;
-struct LightProp
-{
-  OSPLight L;
-  float I = 0.25f;
-  vec3f D = vec3f(-1.f, 0.679f, -0.754f);
-  vec3f C = vec3f(1.f, 1.f, 1.f);
-  std::string type, name;
-  LightProp(std::string str) : type(str)
-  {
-    L = ospNewLight(ospRen, str.c_str());
-    ospSet1f(L, "angularDiameter", 0.53f);
-    Commit();
-    lightList.push_back(L);
-    name = std::to_string(lightList.size());
-  }
-  void Draw()
-  {
-    ImGui::Text((type + "-" + name).c_str());
-    ImGui::SliderFloat3(("direction##" + name).c_str(), &D.x, -1.f, 1.f);
-    ImGui::SliderFloat3(("color##" + name).c_str(), &C.x, 0.f, 1.f);
-    ImGui::SliderFloat(
-        ("intensity##" + name).c_str(), &I, 0.f, 100000.f, "%.3f", 5.0f);
-  }
-  void Commit()
-  {
-    ospSet1f(L, "intensity", I);
-    ospSetVec3f(L, "color", (osp::vec3f &)C);
-    ospSetVec3f(L, "direction", (osp::vec3f &)D);
-    ospCommit(L);
-  }
-};
-static OSPData lights;
-static std::vector<LightProp> lightPropList;
-// ======================================================================== //
-struct RendererProp
-{
-  int aoSamples              = 1;
-  float aoDistance           = 100.f;
-  bool shadowsEnabled        = true;
-  int maxDepth               = 100;
-  bool aoTransparencyEnabled = false;
-  void Draw()
-  {
-    ImGui::SliderInt("maxDepth", &maxDepth, 0, 100, "%.0f");
-    ImGui::SliderInt("aoSamples", &aoSamples, 0, 100, "%.0f");
-    ImGui::SliderFloat("aoDistance", &aoDistance, 0.f, 1e20, "%.3f", 5.0f);
-    ImGui::Checkbox("shadowsEnabled", &shadowsEnabled);
-    ImGui::Checkbox("aoTransparencyEnabled", &aoTransparencyEnabled);
-  }
-  void Commit()
-  {
-    ospSet1i(ospRen, "aoSamples", aoSamples);
-    ospSet1f(ospRen, "aoDistance", aoDistance);
-    ospSet1i(ospRen, "shadowsEnabled", shadowsEnabled);
-    ospSet1i(ospRen, "maxDepth", maxDepth);
-    ospSet1i(ospRen, "aoTransparencyEnabled", aoTransparencyEnabled);
-    ospSet1i(ospRen, "spp", 1);
-    ospSet1i(ospRen, "autoEpsilon", 1);
-    ospSet1f(ospRen, "epsilon", 0.001f);
-    ospSet1f(ospRen, "minContribution", 0.001f);
-    ospCommit(ospRen);
-  }
-};
-static RendererProp renderProp;
+static RendererProp rendererProp;
+static TfnProp transferFcn;
+
+static Engine framebuffer;
+static Camera camera(cameraProp);
+
+bool viewer::widgets::Commit() {
+  bool update = false;
+  if (cameraProp.Commit()) { update = true; }
+  if (rendererProp.Commit()) { update = true; }
+  if (transferFcn.Commit()) { update = true; }
+  return update;
+}
 
 // ======================================================================== //
-#include "navsphere.h"
-Sphere sphere;
+#include "others/navsphere.h"
+static Sphere sphere;
 
 // ======================================================================== //
-#include "widgets/TransferFunctionWidget.h"
-struct TfnProp
-{
-  OSPTransferFunction ospTfn;
-  std::shared_ptr<tfn::tfn_widget::TransferFunctionWidget> tfnWidget;
-  float tfnValueRange[2] = {0.f, 1.f};
-  std::vector<float> cptr;
-  std::vector<float> aptr;
-  bool print = false;
-  void Create(OSPTransferFunction o, const float a = 0.f, const float b = 1.f)
-  {
-    ospTfn           = o;
-    tfnValueRange[0] = a;
-    tfnValueRange[1] = b;
-  }
-  void Init()
-  {
-    if (ospTfn != nullptr) {
-      tfnWidget = std::make_shared<tfn::tfn_widget::TransferFunctionWidget>(
-          [&](const std::vector<float> &c,
-              const std::vector<float> &a,
-              const std::array<float, 2> &r) {
-            cptr               = std::vector<float>(c);
-            aptr               = std::vector<float>(a);
-            OSPData colorsData = ospNewData(c.size() / 3, OSP_FLOAT3, c.data());
-            ospCommit(colorsData);
-            std::vector<float> o(a.size() / 2);
-            for (int i = 0; i < a.size() / 2; ++i) { o[i] = a[2 * i + 1]; }
-            OSPData opacitiesData = ospNewData(o.size(), OSP_FLOAT, o.data());
-
-            ospCommit(opacitiesData);
-            ospSetData(ospTfn, "colors", colorsData);
-            ospSetData(ospTfn, "opacities", opacitiesData);
-            ospSetVec2f(ospTfn, "valueRange", osp::vec2f{r[0], r[1]});
-            ospCommit(ospTfn);
-            ospRelease(colorsData);
-            ospRelease(opacitiesData);
-            ClearOSPRay();
-          });
-      tfnWidget->setDefaultRange(tfnValueRange[0], tfnValueRange[1]);
-    }
-  }
-  void Print()
-  {
-    if ((!cptr.empty()) && !(aptr.empty())) {
-      const std::vector<float> &c = cptr;
-      const std::vector<float> &a = aptr;
-      std::cout << std::endl
-                << "static std::vector<float> colors = {" << std::endl;
-      for (int i = 0; i < c.size() / 3; ++i) {
-        std::cout << "    " << c[3 * i] << ", " << c[3 * i + 1] << ", "
-                  << c[3 * i + 2] << "," << std::endl;
-      }
-      std::cout << "};" << std::endl;
-      std::cout << "static std::vector<float> opacities = {" << std::endl;
-      for (int i = 0; i < a.size() / 2; ++i) {
-        std::cout << "    " << a[2 * i + 1] << ", " << std::endl;
-      }
-      std::cout << "};" << std::endl << std::endl;
-    }
-  }
-  void Draw()
-  {
-    if (ospTfn != nullptr) {
-      if (tfnWidget->drawUI()) {
-        tfnWidget->render(128);
-      };
-    }
-  }
-};
-struct TfnProp transferFcn;
+namespace viewer {};  // namespace viewer
 
 // ======================================================================== //
-static std::thread *osprayThread = nullptr;
-static std::atomic<bool> osprayStop(false);
-static std::atomic<bool> osprayClear(false);
-static std::atomic<bool> osprayCommit(true);
-namespace viewer {
-  void StartOSPRay()
-  {
-    osprayStop   = false;
-    osprayThread = new std::thread([=] {
-      while (!osprayStop) {
-        // commit ospray changes
-        if (osprayCommit) {
-          std::cout << "commit" << std::endl;
-          for (auto &g : geoPropList) {
-            g.Commit();
-          }
-          for (auto &v : btVolumeList) {
-            v.Commit();
-          }
-          ospCommit(ospMod);
-          for (auto &l : lightPropList) {
-            l.Commit();
-          }
-          ospSetData(ospRen, "lights", lights);
-          renderProp.Commit();          
-          osprayCommit = false;
-          osprayClear  = true;
-        }
-        // render
-        if (osprayClear) {
-          framebuffer.Clear();
-          osprayClear = false;
-        }
-        sphere.Update(camera.CameraFocus(), ospMod);
-        framebuffer.Render();
-      }
-    });
-  }
-  void StopOSPRay()
-  {
-    osprayStop = true;
-    osprayThread->join();
-    delete osprayThread;
-  }
-  void ClearOSPRay()
-  {
-    osprayClear = true;
-  }
-  void CommitOSPRay()
-  {
-    osprayCommit = true;
-  }
-  void ResizeOSPRay(int width, int height)
-  {
-    StopOSPRay();
-    framebuffer.Resize((size_t)width, (size_t)height);
-    StartOSPRay();
-  }
-  void UploadOSPRay()
-  {
-    framebuffer.Display();
-  }
-};  // namespace viewer
+//
 // ======================================================================== //
 void RenderWindow(GLFWwindow *window);
 GLFWwindow *CreateWindow();
@@ -292,13 +104,14 @@ namespace viewer {
   void Render(int id)
   {
     sphere.Init();
-    lightPropList.emplace_back("DirectionalLight");
-    lightPropList.emplace_back("DirectionalLight");
-    lightPropList.emplace_back("AmbientLight");
-    lights = ospNewData(
-        lightList.size(), OSP_OBJECT, lightList.data(), OSP_DATA_SHARED_BUFFER);
-    ospCommit(lights);
-    ospSetData(ospRen, "lights", lights);
+    lightPropList.emplace_back("DirectionalLight", ospRen, ospLightList);
+    lightPropList.emplace_back("DirectionalLight", ospRen, ospLightList);
+    lightPropList.emplace_back("AmbientLight", ospRen, ospLightList);
+    ospLightData = ospNewData
+      (ospLightList.size(), OSP_OBJECT, ospLightList.data(), 
+       OSP_DATA_SHARED_BUFFER);
+    ospCommit(ospLightData);
+    ospSetData(ospRen, "lights", ospLightData);
     ospCommit(ospRen);
     framebuffer.Init(camera.CameraWidth(), camera.CameraHeight(), ospRen);
     RenderWindow(windowmap[id]);
@@ -317,29 +130,21 @@ namespace viewer {
   };
   void Handler(OSPTransferFunction t, const float &a, const float &b)
   {
-    transferFcn.Create(t, a, b);
+    transferFcn.Init(t, a, b);
   };
   void Handler(OSPModel m, OSPRenderer r)
   {
     ospMod = m;
     ospRen = r;
-  };
-  void Handler(OSPGeometry g,
-               float &v,
-               const char *n,
-               const float vmin,
-               const float vmax)
-  {
-    geoPropList.emplace_back(g, v, vmin, vmax, n);
-  };
-
-  void Handler(OSPVolume v)
-  {
-    btVolumeList.emplace_back(v);
+    rendererProp.Init(r);
   };
 };  // namespace viewer
 
 // ======================================================================== //
+// Callback Functions
+// ======================================================================== //
+static GLuint texID;
+static GLuint fboID;
 void error_callback(int error, const char *description)
 {
   fprintf(stderr, "Error: %s\n", description);
@@ -363,7 +168,8 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMoveNZ(0.01f * camera.CameraFocalLength());
     }
-    ClearOSPRay();
+    //ClearOSPRay();
+    framebuffer.Clear();
   } else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
     /* DOWN: backward */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -371,7 +177,8 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMoveNZ(-0.01f * camera.CameraFocalLength());
     }
-    ClearOSPRay();
+    //ClearOSPRay();
+    framebuffer.Clear();
   } else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
     /* A: left */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -379,7 +186,8 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMovePX(0.01f * camera.CameraFocalLength());
     }
-    ClearOSPRay();
+    //ClearOSPRay();
+    framebuffer.Clear();
   } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
     /* D: right */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -387,7 +195,8 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMovePX(-0.01f * camera.CameraFocalLength());
     }
-    ClearOSPRay();
+    //ClearOSPRay();
+    framebuffer.Clear();
   } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
     /* S: down */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -395,7 +204,8 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMovePY(0.01f * camera.CameraFocalLength());
     }
-    ClearOSPRay();
+    //ClearOSPRay();
+    framebuffer.Clear();
   } else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
     /* W: up */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -403,26 +213,32 @@ void key_onhold_callback(GLFWwindow *window)
     } else {
       camera.CameraMovePY(-0.01f * camera.CameraFocalLength());
     }
-    ClearOSPRay();
+    //ClearOSPRay();
+    framebuffer.Clear();
   }
 }
 void key_onpress_callback(GLFWwindow *window, int key, 
                           int scancode, int action, int mods)
 {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    //StopOSPRay();
+    //framebuffer.stop();
     glfwSetWindowShouldClose(window, GL_TRUE);
-    exit(0);
+    //exit(0);
   }
   if (!ImGui::GetIO().WantCaptureKeyboard) {
     if (key == GLFW_KEY_LEFT_ALT) {
-      StopOSPRay();
+      //StopOSPRay();
+      framebuffer.Stop();
       if (action == GLFW_PRESS) {
         sphere.Add(ospMod);
       } else if (action == GLFW_RELEASE) {
         sphere.Remove(ospMod);
       }
-      ClearOSPRay();
-      StartOSPRay();
+      framebuffer.Clear();
+      framebuffer.Start();
+      //ClearOSPRay();
+      //StartOSPRay();
     }
     if (key == GLFW_KEY_P && action == GLFW_PRESS) {
       transferFcn.Print();
@@ -447,13 +263,15 @@ void cursor_position_callback(GLFWwindow *window, double xpos, double ypos)
     int right_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
     if (left_state == GLFW_PRESS) {
       camera.CameraDrag((float)xpos, (float)ypos);
-      ClearOSPRay();
+      //ClearOSPRay();
+      framebuffer.Clear();
     } else {
       camera.CameraBeginDrag((float)xpos, (float)ypos);
     }
     if (right_state == GLFW_PRESS) {
       camera.CameraZoom((float)xpos, (float)ypos);
-      ClearOSPRay();
+      //ClearOSPRay();
+      framebuffer.Clear();
     } else {
       camera.CameraBeginZoom((float)xpos, (float)ypos);
     }
@@ -461,37 +279,71 @@ void cursor_position_callback(GLFWwindow *window, double xpos, double ypos)
 }
 void window_size_callback(GLFWwindow *window, int width, int height)
 {
+  // resize opengl
   glViewport(0, 0, width, height);
+  glBindTexture(GL_TEXTURE_2D, texID);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 
+               0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  // resize ospray objects
   camera.CameraUpdateProj((size_t)width, (size_t)height);
-  ResizeOSPRay(width, height);
+  framebuffer.Resize(width, height);
+  // resize screen buffer
+  displaybuffer.resize(camera.CameraWidth() * camera.CameraHeight());
 }
 
+// ======================================================================== //
+//
 // ======================================================================== //
 void RenderWindow(GLFWwindow *window)
 {
   // Init
+  displaybuffer.resize(camera.CameraWidth() * camera.CameraHeight(), 0);
   ImGui_Impi_Init(window, false);
   transferFcn.Init();
+
   // Start
-  StartOSPRay();
+  // StartOSPRay();
+  framebuffer.Start();
+    
   while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     {
       key_onhold_callback(window);
-      UploadOSPRay();
+      
+      if (framebuffer.HasNewFrame()) {
+        auto &mapped = framebuffer.MapFramebuffer();
+        if (mapped.size() == displaybuffer.size()) {
+          auto *srcPixels = mapped.data();
+          auto *dstPixels = displaybuffer.data();
+          memcpy(dstPixels, srcPixels,
+                 displaybuffer.size() * sizeof(uint32_t));
+        }
+        framebuffer.UnmapFramebuffer();
+      }
+      
+      glBindTexture(GL_TEXTURE_2D, texID);
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 
+                      camera.CameraWidth(), camera.CameraHeight(), 
+                      GL_RGBA, GL_UNSIGNED_BYTE,
+                      displaybuffer.data());
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, fboID);
+      glBlitFramebuffer(0, 0, camera.CameraWidth(), camera.CameraHeight(), 
+                        0, 0, camera.CameraWidth(), camera.CameraHeight(),
+                        GL_COLOR_BUFFER_BIT, GL_NEAREST);
+      glBindTexture(GL_TEXTURE_2D, 0);
+
+
       ImGui_Impi_NewFrame();
       transferFcn.Draw();
       ImGui::Begin("Rendering Properties");
       {
-        renderProp.Draw();
-        for (auto &g : geoPropList) {
-          g.Draw();
-        }
+        rendererProp.Draw();
         for (auto &l : lightPropList) {
           l.Draw();
         }
         if (ImGui::Button("Commit")) {
-          CommitOSPRay();
+          //CommitOSPRay();
         };
       }
       ImGui::End();
@@ -501,15 +353,14 @@ void RenderWindow(GLFWwindow *window)
     glfwPollEvents();
   }
   // ShutDown
-  StopOSPRay();
+  framebuffer.Stop();
+  //StopOSPRay();
   {
     ImGui_Impi_Shutdown();
   }
   glfwDestroyWindow(window);
   glfwTerminate();
 }
-
-// ======================================================================== //
 GLFWwindow *CreateWindow()
 {
   // Initialize GLFW
@@ -546,5 +397,23 @@ GLFWwindow *CreateWindow()
   // Setup OpenGL
   glEnable(GL_DEPTH_TEST);
   check_error_gl("Setup OpenGL Options");
+  // Create OpenGL Texture
+  glGenFramebuffers(1, &fboID);
+  glGenTextures(1, &texID);
+  glBindTexture(GL_TEXTURE_2D, texID);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glBindTexture(GL_TEXTURE_2D, texID);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 
+               camera.CameraWidth(), camera.CameraHeight(), 
+               0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                         GL_TEXTURE_2D, texID, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
   return window;
 }
