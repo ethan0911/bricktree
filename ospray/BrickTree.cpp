@@ -146,13 +146,10 @@ namespace ospray {
       fileName   = getParamString("fileName", "");
       format     = getParamString("format", "<not specified>");
       validSize  = getParam3i("validSize",vec3i(-1));
-      PRINT(gridSize);
       validFractionOfRootGrid = vec3f(validSize) / vec3f(gridSize*blockWidth);
 
       sampler = createSampler();
-
       // vec3i halfSize = validSize * 0.5f;
-
       ispc::BrickTreeVolume_set(
           getIE(), xf->getIE(), (ispc::vec3i &)validSize, this, sampler);
 

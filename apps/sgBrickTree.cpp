@@ -74,7 +74,6 @@ namespace ospray{
     assert(gridSize.x > 0);
     assert(gridSize.y > 0);
     assert(gridSize.z > 0);
-    PRINT(gridSize);
 
     // -------------------------------------------------------
     // parameter sanity checking
@@ -99,6 +98,6 @@ namespace ospray{
     ospSetString(ospVolume,"format",format.c_str());
     ospSet3i(ospVolume, "validSize",validSize.x,validSize.y,validSize.z);
     ospSetObject(ospVolume,"transferFunction",tfn);
-    ospCommit(ospVolume);
+    //ospCommit(ospVolume);
   }
 }

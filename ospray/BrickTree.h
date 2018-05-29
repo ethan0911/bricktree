@@ -212,28 +212,25 @@ namespace ospray {
             // auto bt = forest->tree[blockId];
             auto bt = forest->tree.find(blockId);
 
-            if (!bt->second.isLoaded) {
-              // this block hasn't been loaded, return average value
-              neighborValue[idx.z][idx.y][idx.x] = bt->second.avgValue;
-              if (!bt->second.isRequested) {
-                // this block hasn't been requested
-                mtx.lock();
-                //forest->treeBinDataRequested.push_back(blockId);
-                forest->treeBinDataRequested[blockId] = 1;  
-                bt->second.isRequested = true;
-                mtx.unlock();
-              }
-            } else {
-              neighborValue[idx.z][idx.y][idx.x] =
-                  bt->second.findValue(low + idx, btv->blockWidth);
-            }
+            neighborValue[idx.z][idx.y][idx.x] =
+                bt->second.findValue(low + idx, btv->blockWidth);
 
             // if (!bt->second.isLoaded) {
+            //   // this block hasn't been loaded, return average value
             //   neighborValue[idx.z][idx.y][idx.x] = bt->second.avgValue;
+            //   if (!bt->second.isRequested) {
+            //     // this block hasn't been requested
+            //     mtx.lock();
+            //     //forest->treeBinDataRequested.push_back(blockId);
+            //     forest->treeBinDataRequested[blockId] = 1;  
+            //     bt->second.isRequested = true;
+            //     mtx.unlock();
+            //   }
             // } else {
             //   neighborValue[idx.z][idx.y][idx.x] =
             //       bt->second.findValue(low + idx, btv->blockWidth);
             // }
+
           });
           v = lerp3<float>(neighborValue[0][0][0],
                            neighborValue[0][0][1],
