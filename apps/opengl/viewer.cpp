@@ -64,18 +64,18 @@ static OSPRenderer           ospRen;
 static OSPData               ospLightData;
 static std::vector<OSPLight> ospLightList;
 
-static CameraProp cameraProp;
-static RendererProp rendererProp;
-static TransferFunctionProp tfnProp;
-static std::vector<LightProp>  lightPropList;
+static CameraProp               camProp;
+static RendererProp             renProp;
+static TransferFunctionProp     tfnProp;
+static std::array<LightProp, 3> lightPropList;
 
-static Engine framebuffer;
-static Camera camera(cameraProp);
+static Engine engine;
+static Camera camera(camProp);
 
 bool viewer::widgets::Commit() {
   bool update = false;
-  if (cameraProp.Commit()) { update = true; }
-  if (rendererProp.Commit()) { update = true; }
+  if (camProp.Commit()) { update = true; }
+  if (renProp.Commit()) { update = true; }
   if (tfnProp.Commit()) { update = true; }
   return update;
 }
@@ -102,16 +102,16 @@ namespace viewer {
   void Render(int id)
   {
     sphere.Init();
-    lightPropList.emplace_back("DirectionalLight", ospRen, ospLightList);
-    lightPropList.emplace_back("DirectionalLight", ospRen, ospLightList);
-    lightPropList.emplace_back("AmbientLight", ospRen, ospLightList);
+    lightPropList[0].Init("DirectionalLight", ospRen, ospLightList);
+    lightPropList[1].Init("DirectionalLight", ospRen, ospLightList);
+    lightPropList[2].Init("AmbientLight",     ospRen, ospLightList);
     ospLightData = ospNewData
-      (ospLightList.size(), OSP_OBJECT, ospLightList.data(), 
+      (ospLightList.size(), OSP_OBJECT, ospLightList.data(),
        OSP_DATA_SHARED_BUFFER);
     ospCommit(ospLightData);
     ospSetData(ospRen, "lights", ospLightData);
     ospCommit(ospRen);
-    framebuffer.Init(camera.CameraWidth(), camera.CameraHeight(), ospRen);
+    engine.Init(camera.CameraWidth(), camera.CameraHeight(), ospRen);
     RenderWindow(windowmap[id]);
   };
   void Handler(OSPCamera c, const std::string& type,
@@ -129,7 +129,7 @@ namespace viewer {
   {
     ospMod = m;
     ospRen = r;
-    rendererProp.Init(r, viewer::RendererProp::Scivis);
+    renProp.Init(r, viewer::RendererProp::Scivis);
   };
   void Handler(OSPTransferFunction t, const float &a, const float &b)
   {
@@ -210,14 +210,14 @@ void key_onpress_callback(GLFWwindow *window, int key,
   }
   if (!ImGui::GetIO().WantCaptureKeyboard) {
     if (key == GLFW_KEY_LEFT_ALT) {
-      framebuffer.Stop();
+      engine.Stop();
       if (action == GLFW_PRESS) {
         sphere.Add(ospMod);
       } else if (action == GLFW_RELEASE) {
         sphere.Remove(ospMod);
       }
-      framebuffer.Clear();
-      framebuffer.Start();
+      engine.Clear();
+      engine.Start();
     }
     if (key == GLFW_KEY_P && action == GLFW_PRESS) {
       tfnProp.Print();
@@ -262,7 +262,7 @@ void window_size_callback(GLFWwindow *window, int width, int height)
   glBindTexture(GL_TEXTURE_2D, 0);
   // resize ospray objects
   camera.CameraUpdateProj((size_t)width, (size_t)height);
-  framebuffer.Resize(width, height);
+  engine.Resize(width, height);
   // resize screen buffer
   displaybuffer.resize(camera.CameraWidth() * camera.CameraHeight());
 }
@@ -277,21 +277,21 @@ void RenderWindow(GLFWwindow *window)
   ImGui_Impi_Init(window, false);
   tfnProp.Init();
   // Start
-  framebuffer.Start();    
+  engine.Start();    
   while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     {
       key_onhold_callback(window);
       
-      if (framebuffer.HasNewFrame()) {
-        auto &mapped = framebuffer.MapFramebuffer();
+      if (engine.HasNewFrame()) {
+        auto &mapped = engine.MapFramebuffer();
         if (mapped.size() == displaybuffer.size()) {
           auto *srcPixels = mapped.data();
           auto *dstPixels = displaybuffer.data();
           memcpy(dstPixels, srcPixels,
                  displaybuffer.size() * sizeof(uint32_t));
         }
-        framebuffer.UnmapFramebuffer();
+        engine.UnmapFramebuffer();
       }
       
       glBindTexture(GL_TEXTURE_2D, texID);
@@ -310,7 +310,7 @@ void RenderWindow(GLFWwindow *window)
       tfnProp.Draw();
       ImGui::Begin("Rendering Properties");
       {
-        rendererProp.Draw();
+        renProp.Draw();
         //for (auto &l : lightPropList) {
         //  l.Draw();
         //}
@@ -322,8 +322,7 @@ void RenderWindow(GLFWwindow *window)
     glfwPollEvents();
   }
   // ShutDown
-  framebuffer.Stop();
-  //StopOSPRay();
+  engine.Stop();
   {
     ImGui_Impi_Shutdown();
   }

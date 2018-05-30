@@ -222,11 +222,13 @@ bool viewer::TransferFunctionProp::Commit()
 // ======================================================================== //
 //
 // ======================================================================== //
-viewer::LightProp::LightProp(std::string s, 
+viewer::LightProp::LightProp() {}
+void viewer::LightProp::Init(std::string s, 
                              OSPRenderer r, 
                              std::vector<OSPLight>& l)
-  : type(s), renderer(r)
 {
+  type = s; 
+  renderer = r;
   self = ospNewLight(r, s.c_str());
   l.push_back(self);
   name = std::to_string(l.size());

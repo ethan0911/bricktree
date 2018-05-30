@@ -150,6 +150,7 @@ namespace viewer {
   {
   private:
     OSPLight self = nullptr;
+    TValue<int> test;
     OSPRenderer renderer;
     std::string type, name;
   public:
@@ -159,8 +160,9 @@ namespace viewer {
     /* Setter(C, Color, ospcommon::vec3f, */
     /*        ospcommon::vec3f(1.f, 1.f, 1.f)); */
     /* Setter(angularDiameter, AngularDiameter, float, 0.53f); */
-    LightProp(std::string s, OSPRenderer r, std::vector<OSPLight>& l);
+    LightProp();
     OSPLight& operator*() { return self; }
+    void Init(std::string s, OSPRenderer r, std::vector<OSPLight>& l);
     void Draw();
     bool Commit();
   };
