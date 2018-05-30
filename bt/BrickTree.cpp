@@ -130,6 +130,8 @@ namespace ospray {
       // isIndexBrickLoaded.resize(numIndexBricks,false);
       // isBrickInfoLoaded.resize(numBrickInfos,false);
 
+      //vbNeed2Load.reserve(numValueBricks);
+
       sprintf(blockFileName,"%s-brick%06i.ospbin",brickFileBase.str().c_str(),(int)blockID);
 
       FILE *file = fopen(blockFileName, "rb");
@@ -169,7 +171,7 @@ namespace ospray {
     }
 
     template<int N, typename T>
-    void BrickTree<N,T>::loadTreeByBrick(const FileName &brickFileBase, size_t blockID,std::vector<size_t> vbRequested)
+    void BrickTree<N,T>::loadTreeByBrick(const FileName &brickFileBase, size_t blockID,std::vector<vec2i> vbReqList)
     {
       char blockFileName[10000];
       sprintf(blockFileName,"%s-brick%06i.ospbin",brickFileBase.str().c_str(),(int)blockID);
@@ -177,43 +179,46 @@ namespace ospray {
       FILE *file = fopen(blockFileName, "rb");
       if (!file)
         throw std::runtime_error("could not open brick bin file " + std::string(blockFileName));
-
-
       // for (size_t i = 0; i < numValueBricks; i++) {
       //   if (!valueBricksStatus[i].isLoaded && valueBricksStatus[i].isRequested) {
       //     LoadBricks aBrick(VALUEBRICK, i);
-      //     loadBricks(brickFileBase, file, blockID, aBrick);
+      //     loadBricks(file, aBrick);
       //   }
       // }
 
-      for(std::vector<size_t>::iterator it= vbRequested.begin();it != vbRequested.end();it++){
-        LoadBricks aBrick(VALUEBRICK, *it);
-        loadBricks(file,aBrick);
+      std::vector<vec2i>::iterator it = vbReqList.begin();
+      for(; it != vbReqList.end(); it++){
+        loadBricks(file, *it);
       }
       fclose(file);
     }
 
     template<int N, typename T>
-    void BrickTree<N,T>::loadBricks(FILE* file, LoadBricks aBrick)
+    void BrickTree<N,T>::loadBricks(FILE* file, vec2i vbListInfo)
     {
-      switch (aBrick.bricktype) {
-      case INDEXBRICK:
-        fseek(file, binBlockInfo.indexBricksOfs + aBrick.brickID * sizeof(IndexBrick), SEEK_SET);
-        fread((IndexBrick *)(indexBrick + aBrick.brickID), sizeof(IndexBrick), 1, file);
-        break;
-      case VALUEBRICK:
-        fseek(file, binBlockInfo.valueBricksOfs + aBrick.brickID * sizeof(ValueBrick), SEEK_SET);
-        fread((ValueBrick *)(valueBrick + aBrick.brickID), sizeof(ValueBrick), 1, file);
-        break;
-      case BRICKINFO:
-        fseek(file, binBlockInfo.indexBrickOfOfs + aBrick.brickID * sizeof(BrickInfo), SEEK_SET);
-        fread((BrickInfo *)(brickInfo + aBrick.brickID), sizeof(BrickInfo), 1, file);
-        break;
-      }
+      // switch (aBrick.bricktype) {
+      // case INDEXBRICK:
+      //   fseek(file, binBlockInfo.indexBricksOfs + aBrick.brickID * sizeof(IndexBrick), SEEK_SET);
+      //   fread((IndexBrick *)(indexBrick + aBrick.brickID), sizeof(IndexBrick), 1, file);
+      //   break;
+      // case VALUEBRICK:
+      //   fseek(file, binBlockInfo.valueBricksOfs + aBrick.brickID * sizeof(ValueBrick), SEEK_SET);
+      //   fread((ValueBrick *)(valueBrick + aBrick.brickID), sizeof(ValueBrick), 1, file);
+      //   break;
+      // case BRICKINFO:
+      //   fseek(file, binBlockInfo.indexBrickOfOfs + aBrick.brickID * sizeof(BrickInfo), SEEK_SET);
+      //   fread((BrickInfo *)(brickInfo + aBrick.brickID), sizeof(BrickInfo), 1, file);
+      //   break;
+      // }
+      // valueBricksStatus[aBrick.brickID].isLoaded = true;
 
-      valueBricksStatus[aBrick.brickID].isLoaded = true;
-      loadBrickNum++;
-      //loadedBricks.push_back(aBrick.brickID);
+      fseek(file, binBlockInfo.valueBricksOfs + vbListInfo.x * sizeof(ValueBrick), SEEK_SET);
+      fread((ValueBrick *)(valueBrick + vbListInfo.x), sizeof(ValueBrick), vbListInfo.y, file);
+
+      for(size_t i = 0; i < vbListInfo.y;i++)
+      {
+        valueBricksStatus[vbListInfo.x + i].isLoaded = true;
+      }
     }
 
     template <int N, typename T>

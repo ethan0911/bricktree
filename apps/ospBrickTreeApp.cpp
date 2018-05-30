@@ -211,11 +211,6 @@ int main(int ac, const char **av)
 
   viewer::Handler(transferFcn, args.valueRange.x, args.valueRange.y);
   viewer::Handler(world, renderer);
-#if !(HACKED_VOLUME)
-  viewer::Handler(bricktreeVolume->ospVolume);
-#else
-  viewer::Handler(hacked_vol);
-#endif
   viewer::Render(window);
 
 #else

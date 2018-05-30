@@ -98,6 +98,6 @@ namespace ospray{
     ospSetString(ospVolume,"format",format.c_str());
     ospSet3i(ospVolume, "validSize",validSize.x,validSize.y,validSize.z);
     ospSetObject(ospVolume,"transferFunction",tfn);
-    //ospCommit(ospVolume);
+    ospCommit(ospVolume);
   }
 }

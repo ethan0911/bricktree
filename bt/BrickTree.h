@@ -28,6 +28,7 @@
 #include <vector>
 #include <map>
 #include <thread>
+#include <list>
 #include <set>
 #include <mutex>
 #include <thread>
@@ -42,7 +43,7 @@ namespace ospray {
     const char *typeToString();
 
     static std::mutex brickLoadMtx;
-    static const size_t numThread = 10;
+    static const size_t numThread = 100;
 
     enum BRICKTYPE {INDEXBRICK, VALUEBRICK, BRICKINFO};
 
@@ -178,36 +179,55 @@ namespace ospray {
       /*! map this one from a binary dump that was created by the bricktreebuilder/raw2bricks tool */
       void mapOSP(const FileName &brickFileBase, size_t treeID);
       void mapOspBin(const FileName &brickFileBase, size_t treeID);
-      void loadBricks(FILE* file, LoadBricks aBrick);
-      void loadTreeByBrick(const FileName &brickFileBase, size_t treeID,std::vector<size_t> vbRequested);
+      void loadBricks(FILE* file, vec2i vbListInfo);
+      void loadTreeByBrick(const FileName &brickFileBase, size_t treeID,std::vector<vec2i> vbReqList);
 
       // const typename BrickTree<N,T>::ValueBrick * findValueBrick(const vec3i &coord,int blockWidth,int xIdx, int yIdx, int zIdx);
       const T findValue(const vec3i &coord,int blockWidth);
 
       const T findBrickValue(size_t brickID,vec3i cellPos, size_t parentBrickID,vec3i parentCellPos);
 
-      std::vector<size_t> isTreeNeedLoad(bool& needLoad)
-      {
-        std::vector<size_t> vbNeed2Load;
-        std::mutex amutex;
-        // tasking::parallel_for(numValueBricks, [&](size_t brickID) {
-        //   if (!valueBricksStatus[brickID].isLoaded &&
-        //       valueBricksStatus[brickID].isRequested) {
-        //     needLoad = true;
-        //     std::lock_guard<std::mutex> lock(amutex);
-        //     vbNeed2Load.push_back(brickID);
-        //   }
-        // });
+      // bool isTreeNeedLoad()
+      // {   
+      //   for(size_t i= 0;i < numValueBricks;i++){
+      //     if(!valueBricksStatus[i].isLoaded && valueBricksStatus[i].isRequested)
+      //     {
+      //       return true;
+      //     }
+      //   }
+      //   return false;
+      // }
 
+      //get the request value brick list (L = need to load, F = no need to load)
+      // L,L,F,F,F,L,L,L,F,L,F,F,L
+      //return (0,2),(5,3)...
+      std::vector<vec2i> getRequestVBList()
+      { 
+        std::vector<vec2i> scheduledVB;
+        size_t startIdx(0);
+        size_t num(0);   
+        bool loadFlag = false;
         for(size_t i= 0;i < numValueBricks;i++){
-          if(!valueBricksStatus[i].isLoaded && valueBricksStatus[i].isRequested)
-          {
-            needLoad = true;
-            vbNeed2Load.push_back(i);
+          if (!valueBricksStatus[i].isLoaded &&
+              valueBricksStatus[i].isRequested) {
+            if (!loadFlag) {
+              startIdx = i;
+              loadFlag = true;
+            }
+            num++;
+            if(i == numValueBricks){ 
+              scheduledVB.emplace_back(vec2i(startIdx, num));
+            }
+          } else {
+            if (loadFlag)
+              scheduledVB.emplace_back(vec2i(startIdx, num));
+            loadFlag = false;
+            num      = 0;
           }
         }
-        return vbNeed2Load;
+        return scheduledVB;
       }
+
 
       /* gives, for each root cell / tree in the root grid, the ID of
          the first index brick in the (shared) value brick array */
@@ -222,6 +242,7 @@ namespace ospray {
 
 
       std::vector<BrickStatus> valueBricksStatus;
+      std::vector<size_t> vbNeed2Load;
       size_t loadBrickNum;
 
     };
@@ -233,17 +254,32 @@ namespace ospray {
     {
       void loadTreeBrick(const FileName &brickFileBase)
       {
+        // while (!tree.empty()) {
+        //   typename std::map<size_t, BrickTree<N, T>>::iterator it;
+        //   for (it = tree.begin(); it != tree.end(); it++) {
+        //     bool needLoad = false;
+        //     std::vector<size_t> vbRequested; 
+        //     time_point t1 = Time();
+        //     needLoad= it->second.isTreeNeedLoad();
+        //     double ts1 = Time(t1);
+
+        //     time_point t2 = Time();
+        //     if(needLoad)
+        //       it->second.loadTreeByBrick(brickFileBase, it->first,vbRequested);
+        //     double ts2 = Time(t2);
+        //     //printf("test need load: %f, load tree: %f \n",ts1,ts2);
+        //   }
+        // }
+
         while (!tree.empty()) {
           typename std::map<size_t, BrickTree<N, T>>::iterator it;
           for (it = tree.begin(); it != tree.end(); it++) {
-            bool needLoad = false;
-            std::vector<size_t> vbRequested = it->second.isTreeNeedLoad(needLoad);
-            if(needLoad)
-              it->second.loadTreeByBrick(brickFileBase, it->first,vbRequested);
+            std::vector<vec2i> vbReqList = it->second.getRequestVBList();
+            if (!vbReqList.empty())
+              it->second.loadTreeByBrick(brickFileBase, it->first, vbReqList);
           }
         }
       }
-
 
       void Initialize()
       {
