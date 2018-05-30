@@ -28,9 +28,11 @@
 #include <vector>
 #include <map>
 #include <thread>
+#include <list>
 #include <set>
 #include <mutex>
 #include <thread>
+#include "../apps/ospHelper.h"
 
 namespace ospray {
   namespace bt {
@@ -40,7 +42,27 @@ namespace ospray {
     template <typename T>
     const char *typeToString();
 
-    static std::mutex binDataReadMtx;
+    static std::mutex brickLoadMtx;
+    static const size_t numThread = 100;
+
+    enum BRICKTYPE {INDEXBRICK, VALUEBRICK, BRICKINFO};
+
+    struct LoadBricks
+    {
+      LoadBricks(BRICKTYPE btype, size_t offset):bricktype(btype),brickID(offset){};
+      BRICKTYPE bricktype;
+      size_t brickID; //N th of a specific brick
+    };
+
+    struct BrickStatus
+    {
+      BrickStatus(){
+        isRequested = false;
+        isLoaded = false;
+      }
+      bool isRequested;
+      bool isLoaded;
+    };
 
     /*! the superblock we'll store at the end of the binary
     memory/file region for a binary bricktree */
@@ -74,13 +96,13 @@ namespace ospray {
 
       float avgValue;
       vec2f valueRange;
-      int nBrickSize; 
+      int nBrickSize;
       vec3i validSize;
       vec3i rootGridDims;
       vec3f validFractionOfRootGrid;
+
+      FileName brickFileBase;
     };
-
-
 
     /* hierarchical tree of bricks. if N is the template parameter,
        this tree will encode bricks of NxNxN cells (a so-called value
@@ -99,6 +121,7 @@ namespace ospray {
     struct BrickTree : public BrickTreeBase {
       
       BrickTree();
+      ~BrickTree();
 
       static inline int invalidID() { return -1; }
 
@@ -154,13 +177,58 @@ namespace ospray {
       virtual vec3i getRootGridDims() const override { return rootGridDims; }
 
       /*! map this one from a binary dump that was created by the bricktreebuilder/raw2bricks tool */
-      void mapOSP(const FileName &brickFileBase, size_t treeID, const vec3i &treeIdx);
+      void mapOSP(const FileName &brickFileBase, size_t treeID);
       void mapOspBin(const FileName &brickFileBase, size_t treeID);
-      void loadOspBin(const FileName &brickFileBase, size_t treeID);
+      void loadBricks(FILE* file, vec2i vbListInfo);
+      void loadTreeByBrick(const FileName &brickFileBase, size_t treeID,std::vector<vec2i> vbReqList);
 
       // const typename BrickTree<N,T>::ValueBrick * findValueBrick(const vec3i &coord,int blockWidth,int xIdx, int yIdx, int zIdx);
       const T findValue(const vec3i &coord,int blockWidth);
-      
+
+      const T findBrickValue(size_t brickID,vec3i cellPos, size_t parentBrickID,vec3i parentCellPos);
+
+      // bool isTreeNeedLoad()
+      // {   
+      //   for(size_t i= 0;i < numValueBricks;i++){
+      //     if(!valueBricksStatus[i].isLoaded && valueBricksStatus[i].isRequested)
+      //     {
+      //       return true;
+      //     }
+      //   }
+      //   return false;
+      // }
+
+      //get the request value brick list (L = need to load, F = no need to load)
+      // L,L,F,F,F,L,L,L,F,L,F,F,L
+      //return (0,2),(5,3)...
+      std::vector<vec2i> getRequestVBList()
+      { 
+        std::vector<vec2i> scheduledVB;
+        size_t startIdx(0);
+        size_t num(0);   
+        bool loadFlag = false;
+        for(size_t i= 0;i < numValueBricks;i++){
+          if (!valueBricksStatus[i].isLoaded &&
+              valueBricksStatus[i].isRequested) {
+            if (!loadFlag) {
+              startIdx = i;
+              loadFlag = true;
+            }
+            num++;
+            if(i == numValueBricks){ 
+              scheduledVB.emplace_back(vec2i(startIdx, num));
+            }
+          } else {
+            if (loadFlag)
+              scheduledVB.emplace_back(vec2i(startIdx, num));
+            loadFlag = false;
+            num      = 0;
+          }
+        }
+        return scheduledVB;
+      }
+
+
       /* gives, for each root cell / tree in the root grid, the ID of
          the first index brick in the (shared) value brick array */
       const int32_t *firstIndexBrickOfTree;
@@ -168,50 +236,76 @@ namespace ospray {
       // virtual const int *firstIndexBrickOfTreePtr() const override { return firstIndexBrickOfTree; } ;
       // virtual const int *firstValueBrickOfTreePtr() const override { return firstValueBrickOfTree; } ;
 
-      /* gives, for each root cell / tree in the root grid, the ID of
+      /* gives, for each root cell / tree in the rwhileoot grid, the ID of
          the first value brick in the (shared) value brick array */
       const int32_t *firstValueBrickOfTree;
 
-      bool isLoaded;//check if data has been paged in
-      bool isRequested; //check if the binary block has been requested
-    };
 
+      std::vector<BrickStatus> valueBricksStatus;
+      std::vector<size_t> vbNeed2Load;
+      size_t loadBrickNum;
+
+    };
 
     
     /* a entire *FOREST* of bricktrees */
     template <int N, typename T = float>
     struct BrickTreeForest
     {
-
-      void loadBrickTreeData( const FileName &brickFileBase)
+      void loadTreeBrick(const FileName &brickFileBase)
       {
-        // typename std::map<size_t, BrickTree<N, T>>::iterator it;
-        // for (it = tree.begin(); it != tree.end(); it++) {
-        //   if (!it->second.isLoaded) {
-        //     it->second.mapOspBin(brickFileBase, it->first);
-        //     it->second.isLoaded = true;
+        // while (!tree.empty()) {
+        //   typename std::map<size_t, BrickTree<N, T>>::iterator it;
+        //   for (it = tree.begin(); it != tree.end(); it++) {
+        //     bool needLoad = false;
+        //     std::vector<size_t> vbRequested; 
+        //     time_point t1 = Time();
+        //     needLoad= it->second.isTreeNeedLoad();
+        //     double ts1 = Time(t1);
+
+        //     time_point t2 = Time();
+        //     if(needLoad)
+        //       it->second.loadTreeByBrick(brickFileBase, it->first,vbRequested);
+        //     double ts2 = Time(t2);
+        //     //printf("test need load: %f, load tree: %f \n",ts1,ts2);
         //   }
         // }
-        //PRINT(treeBinDataRequested.size());
-        while (treeLoaded.size() != tree.size()) {
-          // typename std::map<size_t, BrickTree<N, T>>::iterator it;
-          // for (it = tree.begin(); it != tree.end(); it++) {
-          //   if (!it->second.isLoaded && it->second.isRequested) {
-          //     it->second.mapOspBin(brickFileBase, it->first);
-          //     it->second.isLoaded = true;
-          //   }
-          // }
-          for (size_t idx = 0; idx < treeBinDataRequested.size(); idx++) {
-            if (treeBinDataRequested[idx] == 0)
-              continue;
-            if (!tree[idx].isLoaded) {
-              tree[idx].mapOspBin(brickFileBase, idx);
-              tree[idx].isLoaded = true;
-              treeLoaded.push_back(idx);
-              // std::cout<<"block:" << idx<< " loaded!"<<std::endl;
-              // PRINT(treeLoaded.size());
-            }
+
+        while (!tree.empty()) {
+          typename std::map<size_t, BrickTree<N, T>>::iterator it;
+          for (it = tree.begin(); it != tree.end(); it++) {
+            std::vector<vec2i> vbReqList = it->second.getRequestVBList();
+            if (!vbReqList.empty())
+              it->second.loadTreeByBrick(brickFileBase, it->first, vbReqList);
           }
+        }
+      }
+
+      void Initialize()
+      {
+        std::cout<<"#osp: start to initialize bricktree forest!"<<std::endl;
+        int numTrees = forestSize.product();
+        assert(numTrees > 0);
+
+        std::mutex amutex;
+        tasking::parallel_for(numTrees,[&](int treeID){
+          BrickTree<N, T> aTree;
+          aTree.mapOSP(brickFileBase, treeID);
+          std::lock_guard<std::mutex> lock(amutex);
+          tree.insert(std::make_pair(treeID, aTree));
+        });
+
+        //printf("#osp: %d trees have initialized!",numTrees);
+      }
+
+      void loadBrickTreeForest()
+      {
+        // set another thread to load the binary data.(*.ospbin)
+        for (size_t i = 0; i < numThread; i++) {
+          loadBrickTreeThread[i] = std::thread(
+              [&](const FileName &filebase) { loadTreeBrick(filebase); },
+              this->brickFileBase);
+          loadBrickTreeThread[i].detach();
         }
       }
 
@@ -222,105 +316,12 @@ namespace ospray {
             originalVolumeSize(originalVolumeSize),
             brickFileBase(brickFileBase)
       {
-        int numTrees = forestSize.product();
-        assert(numTrees > 0);
-
-        treeBinDataRequested.resize(numTrees,0);
-
-        array3D::for_each(forestSize, [&](const vec3i &treeCoord) {
-          size_t treeID = array3D::longIndex(treeCoord, forestSize);
-          BrickTree<N, T> aTree;
-          aTree.mapOSP(brickFileBase, treeID, treeCoord);
-          //aTree.mapOspBin(brickFileBase, treeID);
-          tree.insert(std::make_pair(treeID, aTree));
-          forestBounds = box3f(vec3f(0.f), vec3f(originalVolumeSize));
-        });
-
-        // ospcommon::tasking::parallel_for(numTrees, [&](size_t treeID) {
-        //   BrickTree<N, T> aTree;
-        //   aTree.mapOSP(brickFileBase, treeID, vec3i(0));
-        //   tree.insert(std::make_pair(treeID, aTree));
-        // });
-
-        PRINT(tree.size());
-
-        //set another thread to load the binary data.(*.ospbin)
-        loadBrickTreeThread = std::thread([&](const FileName& filebase) { 
-          loadBrickTreeData(filebase); 
-        },this->brickFileBase);
-
-        loadBrickTreeThread.detach();
-
-        // if (!mpicommon::isMpiParallel()) {
-        //   // tree.resize(numTrees);
-
-        //   array3D::for_each(forestSize, [&](const vec3i &treeCoord) {
-        //     size_t treeID = array3D::longIndex(treeCoord, forestSize);
-        //     BrickTree<N, T> aTree;
-        //     aTree.map(brickFileBase, treeID, treeCoord);
-        //     tree.insert(std::make_pair(treeID, aTree));
-        //     forestBounds = box3f(vec3f(0.f), vec3f(originalVolumeSize));
-        //     // tree[treeID].map(brickFileBase, treeID, treeCoord);
-        //   });
-        // } else {
-        //   std::cout<<"RUNNING IN PARALLEL!"<<std::endl;
-          
-        //   // auto numRanks = static_cast<float>(mpicommon::numGlobalRanks());
-        //   // auto myRank   = mpicommon::globalRank();
-        //   // const vec3i decomposeGrid = computeGrid(numRanks);
-        //   // const vec3i brickDims      = originalVolumeSize / decomposeGrid;
-        //   // const vec3i brickId(myRank % decomposeGrid.x,
-        //   //                      (myRank / decomposeGrid.x) % decomposeGrid.y,
-        //   //                      myRank / (decomposeGrid.x * decomposeGrid.y));
-        //   // const vec3f gridOrigin = vec3f(brickId) * vec3f(brickDims);
-        //   // forestBounds = box3f(gridOrigin, gridOrigin + vec3f(brickDims));
-
-        //   // const vec3i blockWidth = originalVolumeSize / forestSize;
-
-        //   // array3D::for_each(forestSize, [&](const vec3i &treeCoord) {
-        //   //   box3f blockBounds = box3f(treeCoord * blockWidth,
-        //   //                             treeCoord * blockWidth + blockWidth);
-        //   //   if (touchingOrOverlapping(forestBounds, blockBounds)) {
-        //   //     size_t treeID = array3D::longIndex(treeCoord, forestSize);
-        //   //     BrickTree<N, T> aTree;
-        //   //     aTree.map(brickFileBase, treeID, treeCoord);
-        //   //     tree.insert(std::make_pair(treeID, aTree));
-        //   //   }
-        //   // });
-        // }
+        Initialize();
+        loadBrickTreeForest();
       }
-
-      // bool inline computeDivisor(int x, int &divisor)
-      // {
-      //   int upperBound = std::sqrt(x);
-      //   for (int i = 2; i <= upperBound; ++i) {
-      //     if (x % i == 0) {
-      //       divisor = i;
-      //       return true;
-      //     }
-      //   }
-      //   return false;
-      // }
-
-      // vec3i inline computeGrid(int num)
-      // {
-      //   vec3i grid(1);
-      //   int axis    = 0;
-      //   int divisor = 0;
-      //   while (computeDivisor(num, divisor)) {
-      //     grid[axis] *= divisor;
-      //     num /= divisor;
-      //     axis = (axis + 1) % 3;
-      //   }
-      //   if (num != 1) {
-      //     grid[axis] *= num;
-      //   }
-      //   return grid;
-      // }
 
       ~BrickTreeForest()
       {
-        loadBrickTreeThread.join();
         tree.clear();
       }
 
@@ -328,14 +329,11 @@ namespace ospray {
       const vec3i originalVolumeSize;
       const FileName &brickFileBase;
 
-      std::thread loadBrickTreeThread;
+      std::thread loadBrickTreeThread[numThread];
 
       box3f forestBounds; 
 
       std::map<size_t, BrickTree<N,T>> tree;
-      //identify if the current tree is re
-      std::vector<size_t> treeBinDataRequested; 
-      std::vector<size_t> treeLoaded;
 
       //std::vector<BrickTree<N, T>> tree;
     };

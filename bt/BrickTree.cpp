@@ -53,8 +53,18 @@ namespace ospray {
 
     template<int N, typename T>
     BrickTree<N,T>::BrickTree(){
-      isLoaded = false;
-      isRequested = false;
+      brickFileBase = FileName("");
+      loadBrickNum = 0;
+    }
+
+    template<int N, typename T>
+    BrickTree<N,T>::~BrickTree(){
+      if(!valueBrick)
+        free(valueBrick);
+      if(!indexBrick)
+        free(indexBrick);
+      if(!brickInfo)
+        free(brickInfo);
     }
 
 
@@ -77,10 +87,13 @@ namespace ospray {
 
     /*! map this one from a binary dump that was created by the bricktreebuilder/raw2bricks tool */
     template<int N, typename T>
-    void BrickTree<N,T>::mapOSP(const FileName &brickFileBase, size_t blockID, const vec3i &treeCoords)
+    void BrickTree<N,T>::mapOSP(const FileName &brickFileBase, size_t blockID)
     {
+      this->brickFileBase = brickFileBase;
+      
       char blockFileName[10000];
       sprintf(blockFileName,"%s-brick%06i.osp",brickFileBase.str().c_str(),(int)blockID);
+
 
       std::shared_ptr<xml::XMLDoc> doc = xml::readXML(blockFileName);
       if (!doc)
@@ -100,20 +113,37 @@ namespace ospray {
       std::shared_ptr<xml::Node> valueBricksNode  = std::make_shared<xml::Node>(brickTreeNode->child[1]);
       std::shared_ptr<xml::Node> indexBrickOfNode = std::make_shared<xml::Node>(brickTreeNode->child[2]);
 
-      //size_t indexBricksNum  = std::stoll(indexBricksNode->getProp("num"));
       numIndexBricks = std::stoll(indexBricksNode->getProp("num"));
-      //size_t indexBricksOfs  = std::stoll(indexBricksNode->getProp("ofs"));
       binBlockInfo.indexBricksOfs = std::stoll(indexBricksNode->getProp("ofs"));
 
-      //size_t valueBricksNum  = std::stoll(valueBricksNode->getProp("num"));
       numValueBricks = std::stoll(valueBricksNode->getProp("num"));
-      //size_t valueBricksOfs  = std::stoll(valueBricksNode->getProp("ofs"));
       binBlockInfo.valueBricksOfs = std::stoll(valueBricksNode->getProp("ofs"));
 
-      //size_t indexBrickOfNum = std::stoll(indexBrickOfNode->getProp("num"));
       numBrickInfos= std::stoll(indexBrickOfNode->getProp("num"));
-      //size_t indexBrickOfOfs = std::stoll(indexBrickOfNode->getProp("ofs"));
       binBlockInfo.indexBrickOfOfs = std::stoll(indexBrickOfNode->getProp("ofs"));
+
+      valueBrick = (ValueBrick*) malloc(sizeof(ValueBrick) * numValueBricks);
+      indexBrick = (IndexBrick*) malloc(sizeof(IndexBrick) * numIndexBricks);
+      brickInfo = (BrickInfo*) malloc(sizeof(BrickInfo) * numBrickInfos);
+
+      valueBricksStatus.resize(numValueBricks,BrickStatus());
+      // isIndexBrickLoaded.resize(numIndexBricks,false);
+      // isBrickInfoLoaded.resize(numBrickInfos,false);
+
+      //vbNeed2Load.reserve(numValueBricks);
+
+      sprintf(blockFileName,"%s-brick%06i.ospbin",brickFileBase.str().c_str(),(int)blockID);
+
+      FILE *file = fopen(blockFileName, "rb");
+      if (!file)
+        throw std::runtime_error("could not open brick bin file " +
+                                 std::string(blockFileName));
+      fseek(file, binBlockInfo.indexBricksOfs, SEEK_SET);
+      fread(indexBrick, sizeof(IndexBrick), numIndexBricks, file);
+      fseek(file, binBlockInfo.indexBrickOfOfs, SEEK_SET);
+      fread(brickInfo, sizeof(BrickInfo), numBrickInfos, file);
+      
+      fclose(file);
     }
 
     template<int N, typename T>
@@ -122,31 +152,12 @@ namespace ospray {
       //mmap the binary file
       char blockFileName[10000];
       sprintf(blockFileName,"%s-brick%06i.ospbin",brickFileBase.str().c_str(),(int)blockID);
-      //PRINT(blockFileName);
-
-      valueBrick = (ValueBrick*) malloc(sizeof(ValueBrick) * numValueBricks);
-      indexBrick = (IndexBrick*) malloc(sizeof(IndexBrick) * numIndexBricks);
-      brickInfo = (BrickInfo*) malloc(sizeof(BrickInfo) * numBrickInfos);
 
       FILE *file = fopen(blockFileName, "rb");
       if (!file)
         throw std::runtime_error("could not open brick bin file " +
                                  std::string(blockFileName));
-#if 0
-      fseek(file,0,SEEK_END);
-      size_t actualFileSize = ftell(file);return
-      int fd = ::open(blockFileName, O_LARGEFILE | O_RDONLY);
-      assert(fd >= 0);
-      fclose(file);
-      
-      unsigned char *mem = (unsigned char *)mmap(NULL,actualFileSize,PROT_READ,MAP_SHARED,fd,0);
-      assert(mem != NULL && (long long)mem != -1LL);
-      madvise(mem,actualFileSize,MADV_WILLNEED);
 
-      valueBrick = (ValueBrick*)(mem+binBlockInfo.valueBricksOfs);
-      indexBrick = (IndexBrick*)(mem+binBlockInfo.indexBricksOfs);
-      brickInfo  = (BrickInfo*)(mem+binBlockInfo.indexBrickOfOfs);
-#else
       fseek(file, binBlockInfo.indexBricksOfs, SEEK_SET);
       size_t indexBrickRead =
           fread(indexBrick, sizeof(IndexBrick), numIndexBricks, file);
@@ -157,132 +168,142 @@ namespace ospray {
       size_t brickInfoRead =
           fread(brickInfo, sizeof(BrickInfo), numBrickInfos, file);
       fclose(file);
-#endif
     }
 
     template<int N, typename T>
-    void BrickTree<N,T>::loadOspBin(const FileName &brickFileBase, size_t blockID)
+    void BrickTree<N,T>::loadTreeByBrick(const FileName &brickFileBase, size_t blockID,std::vector<vec2i> vbReqList)
     {
-            //mmap the binary file
       char blockFileName[10000];
       sprintf(blockFileName,"%s-brick%06i.ospbin",brickFileBase.str().c_str(),(int)blockID);
-      //PRINT(blockFileName);
-
-      valueBrick = (ValueBrick*) malloc(sizeof(ValueBrick) * numValueBricks);
-      indexBrick = (IndexBrick*) malloc(sizeof(IndexBrick) * numIndexBricks);
-      brickInfo = (BrickInfo*) malloc(sizeof(BrickInfo) * numBrickInfos);
 
       FILE *file = fopen(blockFileName, "rb");
       if (!file)
-        throw std::runtime_error("could not open brick bin file " +
-                                 std::string(blockFileName));
+        throw std::runtime_error("could not open brick bin file " + std::string(blockFileName));
+      // for (size_t i = 0; i < numValueBricks; i++) {
+      //   if (!valueBricksStatus[i].isLoaded && valueBricksStatus[i].isRequested) {
+      //     LoadBricks aBrick(VALUEBRICK, i);
+      //     loadBricks(file, aBrick);
+      //   }
+      // }
 
-      fseek(file, binBlockInfo.indexBricksOfs, SEEK_SET);
-      size_t indexBrickRead =
-          fread(indexBrick, sizeof(IndexBrick), numIndexBricks, file);
-      fseek(file, binBlockInfo.valueBricksOfs, SEEK_SET);
-      size_t valueBrickRead =
-          fread(valueBrick, sizeof(ValueBrick), numValueBricks, file);
-      fseek(file, binBlockInfo.indexBrickOfOfs, SEEK_SET);
-      size_t brickInfoRead =
-          fread(brickInfo, sizeof(BrickInfo), numBrickInfos, file);
+      std::vector<vec2i>::iterator it = vbReqList.begin();
+      for(; it != vbReqList.end(); it++){
+        loadBricks(file, *it);
+      }
       fclose(file);
     }
 
+    template<int N, typename T>
+    void BrickTree<N,T>::loadBricks(FILE* file, vec2i vbListInfo)
+    {
+      // switch (aBrick.bricktype) {
+      // case INDEXBRICK:
+      //   fseek(file, binBlockInfo.indexBricksOfs + aBrick.brickID * sizeof(IndexBrick), SEEK_SET);
+      //   fread((IndexBrick *)(indexBrick + aBrick.brickID), sizeof(IndexBrick), 1, file);
+      //   break;
+      // case VALUEBRICK:
+      //   fseek(file, binBlockInfo.valueBricksOfs + aBrick.brickID * sizeof(ValueBrick), SEEK_SET);
+      //   fread((ValueBrick *)(valueBrick + aBrick.brickID), sizeof(ValueBrick), 1, file);
+      //   break;
+      // case BRICKINFO:
+      //   fseek(file, binBlockInfo.indexBrickOfOfs + aBrick.brickID * sizeof(BrickInfo), SEEK_SET);
+      //   fread((BrickInfo *)(brickInfo + aBrick.brickID), sizeof(BrickInfo), 1, file);
+      //   break;
+      // }
+      // valueBricksStatus[aBrick.brickID].isLoaded = true;
 
-    // template<int N, typename T>
-    // const typename BrickTree<N,T>::ValueBrick * 
-    // BrickTree<N,T>::findValueBrick(const vec3i &coord,int blockWidth,int xIdx, int yIdx, int zIdx)
-    // {
-    //   // start with the root brick
-    //   int brickSize = blockWidth;
+      fseek(file, binBlockInfo.valueBricksOfs + vbListInfo.x * sizeof(ValueBrick), SEEK_SET);
+      fread((ValueBrick *)(valueBrick + vbListInfo.x), sizeof(ValueBrick), vbListInfo.y, file);
 
-    //   assert(reduce_max(coord) < brickSize);
-    //   int32_t brickID = 0; 
-    //   while (brickSize > N) {
-    //     int cellSize = brickSize / N;
+      for(size_t i = 0; i < vbListInfo.y;i++)
+      {
+        valueBricksStatus[vbListInfo.x + i].isLoaded = true;
+      }
+    }
 
-    //     assert(brickID < numValueBricks);
-    //     assert(brickID < numIndexBricks);
-    //     IndexBrick ib = indexBrick[brickInfo[brickID].indexBrickID];
-    //     assert(ib);
-    //     int cx = (coord.x % brickSize) / cellSize;
-    //     int cy = (coord.y % brickSize) / cellSize;
-    //     int cz = (coord.z % brickSize) / cellSize;
-    //     assert(cx < N);
-    //     assert(cy < N);
-    //     assert(cz < N);
+    template <int N, typename T>
+    const T BrickTree<N, T>::findBrickValue(size_t brickID,vec3i cellPos, size_t parentBrickID,vec3i parentCellPos)
+    {
+      ValueBrick *vb = NULL;
+      //valueBricksStatus[brickID].isLoaded = true;
 
-    //     xIdx = cx;
-    //     yIdx = cy;
-    //     zIdx = cz;
-    //     int32_t childBrickID = ib.childID[cz][cy][cx];
-    //     if (childBrickID == BrickTree<N, T>::invalidID()) {
-    //       break;
-    //     } else {
-    //       brickID = childBrickID;
-    //     }
+      if (!valueBricksStatus[brickID].isLoaded) {
+        // request this brick if it is not requested
+        if (!valueBricksStatus[brickID].isRequested) {
+          //brickLoadMtx.lock();
+          //LoadBricks aBrick(VALUEBRICK, brickID);
+          //requestedBricks.push_back(aBrick);
+          valueBricksStatus[brickID].isRequested = true;
+          //brickLoadMtx.unlock();
+        }
+        // return average value if this brick is requested but not loaded
+        if (brickID == 0)  // root node, return average value of the tree
+          return this->avgValue;
+        else {
+          // inner node, return the average value of this node which is stored
+          // in the parent node
+          if (!valueBricksStatus[parentBrickID].isLoaded)
+            return this->avgValue;
+          else {
+            vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick +
+                                                          parentBrickID);
+            return vb->value[parentCellPos.z][parentCellPos.y][parentCellPos.x];
+          }
+        }
+      } else {
+        vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
+        return vb->value[cellPos.z][cellPos.y][cellPos.x];
+      }
 
-    //     assert(brickID < numValueBricks);
-    //     brickSize = cellSize;
-    //   }
-      
-    //   assert(brickID < numValueBricks);
-    //   return (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
-    // }
-
+      return this->avgValue;
+      // ValueBrick *vb =
+      //     (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
+      // return vb->value[cellPos.z][cellPos.y][cellPos.x];
+    }
 
     template <int N, typename T>
     const T BrickTree<N, T>::findValue(const vec3i &coord, int blockWidth)
     {
-       if(!this->isLoaded)
-         return this->avgValue;
-           // start with the root brick
+      // start with the root brick
       int brickSize = blockWidth;
       ValueBrick* vb = NULL;
 
       assert(reduce_max(coord) < brickSize);
       int32_t brickID = 0; 
-      int cx(0);
-      int cy(0);
-      int cz(0);
+      int32_t parentBrickID = BrickTree<N, T>::invalidID();
+      vec3i cpos(0);
+      vec3i parentCellPos(0);
       while (brickSize > N) {
         int cellSize = brickSize / N;
 
-        assert(brickID < numValueBricks);
-        assert(brickID < numIndexBricks);
+        cpos.x = (coord.x % brickSize) / cellSize;
+        cpos.y = (coord.y % brickSize) / cellSize;
+        cpos.z = (coord.z % brickSize) / cellSize;
 
-        cx = (coord.x % brickSize) / cellSize;
-        cy = (coord.y % brickSize) / cellSize;
-        cz = (coord.z % brickSize) / cellSize;
-        assert(cx < N);
-        assert(cy < N);
-        assert(cz < N);
+        parentCellPos.x = (coord.x % (brickSize * N)) / brickSize;
+        parentCellPos.y = (coord.y % (brickSize * N)) / brickSize;
+        parentCellPos.z = (coord.z % (brickSize * N)) / brickSize;
 
         int32_t ibID = brickInfo[brickID].indexBrickID;
         if (ibID == BrickTree<N, T>::invalidID()) {
-          vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
-          return vb->value[cz][cy][cx];
+          return findBrickValue(brickID, cpos,parentBrickID,parentCellPos);
         } else {
           IndexBrick ib = indexBrick[ibID];
-          assert(ib);
-          int32_t childBrickID = ib.childID[cz][cy][cx];
+          int32_t childBrickID = ib.childID[cpos.z][cpos.y][cpos.x];
           if (childBrickID == BrickTree<N, T>::invalidID()) {
-            vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
-            return vb->value[cz][cy][cx];
+            return findBrickValue(brickID,cpos,parentBrickID,parentCellPos);
           } else {
+            parentBrickID = brickID;
             brickID = childBrickID;
           }
         }
-        assert(brickID < numValueBricks);
         brickSize = cellSize;
       }
-      assert(brickID < numValueBricks);
-      vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
-      cx = coord.x % brickSize;
-      cy = coord.y % brickSize;
-      cz = coord.z % brickSize;
-      return vb->value[cz][cy][cx];
+
+      cpos.x = coord.x % brickSize;
+      cpos.y = coord.y % brickSize;
+      cpos.z = coord.z % brickSize;
+      return findBrickValue(brickID,cpos,parentBrickID,parentCellPos);
     }
 
     template<int N, typename T>

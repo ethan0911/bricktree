@@ -74,7 +74,6 @@ namespace ospray{
     assert(gridSize.x > 0);
     assert(gridSize.y > 0);
     assert(gridSize.z > 0);
-    PRINT(gridSize);
 
     // -------------------------------------------------------
     // parameter sanity checking

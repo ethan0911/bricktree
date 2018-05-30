@@ -59,11 +59,11 @@ namespace ospray{
     // Runtime Measurement 
     ////////////////////////////////////////////////////////
     typedef std::chrono::high_resolution_clock::time_point time_point;
-    time_point Time()
+    inline time_point Time()
     {
       return std::chrono::high_resolution_clock::now();
     }
-    double Time(const time_point &t1)
+    inline double Time(const time_point &t1)
     {
       time_point t2 = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double> et =
