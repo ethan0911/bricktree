@@ -150,16 +150,15 @@ namespace viewer {
   {
   private:
     OSPLight self = nullptr;
-    TValue<int> test;
-    OSPRenderer renderer;
+    OSPRenderer renderer = nullptr;
     std::string type, name;
   public:
-    //Setter(I, Intensity, float, 0.25f); 
-    /* Setter(D, Direction, ospcommon::vec3f,  */
-    /*        ospcommon::vec3f(-1.f, 0.679f, -0.754f)); */
-    /* Setter(C, Color, ospcommon::vec3f, */
-    /*        ospcommon::vec3f(1.f, 1.f, 1.f)); */
-    /* Setter(angularDiameter, AngularDiameter, float, 0.53f); */
+    Setter(I, Intensity, float, 0.25f); 
+    Setter(D, Direction, ospcommon::vec3f,
+           ospcommon::vec3f(-1.f, 0.679f, -0.754f));
+    Setter(C, Color, ospcommon::vec3f,
+           ospcommon::vec3f(1.f, 1.f, 1.f));
+    Setter(angularDiameter, AngularDiameter, float, 0.53f);
     LightProp();
     OSPLight& operator*() { return self; }
     void Init(std::string s, OSPRenderer r, std::vector<OSPLight>& l);
