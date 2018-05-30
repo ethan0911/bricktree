@@ -31,12 +31,12 @@ include_directories(
   ${OPENGL_INCLUDE_DIR})
 ospray_create_library(ospray_app_viewer
   scenegraph/properties.cpp
+  scenegraph/scenegraph.cpp
   viewer.cpp
   engine.cpp
-  widgets.cpp
+  ${TFN_MODULE_SRC}
   external/glad.c
   external/imgui_glfw_impi.cpp
-  ${TFN_MODULE_SRC}
   LINK
   ospray
   ospray_common

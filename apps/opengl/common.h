@@ -15,12 +15,4 @@
 #ifndef EXIT_FAILURE
 #define EXIT_FAILURE 1
 #endif
-//
-// include ospray
-//
-#include "ospray/ospray.h"
-#include "ospcommon/vec.h"
-#include "ospcommon/utility/TransactionalValue.h"
-using ospcommon::utility::TransactionalValue;
-
 #endif //OSPRAY_COMMON_H

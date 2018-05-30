@@ -43,10 +43,11 @@ static inline void _glCheckError
 
 // ======================================================================== //
 #include "viewer.h"
-#include "common.h"
 #include "camera.h"
 #include "engine.h"
-#include "widgets.h"
+#include "scenegraph/scenegraph.h"
+#include "ospray/ospray.h"
+#include "ospcommon/vec.h"
 
 // ======================================================================== //
 using namespace viewer;
@@ -56,6 +57,7 @@ static affine3f Identity(vec3f(1, 0, 0),
                          vec3f(0, 0, 0));
 static std::vector<GLFWwindow *> windowmap;
 static std::vector<uint32_t> displaybuffer;
+
 // ======================================================================== //
 static OSPModel              ospMod;
 static OSPRenderer           ospRen;

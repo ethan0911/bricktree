@@ -145,20 +145,23 @@ namespace viewer {
   // ====================================================================== //
   //
   // ====================================================================== //
-  using namespace ospcommon;
-  class LightProp 
+  class LightProp : public Prop 
   {
-  public:
+  private:
     OSPLight L;
-    float I = 0.25f;
-    vec3f D = vec3f(-1.f, 0.679f, -0.754f);
-    vec3f C = vec3f(1.f, 1.f, 1.f);
+    OSPRenderer& R;
+    std::vector<OSPLight>& lightList;
     std::string type, name;
-    OSPRenderer& ospRen;
-    std::vector<OSPLight>&   lightList;
-    LightProp(std::string str, OSPRenderer& r, std::vector<OSPLight>& l);
+  public:
+    Setter(I, Intensity, float, 0.25f);
+    Setter(D, Direction, ospcommon::vec3f, 
+           ospcommon::vec3f(-1.f, 0.679f, -0.754f));
+    Setter(C, Color, ospcommon::vec3f,
+           ospcommon::vec3f(1.f, 1.f, 1.f));
+    Setter(angularDiameter, AngularDiameter, float, 0.53f);
+    LightProp(std::string s, OSPRenderer& r, std::vector<OSPLight>& l);
     void Draw();
-    void Commit();
+    bool Commit();
   };
 
 };

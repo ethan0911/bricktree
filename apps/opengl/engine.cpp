@@ -2,7 +2,7 @@
 // Copyright SCI Institute, University of Utah, 2018
 // ======================================================================== //
 #include "engine.h"
-#include "widgets.h"
+#include "scenegraph/scenegraph.h"
 void viewer::Engine::Validate()
 {
   if (fbState == ExecState::INVALID)
@@ -18,24 +18,20 @@ void viewer::Engine::Start() {
       while (fbState != ExecState::STOPPED) {
         // check if we need to resize
         if (fbSize.update()) {
-          //std::cout << "resize" << std::endl;
           // resize buffer
           ospcommon::vec2i size = fbSize.get();
           fbNumPixels = size.x * size.y;
           fbBuffers.front().resize(fbNumPixels);
           fbBuffers.back().resize(fbNumPixels);
-          //std::cout << "new size " << fbNumPixels << std::endl;
           // resize ospray framebuffer
           if (ospFB != nullptr) {
             ospUnmapFrameBuffer(ospFBPtr, ospFB);
             ospFreeFrameBuffer(ospFB);
             ospFB = nullptr;
           }
-          //std::cout << "clean" << std::endl;
           ospFB = ospNewFrameBuffer((osp::vec2i&)size, 
                                     OSP_FB_SRGBA, 
                                     OSP_FB_COLOR | OSP_FB_ACCUM);
-          //std::cout << "create" << std::endl;
           ospFrameBufferClear(ospFB, OSP_FB_COLOR | OSP_FB_ACCUM);
           ospFBPtr = (uint32_t *) ospMapFrameBuffer(ospFB, OSP_FB_COLOR);
         }
