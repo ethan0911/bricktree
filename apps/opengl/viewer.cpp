@@ -311,12 +311,9 @@ void RenderWindow(GLFWwindow *window)
       ImGui::Begin("Rendering Properties");
       {
         rendererProp.Draw();
-        for (auto &l : lightPropList) {
-          l.Draw();
-        }
-        if (ImGui::Button("Commit")) {
-          //CommitOSPRay();
-        };
+        //for (auto &l : lightPropList) {
+        //  l.Draw();
+        //}
       }
       ImGui::End();
       ImGui::Render();

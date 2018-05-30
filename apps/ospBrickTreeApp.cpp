@@ -204,7 +204,7 @@ int main(int ac, const char **av)
   
 #if USE_VIEWER
 
-  viewer::Handler(camera,
+  viewer::Handler(camera, "perspective",
                   (const osp::vec3f &)args.vp,
                   (const osp::vec3f &)args.vu,
                   (const osp::vec3f &)args.vi);

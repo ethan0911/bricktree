@@ -222,46 +222,47 @@ bool viewer::TransferFunctionProp::Commit()
 // ======================================================================== //
 //
 // ======================================================================== //
-viewer::LightProp::LightProp(std::string s, OSPRenderer& r, 
-                             std::vector<OSPLight>& l) 
-  : type(s), R(r), lightList(l)
+viewer::LightProp::LightProp(std::string s, 
+                             OSPRenderer r, 
+                             std::vector<OSPLight>& l)
+  : type(s), renderer(r)
 {
-  L = ospNewLight(R, s.c_str());
-  lightList.push_back(L);
-  name = std::to_string(lightList.size());
+  self = ospNewLight(r, s.c_str());
+  l.push_back(self);
+  name = std::to_string(l.size());
 }
 void viewer::LightProp::Draw()
 {
-  ImGui::Text((type + "-" + name).c_str());
-  if (ImGui::SliderFloat3(("direction##" + name).c_str(),
-                          &imgui_D.x, -1.f, 1.f)) {
-    D = imgui_D;
-  };
-  if (ImGui::SliderFloat3(("color##" + name).c_str(), 
-                          &imgui_C.x, 0.f, 1.f)) {
-    C = imgui_C;
-  };
-  if (ImGui::SliderFloat(("intensity##" + name).c_str(), &imgui_I, 
-                         0.f, 100000.f, "%.3f", 5.0f)) {
-    I = imgui_I;
-  };
+  // ImGui::Text((type + "-" + name).c_str());
+  // if (ImGui::SliderFloat3(("direction##" + name).c_str(),
+  //                         &imgui_D.x, -1.f, 1.f)) {
+  //   D = imgui_D;
+  // };
+  // if (ImGui::SliderFloat3(("color##" + name).c_str(), 
+  //                         &imgui_C.x, 0.f, 1.f)) {
+  //   C = imgui_C;
+  // };
+  // if (ImGui::SliderFloat(("intensity##" + name).c_str(), &imgui_I, 
+  //                        0.f, 100000.f, "%.3f", 5.0f)) {
+  //   I = imgui_I;
+  // };
 }
 bool viewer::LightProp::Commit()
 {
   bool update = false;
-  if (I.update()) {
-    ospSet1f(L, "intensity", I.ref());
-    update = true;
-  }
-  if (C.update()) {
-    ospSetVec3f(L, "color", (osp::vec3f &)C.ref());
-    update = true;
-  }
-  if(D.update()) {
-    ospSetVec3f(L, "direction", (osp::vec3f &)D.ref());
-    update = true;
-  }
-  ospCommit(L);
+  // if (I.update()) {
+  //   ospSet1f(self, "intensity", I.ref());
+  //   update = true;
+  // }
+  // if (C.update()) {
+  //   ospSetVec3f(self, "color", (osp::vec3f &)C.ref());
+  //   update = true;
+  // }
+  // if(D.update()) {
+  //   ospSetVec3f(self, "direction", (osp::vec3f &)D.ref());
+  //   update = true;
+  // }
+  // ospCommit(self);
   return update;
 }
 

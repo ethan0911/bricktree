@@ -33,6 +33,7 @@ namespace viewer {
   //
   // ====================================================================== //
   struct Prop { 
+    Prop() {}
     virtual void Draw() = 0; 
     virtual bool Commit() = 0; 
   };
@@ -117,7 +118,7 @@ namespace viewer {
   class TransferFunctionProp : public Prop
   {
   private:
-    OSPTransferFunction self;
+    OSPTransferFunction self = nullptr;
     bool doUpdate = true;
     std::shared_ptr<tfn::tfn_widget::TransferFunctionWidget> widget;
     std::mutex lock;
@@ -148,18 +149,18 @@ namespace viewer {
   class LightProp : public Prop 
   {
   private:
-    OSPLight L;
-    OSPRenderer& R;
-    std::vector<OSPLight>& lightList;
+    OSPLight self = nullptr;
+    OSPRenderer renderer;
     std::string type, name;
   public:
-    Setter(I, Intensity, float, 0.25f);
-    Setter(D, Direction, ospcommon::vec3f, 
-           ospcommon::vec3f(-1.f, 0.679f, -0.754f));
-    Setter(C, Color, ospcommon::vec3f,
-           ospcommon::vec3f(1.f, 1.f, 1.f));
-    Setter(angularDiameter, AngularDiameter, float, 0.53f);
-    LightProp(std::string s, OSPRenderer& r, std::vector<OSPLight>& l);
+    //Setter(I, Intensity, float, 0.25f); 
+    /* Setter(D, Direction, ospcommon::vec3f,  */
+    /*        ospcommon::vec3f(-1.f, 0.679f, -0.754f)); */
+    /* Setter(C, Color, ospcommon::vec3f, */
+    /*        ospcommon::vec3f(1.f, 1.f, 1.f)); */
+    /* Setter(angularDiameter, AngularDiameter, float, 0.53f); */
+    LightProp(std::string s, OSPRenderer r, std::vector<OSPLight>& l);
+    OSPLight& operator*() { return self; }
     void Draw();
     bool Commit();
   };
