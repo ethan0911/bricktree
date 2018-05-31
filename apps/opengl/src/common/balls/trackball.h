@@ -22,28 +22,40 @@ using namespace ospcommon;
 class Trackball {
 private:
   float radius = 1.0f;
-  affine3f matrix_new = affine3f(OneTy());
-  affine3f matrix_old = affine3f(OneTy());
-  vec3f position_new;
-  vec3f position_old;
+  ospcommon::affine3f cofc = affine3f(OneTy());
+  ospcommon::affine3f matrix_new = affine3f(OneTy());
+  ospcommon::affine3f matrix_old = affine3f(OneTy());
+  ospcommon::vec3f position_new;
+  ospcommon::vec3f position_old;
   float zoom_new = 1.f;
-  float zoom_old;
+  float zoom_old = 1.f;
+
 public:
   /** constractors */
   Trackball() {}
   void SetRadius(const float r) { radius = r; }
+  void SetCoordinate(const ospcommon::vec3f& u, 
+                     const ospcommon::vec3f& d)
+  {
+    ospcommon::vec3f Z = ospcommon::normalize(d);
+    ospcommon::vec3f U = ospcommon::normalize(ospcommon::cross(Z, u));
+    ospcommon::vec3f V = ospcommon::cross(U, Z);
+    const auto l = ospcommon::linear3f(U, V, Z);
+    cofc = ospcommon::affine3f(l.inverse(), ospcommon::vec3f(0.f));
+  }
 
   /**
    * @brief BeginDrag/Zoom: initialize drag/zoom
    * @param x: previous x position
    * @param y: previous y position
    */
-  void BeginDrag(float x, float y) {
+  void BeginDrag(float x, float y) 
+  {
     position_old = proj2surf(x, y);
     matrix_old = matrix_new;
   }
-
-  void BeginZoom(float x, float y) {
+  void BeginZoom(float x, float y) 
+  {
     zoom_old = y;
   }
 
@@ -52,30 +64,16 @@ public:
    * @param x: current x position
    * @param y: current y position
    */
-  void Drag(float x, float y, 
-            ospcommon::vec3f u, 
-            ospcommon::vec3f d) 
+  void Drag(float x, float y)
   {
+    // new mouse position
     position_new = proj2surf(x, y);
-
-    /* ospcommon::vec3f Z = normalize(d); */
-    /* ospcommon::vec3f U = normalize(cross(Z, u)); */
-    /* ospcommon::vec3f V = cross(U, Z); */
-    /* linear3f l = linear3f(U, V, Z); */
-
-    //affine3f m = affine3f(l.inverse(), ospcommon::vec3f(0.f, 0.f, 0.f));
-
-    /* auto p0 = l.inverse() * position_prev; */
-    /* auto p1 = l.inverse() * position; */
-
-    auto p0 =  position_new;
-    auto p1 =  position_old;
-
-    // get direction
-    vec3f dir = normalize(cross(p0, p1));
-
-    // compute rotation angle
-    float angle = ospcommon::acos(dot(normalize(p0), normalize(p1)));
+    const auto p0 = ospcommon::normalize(position_old);
+    const auto p1 = ospcommon::normalize(position_new);
+    // get direction and angle
+    vec3f dir = -ospcommon::normalize(ospcommon::cross(p0, p1));
+    float angle = ospcommon::acos(ospcommon::dot(p0, p1));
+    // update matrix
     if (angle < 0.001f) {
       // to prevent position_prev == position, this will cause invalid value
       return;
@@ -83,8 +81,8 @@ public:
       matrix_new = matrix_old * affine3f::rotate(dir, angle);
     }
   }
-
-  void Zoom(float x, float y) {
+  void Zoom(float x, float y) 
+  {
     zoom_new += (y - zoom_old);
     zoom_old = y;
   }
@@ -93,13 +91,14 @@ public:
    * @brief matrix: trackball matrix accessor
    * @return current trackball matrix
    */
-  affine3f Matrix() { return matrix_new * affine3f::scale(vec3f(zoom_new)); }
-
+  affine3f Matrix() 
+  { 
+    return matrix_new * affine3f::scale(vec3f(zoom_new)) * cofc;      
+  }
   void Reset() {
     matrix_new = affine3f(OneTy());
     zoom_new = 1.0f;
   }
-
   void Reset(const affine3f &m) { matrix_new = m; }
 
 private:

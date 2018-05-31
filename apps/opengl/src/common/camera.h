@@ -4,6 +4,10 @@
 #include "common/constants.h"
 #include "common/properties.h"
 #include "common/balls/trackball.h"
+
+#include "ospcommon/vec.h"
+#include "ospcommon/AffineSpace.h"
+using namespace ospcommon;
 class Camera {
 private:
   vec2f mouse2screen(const int& x, const int& y, 
@@ -64,10 +68,7 @@ public:
   }
   void   CameraDrag(const float& x, const float& y) {
     const vec2f p = mouse2screen(x, y, this->width, this->height);
-    //auto dir = -xfmVector(this->ball.Matrix().l, this->eye - this->focus);
-    //auto up  =  xfmVector(this->ball.Matrix().l, this->up);
-    //this->ball.Drag(p.x, p.y, up, dir);
-    this->ball.Drag(p.x, p.y, this->up, this->focus - this->eye);
+    this->ball.Drag(p.x, p.y);
     CameraUpdateView();
   }
   void   CameraMoveNZ(const float& v) {
@@ -98,6 +99,7 @@ public:
   //--------------------------------------------------------
   void Init(OSPCamera camera, const std::string type) 
   {
+    this->ball.SetCoordinate(this->up, this->focus - this->eye);
     if (camera == nullptr) { 
       throw std::runtime_error("empty camera found"); 
     }
