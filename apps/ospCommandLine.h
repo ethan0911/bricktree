@@ -54,7 +54,8 @@ namespace ospray {
       if (init + 1 < ac) {
         v = lexical_cast<double, const char *>(av[++i]);
       } else {
-        throw std::runtime_error("value required for " + std::string(av[init]));
+        throw std::runtime_error("value required for " + 
+                                 std::string(av[init]));
       }
     }
   template <int N, typename T>
@@ -103,6 +104,7 @@ namespace ospray {
     vec3f disDir{.372f, .416f, -0.605f};
     vec2f valueRange{0.f, -1.f};
     vec2i numFrames{1 /* skipped */, 20 /* measure */};
+    bool use_hacked_vol{false};
   };
 
   inline void CommandLine::Parse(int ac, const char **av)
@@ -135,7 +137,7 @@ namespace ospray {
         ospray::Parse<3>(ac, av, i, sunDir);
       } else if (str == "-dis") {
         ospray::Parse<3>(ac, av, i, disDir);
-      }else if (str == "-frames") {
+      } else if (str == "-frames") {
         try {
           ospray::Parse<2>(ac, av, i, numFrames);
         } catch (const std::runtime_error &e) {
@@ -144,6 +146,8 @@ namespace ospray {
               "<# of warmup frames> "
               "<# of benchmark frames>");
         }
+      } else if (str == "-hacked-volume") {
+        use_hacked_vol = true;
       } else if (str[0] == '-') {
         throw std::runtime_error("unknown argument: " + str);
       } else {
