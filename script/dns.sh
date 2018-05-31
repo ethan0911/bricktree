@@ -1,0 +1,12 @@
+#!/bin/bash
+
+OSPRAY=$1
+BRICKTREEFILE=$2
+
+$OSPRAY $BRICKTREEFILE -valueRange 0 1.2 \
+  -vp 11484.5 -2557.59 -356.972 -vi 5705.08 3750.32 1094.41 -vu 0.13481 -0.185449 -0.562216 
+
+
+
+
+

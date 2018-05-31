@@ -31,7 +31,9 @@
 #include <list>
 #include <set>
 #include <mutex>
+#include <stack>
 #include <thread>
+#include <algorithm>
 #include "../apps/ospHelper.h"
 
 namespace ospray {
@@ -43,7 +45,7 @@ namespace ospray {
     const char *typeToString();
 
     static std::mutex brickLoadMtx;
-    static const size_t numThread = 100;
+    static const size_t numThread = 1;
 
     enum BRICKTYPE {INDEXBRICK, VALUEBRICK, BRICKINFO};
 
@@ -60,6 +62,9 @@ namespace ospray {
         isRequested = false;
         isLoaded = false;
       }
+
+      BrickStatus(bool request, bool load): isRequested(request), isLoaded(load){}
+      
       bool isRequested;
       bool isLoaded;
     };
@@ -180,23 +185,25 @@ namespace ospray {
       void mapOSP(const FileName &brickFileBase, size_t treeID);
       void mapOspBin(const FileName &brickFileBase, size_t treeID);
       void loadBricks(FILE* file, vec2i vbListInfo);
+      void loadBricks(FILE* file, LoadBricks aBrick);
       void loadTreeByBrick(const FileName &brickFileBase, size_t treeID,std::vector<vec2i> vbReqList);
+      void loadTreeByBrick(const FileName &brickFileBase, size_t treeID);
 
       // const typename BrickTree<N,T>::ValueBrick * findValueBrick(const vec3i &coord,int blockWidth,int xIdx, int yIdx, int zIdx);
       const T findValue(const vec3i &coord,int blockWidth);
 
       const T findBrickValue(size_t brickID,vec3i cellPos, size_t parentBrickID,vec3i parentCellPos);
 
-      // bool isTreeNeedLoad()
-      // {   
-      //   for(size_t i= 0;i < numValueBricks;i++){
-      //     if(!valueBricksStatus[i].isLoaded && valueBricksStatus[i].isRequested)
-      //     {
-      //       return true;
-      //     }
-      //   }
-      //   return false;
-      // }
+      bool isTreeNeedLoad()
+      {   
+        for(size_t i= 0;i < numValueBricks;i++){
+          if(!valueBricksStatus[i].isLoaded && valueBricksStatus[i].isRequested)
+          {
+            return true;
+          }
+        }
+        return false;
+      }
 
       //get the request value brick list (L = need to load, F = no need to load)
       // L,L,F,F,F,L,L,L,F,L,F,F,L
@@ -204,25 +211,44 @@ namespace ospray {
       std::vector<vec2i> getRequestVBList()
       { 
         std::vector<vec2i> scheduledVB;
-        size_t startIdx(0);
-        size_t num(0);   
-        bool loadFlag = false;
-        for(size_t i= 0;i < numValueBricks;i++){
-          if (!valueBricksStatus[i].isLoaded &&
-              valueBricksStatus[i].isRequested) {
-            if (!loadFlag) {
-              startIdx = i;
-              loadFlag = true;
+        // size_t startIdx(0);
+        // size_t num(0);   
+        // bool loadFlag = false;
+        // for(size_t i= 0;i < numValueBricks;i++){
+        //   if (!valueBricksStatus[i].isLoaded &&
+        //       valueBricksStatus[i].isRequested) {
+        //     if (!loadFlag) {
+        //       startIdx = i;
+        //       loadFlag = true;
+        //     }
+        //     num++;
+        //     if(i == numValueBricks){ 
+        //       scheduledVB.emplace_back(vec2i(startIdx, num));
+        //     }
+        //   } else {
+        //     if (loadFlag)
+        //       scheduledVB.emplace_back(vec2i(startIdx, num));
+        //     loadFlag = false;
+        //     num      = 0;
+        //   }
+        // }
+
+        std::stack<int> sIdxStack;
+        for(int i=0;i<(int)numValueBricks;i++)
+        {
+          if (!valueBricksStatus[i].isLoaded && valueBricksStatus[i].isRequested) {
+            if(sIdxStack.empty()){
+              sIdxStack.push(i);
             }
-            num++;
-            if(i == numValueBricks){ 
-              scheduledVB.emplace_back(vec2i(startIdx, num));
+            if(i == (int)numValueBricks -1){
+              scheduledVB.emplace_back(vec2i(sIdxStack.top(), i - sIdxStack.top() + 1));
+              sIdxStack.pop();
             }
-          } else {
-            if (loadFlag)
-              scheduledVB.emplace_back(vec2i(startIdx, num));
-            loadFlag = false;
-            num      = 0;
+          }else{
+            if(!sIdxStack.empty()){
+              scheduledVB.emplace_back(vec2i(sIdxStack.top(), i - sIdxStack.top()));
+              sIdxStack.pop();
+            }
           }
         }
         return scheduledVB;
@@ -265,7 +291,7 @@ namespace ospray {
 
         //     time_point t2 = Time();
         //     if(needLoad)
-        //       it->second.loadTreeByBrick(brickFileBase, it->first,vbRequested);
+        //       it->second.loadTreeByBrick(brickFileBase, it->first);
         //     double ts2 = Time(t2);
         //     //printf("test need load: %f, load tree: %f \n",ts1,ts2);
         //   }

@@ -31,12 +31,12 @@ namespace ospray{
         fprintf(stderr, "fopen('%s', 'wb') failed: %d", fileName, errno);
         return;
       }
-      fprintf(file, "P6\n%i %i\n255\n", sizex, sizey);
+      fprintf(file, "P6\n%i %i\n255\n", (int)sizex, (int)sizey);
       unsigned char *out = (unsigned char *)alloca(3 * sizex);
-      for (int y = 0; y < sizey; y++) {
+      for (size_t y = 0; y < sizey; y++) {
         const unsigned char *in =
             (const unsigned char *)&pixel[(sizey - 1 - y) * sizex];
-        for (int x = 0; x < sizex; x++) {
+        for (size_t x = 0; x < sizex; x++) {
           out[3 * x + 0] = in[4 * x + 0];
           out[3 * x + 1] = in[4 * x + 1];
           out[3 * x + 2] = in[4 * x + 2];

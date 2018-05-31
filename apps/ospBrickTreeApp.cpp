@@ -111,7 +111,7 @@ int main(int ac, const char **av)
   ospRelease(oData);
 
   // create volume
-#define HACKED_VOLUME 1
+#define HACKED_VOLUME 0
 #if !(HACKED_VOLUME)
   std::cout << "#osp:bench using BrickTree volume" << std::endl;
   std::shared_ptr<ospray::BrickTree> bricktreeVolume =

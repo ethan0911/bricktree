@@ -104,7 +104,7 @@ export void BrickTreeVolume_set(void *uniform _self,
     //self->super.adaptiveSampling = true;
   
     self->super.samplingRate = 0.125f;//samplingRate;
-    self->super.samplingStep = 2.0f;
+    self->super.samplingStep = 1.0f;
   
     self->super.gradientShadingEnabled = 0;
   
