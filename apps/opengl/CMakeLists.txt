@@ -32,8 +32,9 @@ include_directories(src external
 ospray_create_library(ospray_app_viewer
   viewer.cpp
   src/engine.cpp
-  src/common/properties.cpp
   src/common/camera.cpp
+  src/common/trackball.cpp
+  src/common/properties.cpp
   ${TFN_MODULE_SRC}
   external/glad.c
   external/imgui_glfw_impi.cpp

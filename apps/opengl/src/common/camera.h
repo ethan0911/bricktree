@@ -7,11 +7,10 @@
 // local
 #include "common/constants.h"
 #include "common/properties.h"
-#include "common/balls/trackball.h"
+#include "common/trackball.h"
 // ospray
 #include "ospray/ospray.h"
 #include "ospcommon/vec.h"
-#include "ospcommon/AffineSpace.h"
 namespace viewer {
   class Camera {
   private:
@@ -37,9 +36,9 @@ namespace viewer {
     size_t CameraWidth();
     size_t CameraHeight();
     float  CameraFocalLength();
-    vec3f  CameraFocus();
-    vec3f  CameraPos();
-    vec3f  CameraUp();
+    ospcommon::vec3f CameraFocus();
+    ospcommon::vec3f CameraPos();
+    ospcommon::vec3f CameraUp();
     void   CameraBeginZoom(const float& x, const float& y);
     void   CameraZoom(const float& x, const float& y);
     void   CameraBeginDrag(const float& x, const float& y);

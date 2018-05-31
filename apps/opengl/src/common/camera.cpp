@@ -2,6 +2,7 @@
 // Copyright SCI Institute, University of Utah, 2018
 // ======================================================================== //
 #include "camera.h"
+#include "ospcommon/AffineSpace.h"
 using namespace ospcommon;
 viewer::Camera::Camera(viewer::CameraProp& p) : prop(p) {}
 vec2f viewer::Camera::mouse2screen(const int& x, const int& y, 
