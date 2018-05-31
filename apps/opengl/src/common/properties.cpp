@@ -57,7 +57,8 @@ bool viewer::CameraProp::Commit()
       update = true;
     }
   }
-  ospCommit(self);
+  if (update)
+    ospCommit(self);
   return update;
 }
 
@@ -138,7 +139,8 @@ bool viewer::RendererProp::Commit()
     ospSet1f(self, "minContribution", minContribution.ref());
     update = true;
   }
-  ospCommit(self);
+  if (update)
+    ospCommit(self);
   return update;
 }
 
@@ -195,6 +197,7 @@ bool viewer::TransferFunctionProp::Commit()
 {
   bool update = false;
   if (doUpdate && lock.try_lock()) {
+    std::cout << "commit" << std::endl;
     doUpdate = false;
     OSPData colorsData = ospNewData(colors.size() / 3, 
                                     OSP_FLOAT3, 
@@ -264,7 +267,8 @@ bool viewer::LightProp::Commit()
     ospSetVec3f(self, "direction", (osp::vec3f &)D.ref());
     update = true;
   }
-  ospCommit(self);
+  if (update)
+    ospCommit(self);
   return update;
 }
 

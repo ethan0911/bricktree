@@ -47,7 +47,7 @@ namespace viewer {
   class CameraProp : public Prop
   {
   private:
-    OSPCamera self = nullptr;
+    OSPCamera self{nullptr};
   public:
     enum Type { Perspective, Orthographic, Panoramic } type;
   public:
@@ -85,7 +85,7 @@ namespace viewer {
   class RendererProp : public Prop
   {
   private:
-    OSPRenderer self = nullptr;
+    OSPRenderer self{nullptr};
   public:
     enum Type { Scivis, Pathtracer } type;
   public:
@@ -121,8 +121,8 @@ namespace viewer {
   class TransferFunctionProp : public Prop
   {
   private:
-    OSPTransferFunction self = nullptr;
-    bool doUpdate = true;
+    OSPTransferFunction self{nullptr};
+    bool doUpdate{false}; // no initial update
     std::shared_ptr<tfn::tfn_widget::TransferFunctionWidget> widget;
     std::mutex lock;
     std::vector<float> colors;
