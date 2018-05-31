@@ -19,5 +19,5 @@
 /*! this function has to be present for a module to be loadable ... */
 extern "C" void ospray_init_module_bricktree()
 {
-  printf("loading 'bricktree' module\n");
+  printf("#osp: loading 'bricktree' module\n");
 }
