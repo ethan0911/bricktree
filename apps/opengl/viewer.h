@@ -9,7 +9,8 @@
 #include <string>
 
 namespace viewer {
-  int Init(const int ac, const char** av, const size_t& w, const size_t& h);
+  int  Init(const int ac, const char** av,
+            const size_t& w, const size_t& h);
   void Render(int window_id);
   void Handler(OSPCamera c, const std::string& type,
 	       const osp::vec3f& vp,

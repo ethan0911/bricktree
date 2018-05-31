@@ -21,7 +21,7 @@
 using namespace ospcommon;
 class Trackball {
 private:
-  bool inverse_rotate = true; // inverse rotation
+  //bool inverse_rotate = true; // inverse rotation
   float radius = 1.0f;
   affine3f matrix = affine3f(OneTy());
   affine3f matrix_prev = affine3f(OneTy());
@@ -33,10 +33,8 @@ private:
 public:
   /** constractors */
   Trackball() {}
-
   void SetRadius(const float r) { radius = r; }
-
-  void SetInverseRotateMode(bool r) { inverse_rotate = r; }
+  //void SetInverseRotateMode(bool r) { inverse_rotate = r; }
 
   /**
    * @brief BeginDrag/Zoom: initialize drag/zoom
@@ -59,18 +57,29 @@ public:
    * @param x: current x position
    * @param y: current y position
    */
-  void Drag(float x, float y) {
+  void Drag(float x, float y, 
+            ospcommon::vec3f u, 
+            ospcommon::vec3f d) 
+  {
     // get direction
     position = proj2surf(x, y);
     vec3f dir = normalize(cross(position_prev, position));
-    if (inverse_rotate) dir *= -1.0f;
+    //if (inverse_rotate) dir *= -1.0f;
     // compute rotation angle
-    float angle = ospcommon::acos(dot(normalize(position_prev), normalize(position)));
+    float angle = ospcommon::acos(dot(normalize(position_prev), 
+                                      normalize(position)));
     if (angle < 0.001f) {
       // to prevent position_prev == position, this will cause invalid value
       return;
     } else { // compute rotation
-      matrix = matrix_prev * affine3f::rotate(dir, angle);
+      ospcommon::vec3f Z = normalize(d);
+      ospcommon::vec3f U = normalize(cross(Z, u));
+      ospcommon::vec3f V = cross(U, Z);
+      linear3f l = linear3f(U, V, Z);
+      matrix = matrix_prev * 
+        affine3f(l.inverse(),
+                 ospcommon::vec3f(0.f, 0.f, 0.f)) *
+        affine3f::rotate(dir, angle);
     }
   }
 

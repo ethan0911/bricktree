@@ -1,9 +1,9 @@
 #pragma once
 #ifndef OSPRAY_CAMERA_H
 #define OSPRAY_CAMERA_H
-#include "common.h"
-#include "scenegraph/properties.h"
-#include "others/trackball.h"
+#include "common/constants.h"
+#include "common/properties.h"
+#include "common/balls/trackball.h"
 class Camera {
 private:
   vec2f mouse2screen(const int& x, const int& y, const float& width, const float& height) {
@@ -62,7 +62,10 @@ public:
   }
   void   CameraDrag(const float& x, const float& y) {
     const vec2f p = mouse2screen(x, y, this->width, this->height);
-    this->ball.Drag(p.x, p.y);
+    //auto dir = -xfmVector(this->ball.Matrix().l, this->eye - this->focus);
+    //auto up  =  xfmVector(this->ball.Matrix().l, this->up);
+    this->ball.Drag(p.x, p.y, this->up, this->focus - this->eye);
+    //this->ball.Drag(p.x, p.y, up, dir);
     CameraUpdateView();
   }
   void   CameraMoveNZ(const float& v) {

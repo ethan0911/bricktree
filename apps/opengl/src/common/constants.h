@@ -6,8 +6,8 @@
 //! This file contains headers of all external libraries
 //!
 #pragma once
-#ifndef OSPRAY_COMMON_H
-#define OSPRAY_COMMON_H
+#ifndef OSPRAY_CONSTANTS_H
+#define OSPRAY_CONSTANTS_H
 #define NOMINMAX
 #ifndef EXIT_SUCCESS
 #define EXIT_SUCCESS 0
@@ -15,4 +15,4 @@
 #ifndef EXIT_FAILURE
 #define EXIT_FAILURE 1
 #endif
-#endif //OSPRAY_COMMON_H
+#endif //OSPRAY_CONSTANTS_H

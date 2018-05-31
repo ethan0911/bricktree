@@ -5,13 +5,10 @@
 #ifndef OSPRAY_ENGINE_H
 #define OSPRAY_ENGINE_H
 
-#include "common.h"
+#include "common/constants.h"
 // ospcommon
 #include "ospray/ospray.h"
 #include "ospcommon/vec.h"
-#include "ospcommon/box.h"
-#include "ospcommon/AsyncLoop.h"
-#include "ospcommon/utility/CodeTimer.h"
 #include "ospcommon/utility/DoubleBufferedValue.h"
 #include "ospcommon/utility/TransactionalValue.h"
 // std
@@ -20,6 +17,7 @@
 #include <mutex>
 #include <vector>
 #include <memory>
+
 using namespace ospcommon;
 namespace viewer {  
   class Engine {
