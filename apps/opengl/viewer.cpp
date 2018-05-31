@@ -43,12 +43,11 @@ static inline void _glCheckError
 
 // ======================================================================== //
 #include "viewer.h"
-#include "camera.h"
+#include "common/constants.h"
+#include "common/camera.h"
+#include "common/properties.h"
 #include "engine.h"
-#include "scenegraph/scenegraph.h"
-#include "ospray/ospray.h"
 #include "ospcommon/vec.h"
-
 // ======================================================================== //
 using namespace viewer;
 static affine3f Identity(vec3f(1, 0, 0),
@@ -81,11 +80,8 @@ bool viewer::widgets::Commit() {
 }
 
 // ======================================================================== //
-#include "others/navsphere.h"
+#include "common/utils/navsphere.h"
 static Sphere sphere;
-
-// ======================================================================== //
-namespace viewer {};  // namespace viewer
 
 // ======================================================================== //
 //
@@ -140,6 +136,8 @@ namespace viewer {
 // ======================================================================== //
 // Callback Functions
 // ======================================================================== //
+#include <imgui.h>
+#include <imgui_glfw_impi.h>
 static GLuint texID;
 static GLuint fboID;
 void error_callback(int error, const char *description)

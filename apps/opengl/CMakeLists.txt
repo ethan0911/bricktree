@@ -1,9 +1,7 @@
 ospray_disable_compiler_warnings()
 
-find_package(OpenGL)
-if (NOT OPENGL_FOUND) 
-  set(OSPRAY_MODULE_BRICKTREE_WIDGET OFF)
-endif ()
+# find openGL
+find_package(OpenGL REQUIRED)
 
 # transfer function widget
 set(TFN_MODULE_DEFAULT_ROOT 
@@ -24,16 +22,17 @@ if (TFN_MODULE)
     ${TFN_MODULE_ROOT}/src/widgets/TransferFunctionWidget.cpp)
 endif (TFN_MODULE)
 
-include_directories(
-  external
+# set correct include path
+include_directories(src external
   ${PROJECT_SOURCE_DIR}/apps/exampleViewer/common/imgui
   ${TFN_MODULE_INCLUDE_DIR}
   ${OPENGL_INCLUDE_DIR})
+
+# build everything as a library
 ospray_create_library(ospray_app_viewer
-  scenegraph/properties.cpp
-  scenegraph/scenegraph.cpp
   viewer.cpp
-  engine.cpp
+  src/engine.cpp
+  src/common/properties.cpp
   ${TFN_MODULE_SRC}
   external/glad.c
   external/imgui_glfw_impi.cpp
@@ -43,5 +42,7 @@ ospray_create_library(ospray_app_viewer
   ospray_imgui
   ospray_imgui3d_sg
   ${OPENGL_LIBRARIES})
+
+# setup properties
 set_target_properties(ospray_app_viewer
   PROPERTIES CXX_STANDARD 14)

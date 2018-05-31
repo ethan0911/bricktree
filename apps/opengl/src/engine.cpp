@@ -2,7 +2,7 @@
 // Copyright SCI Institute, University of Utah, 2018
 // ======================================================================== //
 #include "engine.h"
-#include "scenegraph/scenegraph.h"
+#include "common/properties.h"
 void viewer::Engine::Validate()
 {
   if (fbState == ExecState::INVALID)

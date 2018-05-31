@@ -5,13 +5,16 @@
 #ifndef OSPRAY_PROPERTIES_H
 #define OSPRAY_PROPERTIES_H
 
+// ======================================================================== //
+// This is the place where to involve ospray commits
+// ======================================================================== //
+namespace viewer { namespace widgets { bool Commit(); }; };
+
 /* ospray */
 #include "ospray/ospray.h"
 #include "ospcommon/vec.h"
 #include "ospcommon/utility/TransactionalValue.h"
 /* imgui */
-#include <imgui.h>
-#include <imgui_glfw_impi.h>
 #include "widgets/TransferFunctionWidget.h"
 /* stl */
 #include <vector>
