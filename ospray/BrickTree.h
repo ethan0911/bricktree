@@ -19,8 +19,10 @@
 // ospray
 #include "ospcommon/math.h"
 #include "ospray/volume/Volume.h"
+#include "../apps/ospHelper.h"
 // bt base
 #include "../bt/BrickTree.h"
+#include <mutex>
 
 // hack for lerp3
 namespace ospcommon {
@@ -37,6 +39,7 @@ template<typename T>
 // other headers
 #include <mutex>
 #include <thread>
+
 
 namespace ospray {
   namespace bt {
@@ -82,7 +85,7 @@ namespace ospray {
                             const vec3i &count) override;
 
       //get the blockID in the bricktree volume
-      size_t getBlockID(const vec3f &pos);
+      int getBlockID(const vec3f &pos);
 
       /*! create specialization of sampler for given type and brick size
        */
@@ -112,6 +115,8 @@ namespace ospray {
       box3f volBounds;
     };
 
+    static std::mutex mmtx;
+
     /*! the actual sampler code for a bricktree; to be specialized for
       bricksize, voxel type, etcpp */
     template <typename T, int N>
@@ -133,27 +138,20 @@ namespace ospray {
       virtual float sample(const vec3f &pos) const override
       {
         //PING;
-        vec3f coord = pos; //* btv->validSize;
+
+        vec3f coord = pos; 
 
         vec3i low    = (vec3i)coord;
-        vec3i upper  = low + vec3i(1);
         vec3f factor = coord - (vec3f)low;
 
         float v;
-#if 0
-        size_t blockId = btv->getBlockID(low);
-        //auto bt = forest->tree[blockId];
-        auto bt = forest->tree.find(blockId);
-        v = bt->second.avgValue;//second.findValue(low, btv->blockWidth);
-#else
+
+#if 1
         if (low.x == btv->validSize.x - 1) {
           float neighborValue[2][2];
           for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 2; j++) {
-              size_t blockId = btv->getBlockID((vec3f)(low + vec3i(0, j, i)));
-              if (blockId >= btv->gridSize.product())
-                throw std::runtime_error("Overflow the block tree vector!!");
-              //auto bt = forest->tree[blockId];
+              int blockId = btv->getBlockID((vec3f)(low + vec3i(0, j, i)));
               auto bt = forest->tree.find(blockId);
               neighborValue[i][j] =
                   bt->second.findValue(low + vec3i(0, j, j), btv->blockWidth);
@@ -169,10 +167,7 @@ namespace ospray {
           float neighborValue[2][2];
           for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 2; j++) {
-              size_t blockId = btv->getBlockID((vec3f)(low + vec3i(j, 0, i)));
-              if (blockId >= btv->gridSize.product())
-                throw std::runtime_error("Overflow the block tree vector!!");
-              //auto bt = forest->tree[blockId];
+              int blockId = btv->getBlockID((vec3f)(low + vec3i(j, 0, i)));
               auto bt = forest->tree.find(blockId);
               neighborValue[i][j] =
                   bt->second.findValue(low + vec3i(j, 0, i), btv->blockWidth);
@@ -188,10 +183,7 @@ namespace ospray {
           float neighborValue[2][2];
           for (int i = 0; i < 2; i++) {
             for (int j = 0; j < 2; j++) {
-              size_t blockId = btv->getBlockID((vec3f)(low + vec3i(j, i, 0)));
-              if (blockId >= btv->gridSize.product())
-                throw std::runtime_error("Overflow the block tree vector!!");
-              //auto bt = forest->tree[blockId];
+              int blockId = btv->getBlockID((vec3f)(low + vec3i(j, i, 0)));
               auto bt = forest->tree.find(blockId);
               neighborValue[i][j] =
                   bt->second.findValue(low + vec3i(j, i, 0), btv->blockWidth);
@@ -204,34 +196,21 @@ namespace ospray {
                            factor.x,
                            factor.y);
         } else {
+
           float neighborValue[2][2][2];
           array3D::for_each(vec3i(2), [&](const vec3i &idx) {
-            size_t blockId = btv->getBlockID((vec3f)(low + idx));
-            if (blockId >= btv->gridSize.product())
-              throw std::runtime_error("Overflow the block tree vector!!");
-            // auto bt = forest->tree[blockId];
+            int blockId = btv->getBlockID((vec3f)(low + idx));
             auto bt = forest->tree.find(blockId);
 
+          //time_point t1 = Time();
             neighborValue[idx.z][idx.y][idx.x] =
                 bt->second.findValue(low + idx, btv->blockWidth);
-
-            // if (!bt->second.isLoaded) {
-            //   // this block hasn't been loaded, return average value
-            //   neighborValue[idx.z][idx.y][idx.x] = bt->second.avgValue;
-            //   if (!bt->second.isRequested) {
-            //     // this block hasn't been requested
-            //     mtx.lock();
-            //     //forest->treeBinDataRequested.push_back(blockId);
-            //     forest->treeBinDataRequested[blockId] = 1;  
-            //     bt->second.isRequested = true;
-            //     mtx.unlock();
-            //   }
-            // } else {
-            //   neighborValue[idx.z][idx.y][idx.x] =
-            //       bt->second.findValue(low + idx, btv->blockWidth);
-            // }
-
+          // double timespan  = Time(t1);
+          // mmtx.lock();
+          // std::cout<<"Sample Time: " << timespan<< std::endl;
+          // mmtx.unlock();
           });
+
           v = lerp3<float>(neighborValue[0][0][0],
                            neighborValue[0][0][1],
                            neighborValue[0][1][0],
@@ -243,8 +222,13 @@ namespace ospray {
                            factor.x,
                            factor.y,
                            factor.z);
+                           
         }
+#else
+        v = 0.5f;
 #endif
+
+
 
         return v;
       }

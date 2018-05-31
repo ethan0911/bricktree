@@ -60,16 +60,16 @@ namespace ospray {
           "set from existing data");
     }
 
-    size_t BrickTreeVolume::getBlockID(const vec3f &pos)
+    int BrickTreeVolume::getBlockID(const vec3f &pos)
     {
       // vec3i blockIdx = (pos * validSize) / blockWidth;
       // return blockIdx.x + blockIdx.y * gridSize.x +
       //        blockIdx.z * gridSize.y * gridSize.x;
 
       // PRINT(blockWidth);
-      size_t xDim = pos.x / blockWidth;  //(pos.x <= blockWidth) ? 0 : 1;
-      size_t yDim = pos.y / blockWidth;  //(pos.y <= blockWidth) ? 0 : 1;
-      size_t zDim = pos.z / blockWidth;  //(pos.z <= blockWidth) ? 0 : 1;
+      int xDim = pos.x / blockWidth;  //(pos.x <= blockWidth) ? 0 : 1;
+      int yDim = pos.y / blockWidth;  //(pos.y <= blockWidth) ? 0 : 1;
+      int zDim = pos.z / blockWidth;  //(pos.z <= blockWidth) ? 0 : 1;
 
       xDim = (xDim >= gridSize.x) ? gridSize.x - 1 : xDim;
       yDim = (yDim >= gridSize.y) ? gridSize.y - 1 : yDim;
