@@ -19,6 +19,7 @@
 // 2) Use y axis as the initial up vector
 //
 using namespace ospcommon;
+namespace viewer {
 class Trackball {
 private:
   float radius = 1.0f;
@@ -115,5 +116,5 @@ private:
     return vec3f(x, y, z);
   }
 };
-
+};
 #endif //OSPRAY_TRACKBALL_H
