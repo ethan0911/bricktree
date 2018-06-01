@@ -23,7 +23,6 @@ namespace viewer {
   class Trackball {
   private:
     float radius = 1.0f;
-    ospcommon::affine3f cofc         {ospcommon::OneTy()};
     ospcommon::affine3f matrix_new   {ospcommon::OneTy()};
     ospcommon::affine3f matrix_old   {ospcommon::OneTy()};
     ospcommon::affine3f matrix_final {ospcommon::OneTy()};

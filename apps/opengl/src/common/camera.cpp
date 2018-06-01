@@ -27,13 +27,11 @@ vec3f  viewer::Camera::CameraPos(const vec3f& dir)
 }
 vec3f  viewer::Camera::CameraUp() 
 {
-  return xfmVector(this->ball.Matrix().l, this->up);
-  //return xfmVector(this->ball.Matrix().l, vec3f(0.f, 1.f, 0.f));
+  return xfmVector(this->ball.Matrix().l, vec3f(0.f, 1.f, 0.f));
 }
 vec3f  viewer::Camera::CameraDir() 
 {
-  return -xfmVector(this->ball.Matrix().l, this->eye - this->focus);
-  //return -xfmVector(this->ball.Matrix().l, vec3f(0,0,CameraFocalLength()));
+  return -xfmVector(this->ball.Matrix().l, vec3f(0,0, -CameraFocalLength()));
 }
 void   viewer::Camera::CameraBeginZoom(const float& x, const float& y) {
   const vec2f p = mouse2screen(x, y, this->width, this->height);

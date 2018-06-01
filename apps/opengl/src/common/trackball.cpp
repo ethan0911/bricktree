@@ -10,10 +10,11 @@ void viewer::Trackball::SetCoordinate(const vec3f& u,
                                       const vec3f& p)
 {
   vec3f Z = normalize(d);
-  vec3f U = normalize(cross(Z, u));
-  vec3f V = cross(U, Z);
+  vec3f U = normalize(cross(Z, -u));
+  vec3f V = cross(Z, U);
   const linear3f l(U, V, Z);
-  this->cofc = affine3f(l.inverse(), vec3f(0.f));
+  matrix_new = affine3f(l.inverse(), vec3f(0.f));
+  matrix_old = affine3f(l.inverse(), vec3f(0.f));
   UpdateMatrix();
 }
 
@@ -78,7 +79,7 @@ void viewer::Trackball::Reset()
 void viewer::Trackball::Reset(const affine3f &m) { matrix_new = m; }
 void viewer::Trackball::UpdateMatrix()
 {
-  matrix_final = matrix_new * affine3f::scale(vec3f(zoom_new)) * cofc;
+  matrix_final = matrix_new * affine3f::scale(vec3f(zoom_new));
 }
 
 /**
