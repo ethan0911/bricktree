@@ -37,8 +37,10 @@ namespace viewer {
     size_t CameraHeight();
     float  CameraFocalLength();
     ospcommon::vec3f CameraFocus();
+    ospcommon::vec3f CameraPos(const ospcommon::vec3f& dir);
     ospcommon::vec3f CameraPos();
     ospcommon::vec3f CameraUp();
+    ospcommon::vec3f CameraDir();
     void   CameraBeginZoom(const float& x, const float& y);
     void   CameraZoom(const float& x, const float& y);
     void   CameraBeginDrag(const float& x, const float& y);

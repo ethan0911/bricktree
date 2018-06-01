@@ -35,7 +35,8 @@ namespace viewer {
     /** constractors */
     void SetRadius(const float r);
     void SetCoordinate(const ospcommon::vec3f& u, 
-                       const ospcommon::vec3f& d);
+                       const ospcommon::vec3f& d,
+                       const ospcommon::vec3f& p);
 
     /**
      * @brief BeginDrag/Zoom: initialize drag/zoom

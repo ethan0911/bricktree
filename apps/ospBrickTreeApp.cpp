@@ -150,6 +150,7 @@ int main(int ac, const char **av)
     ospSet2f(hacked_vol, "voxelRange", 0, 1.5);  
     ospSetString(hacked_vol, "voxelType", hacked_volume_type.c_str());
     ospSetVec3i(hacked_vol, "dimensions", (osp::vec3i&)hacked_dims);
+    ospSet1i(hacked_vol, "gradientShadingEnabled", 1);
     ospSetObject(hacked_vol, "transferFunction", transferFcn);
     ospSetRegion(hacked_vol, volume_data.data(), osp::vec3i{0,0,0}, 
                  (osp::vec3i&)hacked_dims);

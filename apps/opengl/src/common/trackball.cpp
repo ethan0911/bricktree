@@ -6,7 +6,8 @@ using namespace ospcommon;
 /** constractors */
 void viewer::Trackball::SetRadius(const float r) { radius = r; }
 void viewer::Trackball::SetCoordinate(const vec3f& u, 
-                                      const vec3f& d)
+                                      const vec3f& d,
+                                      const vec3f& p)
 {
   vec3f Z = normalize(d);
   vec3f U = normalize(cross(Z, u));
@@ -43,7 +44,7 @@ void viewer::Trackball::Drag(const float x, const float y)
   const auto p0 = normalize(position_old);
   const auto p1 = normalize(position_new);
   // get direction and angle
-  vec3f dir = -normalize(cross(p0, p1));
+  vec3f dir = normalize(cross(p0, p1));
   float angle = ospcommon::acos(dot(p0, p1));
   // update matrix
   if (angle < 0.001f) {

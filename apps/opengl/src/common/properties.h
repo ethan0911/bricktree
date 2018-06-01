@@ -27,11 +27,14 @@ namespace viewer { namespace widgets {
 // ======================================================================== //
 #define TValue ospcommon::utility::TransactionalValue
 #define Setter(field, name, type, value)                 \
-  private:                                               \
+private:                                                 \
   TValue<type> field{value};                             \
   type imgui_##field = field.ref();                      \
 public:                                                  \
-  void Set##name (const type& v) { this->field = v; }
+  void Set##name (const type& v) {                       \
+    this->field = v;                                     \
+    this->imgui_##field = field.ref();                   \
+  }
 
 namespace viewer {
 
@@ -55,7 +58,6 @@ namespace viewer {
     enum Type { Perspective, Orthographic, Panoramic } type;
   public:
     // ==== Set ===== //
-    /* camera */
     Setter(pos, Pos, ospcommon::vec3f, ospcommon::vec3f(0.f));
     Setter(dir, Dir, ospcommon::vec3f, ospcommon::vec3f(0.f, 0.f, 1.f));
     Setter(up, Up, ospcommon::vec3f, ospcommon::vec3f(0.f, 1.f, 0.f));
@@ -176,6 +178,13 @@ namespace viewer {
     std::vector<OSPLight> self;
     std::vector<LightProp*> prop;
   public:
+    size_t Size() { return self.size(); }
+    void Append() 
+    {
+      //self. 
+    }
+    void GetProp(const size_t i) {};
+
     void Draw(){};
     bool Commit(){};
   };
