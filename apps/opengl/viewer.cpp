@@ -106,7 +106,7 @@ void WidgetDraw() {
 }
 
 // ======================================================================== //
-#include "common/utils/navsphere.h"
+#include "common/navsphere.h"
 static Sphere sphere;
 
 // ======================================================================== //
