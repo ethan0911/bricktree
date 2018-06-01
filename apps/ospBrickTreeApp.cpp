@@ -45,8 +45,9 @@ int main(int ac, const char **av)
     return 1;
   }
 
+
   ospray::CommandLine args(ac,av);
-  
+
   if (args.inputFiles.empty()) {
     throw std::runtime_error("missing input file");
   }
@@ -110,52 +111,47 @@ int main(int ac, const char **av)
   ospRelease(oData);
 
   // create volume
-  if (!args.use_hacked_vol) {
-    std::cout << "\033[32;1m"
-              << "#osp:bench using BrickTree volume"
-              << "\033[0m" 
-              << std::endl;
-    std::shared_ptr<ospray::BrickTree> bricktreeVolume =
-      std::make_shared<ospray::BrickTree>();
-    bricktreeVolume->setFromXML(args.inputFiles[0]);
-    bricktreeVolume->createBtVolume(transferFcn);
-    ospAddVolume(world,bricktreeVolume->ospVolume);
-    ospray::bt::BrickTreeVolume *btVolume = 
-      (ospray::bt::BrickTreeVolume *)bricktreeVolume->ospVolume;  
-    box3f worldBounds(vec3f(0), vec3f(btVolume->validSize) - vec3f(1));
-  } else {
-    std::cout << "\033[33;1m"
-              << "#osp:bench using hacked volume"
-              << "\033[0m" 
-              << std::endl;
-    const std::string hacked_volume_path = 
-      "/home/sci/feng/Desktop/ws/data/"
-      "magnetic-512-volume/magnetic-512-volume.raw";
-    const std::string hacked_volume_type = "float";
-    const size_t hacked_dtype_size = 4;
-    const ospcommon::vec3i hacked_dims(512);
-    FILE *f = fopen(hacked_volume_path.c_str(), "rb");
-    std::vector<char> volume_data(hacked_dims.x * 
-                                  hacked_dims.y * 
-                                  hacked_dims.z * 
-                                  hacked_dtype_size, 0);
-    size_t voxelsRead = 
-      fread(volume_data.data(), hacked_dtype_size, 
-            hacked_dims.x * hacked_dims.y * hacked_dims.z, f);
-    if (voxelsRead != hacked_dims.x * hacked_dims.y * hacked_dims.z) {
-      throw std::runtime_error("Failed to read all voxles");
-    }
-    fclose(f);
-    OSPVolume hacked_vol = ospNewVolume("block_bricked_volume");  
-    ospSet2f(hacked_vol, "voxelRange", 0, 1.5);  
-    ospSetString(hacked_vol, "voxelType", hacked_volume_type.c_str());
-    ospSetVec3i(hacked_vol, "dimensions", (osp::vec3i&)hacked_dims);
-    ospSetObject(hacked_vol, "transferFunction", transferFcn);
-    ospSetRegion(hacked_vol, volume_data.data(), osp::vec3i{0,0,0}, 
-                 (osp::vec3i&)hacked_dims);
-    ospCommit(hacked_vol);
-    ospAddVolume(world, hacked_vol);
+#define HACKED_VOLUME 0
+#if !(HACKED_VOLUME)
+  std::cout << "#osp:bench using BrickTree volume" << std::endl;
+  std::shared_ptr<ospray::BrickTree> bricktreeVolume =
+    std::make_shared<ospray::BrickTree>();
+  bricktreeVolume->setFromXML(args.inputFiles[0]);
+  bricktreeVolume->createBtVolume(transferFcn);
+  ospAddVolume(world,bricktreeVolume->ospVolume);
+  ospray::bt::BrickTreeVolume *btVolume = 
+    (ospray::bt::BrickTreeVolume *)bricktreeVolume->ospVolume;  
+  box3f worldBounds(vec3f(0), vec3f(btVolume->validSize) - vec3f(1));
+#else
+  std::cout << "#osp:bench using hacked volume" << std::endl;
+  const std::string hacked_volume_path = 
+    "/home/sci/feng/Desktop/ws/data/"
+    "magnetic-512-volume/magnetic-512-volume.raw";
+  const std::string hacked_volume_type = "float";
+  const size_t hacked_dtype_size = 4;
+  const ospcommon::vec3i hacked_dims(512);
+  FILE *f = fopen(hacked_volume_path.c_str(), "rb");
+  std::vector<char> volume_data(hacked_dims.x * 
+                                hacked_dims.y * 
+                                hacked_dims.z * 
+                                hacked_dtype_size, 0);
+  size_t voxelsRead = 
+    fread(volume_data.data(), hacked_dtype_size, 
+          hacked_dims.x * hacked_dims.y * hacked_dims.z, f);
+  if (voxelsRead != hacked_dims.x * hacked_dims.y * hacked_dims.z) {
+    throw std::runtime_error("Failed to read all voxles");
   }
+  fclose(f);
+  OSPVolume hacked_vol = ospNewVolume("block_bricked_volume");  
+  ospSet2f(hacked_vol, "voxelRange", 0, 1.5);  
+  ospSetString(hacked_vol, "voxelType", hacked_volume_type.c_str());
+  ospSetVec3i(hacked_vol, "dimensions", (osp::vec3i&)hacked_dims);
+  ospSetObject(hacked_vol, "transferFunction", transferFcn);
+  ospSetRegion(hacked_vol, volume_data.data(), osp::vec3i{0,0,0}, 
+               (osp::vec3i&)hacked_dims);
+  ospCommit(hacked_vol);
+  ospAddVolume(world, hacked_vol);
+#endif
 
   // setup camera
   OSPCamera camera = ospNewCamera("perspective");
@@ -171,10 +167,12 @@ int main(int ac, const char **av)
   OSPLight d_light = ospNewLight(renderer, "DirectionalLight");
   ospSet1f(d_light, "intensity", 0.25f);
   ospSet1f(d_light, "angularDiameter", 0.53f);
-  ospSetVec3f(d_light, "color",
-              osp::vec3f{255.f / 255.f,
-                  255.f / 255.f,
-                  255.f / 255.f});  // 127.f/255.f,178.f/255.f,255.f/255.f
+  ospSetVec3f(
+      d_light,
+      "color",
+      osp::vec3f{255.f / 255.f,
+                 255.f / 255.f,
+                 255.f / 255.f});  // 127.f/255.f,178.f/255.f,255.f/255.f
   ospSetVec3f(d_light, "direction", (const osp::vec3f &)args.disDir);
   ospCommit(d_light);
   OSPLight s_light = ospNewLight(renderer, "DirectionalLight");
@@ -185,14 +183,15 @@ int main(int ac, const char **av)
   ospCommit(s_light);
   OSPLight a_light = ospNewLight(renderer, "AmbientLight");
   ospSet1f(a_light, "intensity", 0.90f);
-  ospSetVec3f(a_light, "color",
-              osp::vec3f{255.f / 255.f,
-                  255.f / 255.f,
-                  255.f / 255.f});  // 174.f/255.f,218.f/255.f,255.f/255.f
+  ospSetVec3f(
+      a_light,
+      "color",
+      osp::vec3f{255.f / 255.f,
+                 255.f / 255.f,
+                 255.f / 255.f});  // 174.f/255.f,218.f/255.f,255.f/255.f
   ospCommit(a_light);
   std::vector<OSPLight> light_list{a_light, d_light, s_light};
-  OSPData lights = ospNewData(light_list.size(), OSP_OBJECT, 
-                              light_list.data());
+  OSPData lights = ospNewData(light_list.size(), OSP_OBJECT, light_list.data());
   ospCommit(lights);
 
   // setup world & renderer
@@ -229,8 +228,7 @@ int main(int ac, const char **av)
   // setup framebuffer
   std::cout << std::endl;
   OSPFrameBuffer fb = ospNewFrameBuffer(
-      (const osp::vec2i &)args.imgSize, OSP_FB_SRGBA, 
-      OSP_FB_COLOR | OSP_FB_ACCUM);
+      (const osp::vec2i &)args.imgSize, OSP_FB_SRGBA, OSP_FB_COLOR | OSP_FB_ACCUM);
   ospFrameBufferClear(fb, OSP_FB_COLOR | OSP_FB_ACCUM);
 
   // render 10 more frames, which are accumulated to result in a better
@@ -262,5 +260,4 @@ int main(int ac, const char **av)
 #endif
 
   return 0;
-
 }
