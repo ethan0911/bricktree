@@ -13,8 +13,8 @@ void viewer::Trackball::SetCoordinate(const vec3f& u,
   vec3f U = normalize(cross(Z, -u));
   vec3f V = cross(Z, U);
   const linear3f l(U, V, Z);
-  matrix_new = affine3f(l.inverse(), vec3f(0.f));
-  matrix_old = affine3f(l.inverse(), vec3f(0.f));
+  matrix_new = affine3f(l, vec3f(0.f));
+  matrix_old = affine3f(l, vec3f(0.f));
   UpdateMatrix();
 }
 

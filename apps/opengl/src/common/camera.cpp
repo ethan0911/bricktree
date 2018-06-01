@@ -31,7 +31,7 @@ vec3f  viewer::Camera::CameraUp()
 }
 vec3f  viewer::Camera::CameraDir() 
 {
-  return -xfmVector(this->ball.Matrix().l, vec3f(0,0, -CameraFocalLength()));
+  return -xfmVector(this->ball.Matrix().l, vec3f(0, 0, -CameraFocalLength()));
 }
 void   viewer::Camera::CameraBeginZoom(const float& x, const float& y) {
   const vec2f p = mouse2screen(x, y, this->width, this->height);
