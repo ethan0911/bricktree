@@ -70,13 +70,39 @@ static std::array<LightProp, 3> lightPropList;
 
 static Engine engine;
 static Camera camera(camProp);
-
 bool viewer::widgets::Commit() {
   bool update = false;
   if (camProp.Commit()) { update = true; }
   if (renProp.Commit()) { update = true; }
   if (tfnProp.Commit()) { update = true; }
   return update;
+}
+
+// ======================================================================== //
+#include <imgui.h>
+#include <imgui_glfw_impi.h>
+void WidgetInit(GLFWwindow *window) {
+  ImGui_Impi_Init(window, false);
+  tfnProp.Init();
+}
+void WidgetStop() { 
+  ImGui_Impi_Shutdown();
+}
+void WidgetDraw() {
+  ImGui_Impi_NewFrame();
+  tfnProp.Draw();
+  ImGui::Begin("Rendering Properties");
+  {
+    camProp.Draw();
+    ImGui::Separator();
+    renProp.Draw();
+    ImGui::Separator();
+    for (auto &l : lightPropList) {
+      l.Draw();
+    }
+  }
+  ImGui::End();
+  ImGui::Render();
 }
 
 // ======================================================================== //
@@ -136,8 +162,6 @@ namespace viewer {
 // ======================================================================== //
 // Callback Functions
 // ======================================================================== //
-#include <imgui.h>
-#include <imgui_glfw_impi.h>
 static GLuint texID;
 static GLuint fboID;
 void error_callback(int error, const char *description)
@@ -272,15 +296,14 @@ void RenderWindow(GLFWwindow *window)
 {
   // Init
   displaybuffer.resize(camera.CameraWidth() * camera.CameraHeight(), 0);
-  ImGui_Impi_Init(window, false);
-  tfnProp.Init();
+  WidgetInit(window);
   // Start
-  engine.Start();    
+  engine.Start();
   while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     {
       key_onhold_callback(window);
-      
+      /* copy rendered buffer */
       if (engine.HasNewFrame()) {
         auto &mapped = engine.MapFramebuffer();
         if (mapped.size() == displaybuffer.size()) {
@@ -291,7 +314,7 @@ void RenderWindow(GLFWwindow *window)
         }
         engine.UnmapFramebuffer();
       }
-      
+      /* display buffer*/
       glBindTexture(GL_TEXTURE_2D, texID);
       glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 
                       camera.CameraWidth(), camera.CameraHeight(), 
@@ -302,28 +325,15 @@ void RenderWindow(GLFWwindow *window)
                         0, 0, camera.CameraWidth(), camera.CameraHeight(),
                         GL_COLOR_BUFFER_BIT, GL_NEAREST);
       glBindTexture(GL_TEXTURE_2D, 0);
-
-
-      ImGui_Impi_NewFrame();
-      tfnProp.Draw();
-      ImGui::Begin("Rendering Properties");
-      {
-        renProp.Draw();
-        //for (auto &l : lightPropList) {
-        //  l.Draw();
-        //}
-      }
-      ImGui::End();
-      ImGui::Render();
+      /* draw widgets */
+      WidgetDraw();
     }
     glfwSwapBuffers(window);
     glfwPollEvents();
   }
   // ShutDown
+  WidgetStop();
   engine.Stop();
-  {
-    ImGui_Impi_Shutdown();
-  }
   glfwDestroyWindow(window);
   glfwTerminate();
 }

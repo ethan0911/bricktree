@@ -74,7 +74,7 @@ void viewer::RendererProp::Init(OSPRenderer renderer,
 }
 void viewer::RendererProp::Draw()
 {
-  if (ImGui::Checkbox("shadowsEnabled", &imgui_autoEpsilon)) {
+  if (ImGui::Checkbox("autoEpsilon", &imgui_autoEpsilon)) {
     autoEpsilon = imgui_autoEpsilon;
   }
   if (ImGui::SliderInt("maxDepth", &imgui_maxDepth, 0, 100, "%.0f")) {
@@ -83,7 +83,9 @@ void viewer::RendererProp::Draw()
   if (ImGui::Checkbox("shadowsEnabled", &imgui_shadowsEnabled)) {
     shadowsEnabled = imgui_shadowsEnabled;
   }
-
+  if (ImGui::SliderInt("spp", &imgui_spp, 0, 100, "%.0f")) {
+    spp = imgui_spp;
+  }
   if (ImGui::SliderInt("aoSamples", &imgui_aoSamples, 0, 100, "%.0f")) {
     aoSamples = imgui_aoSamples;
   }
@@ -197,7 +199,6 @@ bool viewer::TransferFunctionProp::Commit()
 {
   bool update = false;
   if (doUpdate && lock.try_lock()) {
-    std::cout << "commit" << std::endl;
     doUpdate = false;
     OSPData colorsData = ospNewData(colors.size() / 3, 
                                     OSP_FLOAT3, 
@@ -238,19 +239,30 @@ void viewer::LightProp::Init(std::string s,
 }
 void viewer::LightProp::Draw()
 {
+  ImVec4 picked_color = ImColor(imgui_C.x, imgui_C.y, imgui_C.z, 1.f);
+  if (ImGui::ColorEdit4(("color##" + name).c_str(),
+                        (float *) &picked_color,
+                        ImGuiColorEditFlags_NoAlpha |
+                        ImGuiColorEditFlags_NoInputs |
+                        ImGuiColorEditFlags_NoLabel |
+                        ImGuiColorEditFlags_AlphaPreview |
+                        ImGuiColorEditFlags_NoOptions |
+                        ImGuiColorEditFlags_NoTooltip)) {
+    imgui_C.x = picked_color.x;
+    imgui_C.y = picked_color.y;
+    imgui_C.z = picked_color.z;
+    C = imgui_C;
+  }
+  ImGui::SameLine();
   ImGui::Text((type + "-" + name).c_str());
   if (ImGui::SliderFloat3(("direction##" + name).c_str(),
                           &imgui_D.x, -1.f, 1.f)) {
     D = imgui_D;
-  };
-  if (ImGui::SliderFloat3(("color##" + name).c_str(), 
-                          &imgui_C.x, 0.f, 1.f)) {
-    C = imgui_C;
-  };
+  }
   if (ImGui::SliderFloat(("intensity##" + name).c_str(), &imgui_I, 
                          0.f, 100000.f, "%.3f", 5.0f)) {
     I = imgui_I;
-  };
+  }
 }
 bool viewer::LightProp::Commit()
 {

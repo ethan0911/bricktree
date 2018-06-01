@@ -8,7 +8,10 @@
 // ======================================================================== //
 // This is the place where to involve ospray commits
 // ======================================================================== //
-namespace viewer { namespace widgets { bool Commit(); }; };
+namespace viewer { namespace widgets { 
+    bool Commit(); 
+  };
+};
 
 /* ospray */
 #include "ospray/ospray.h"
@@ -156,7 +159,7 @@ namespace viewer {
     OSPRenderer renderer = nullptr;
     std::string type, name;
   public:
-    Setter(I, Intensity, float, 0.25f); 
+    Setter(I, Intensity, float, 0.f); 
     Setter(D, Direction, ospcommon::vec3f,
            ospcommon::vec3f(-1.f, 0.679f, -0.754f));
     Setter(C, Color, ospcommon::vec3f,
@@ -168,7 +171,14 @@ namespace viewer {
     void Draw();
     bool Commit();
   };
-
+  class LightListProp : public Prop {
+  private:
+    std::vector<OSPLight> self;
+    std::vector<LightProp*> prop;
+  public:
+    void Draw(){};
+    bool Commit(){};
+  };
 };
 #undef Setter
 #undef TValue
