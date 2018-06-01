@@ -45,8 +45,9 @@ int main(int ac, const char **av)
     return 1;
   }
 
+
   ospray::CommandLine args(ac,av);
-  
+
   if (args.inputFiles.empty()) {
     throw std::runtime_error("missing input file");
   }
@@ -172,10 +173,12 @@ int main(int ac, const char **av)
   OSPLight d_light = ospNewLight(renderer, "DirectionalLight");
   ospSet1f(d_light, "intensity", 0.25f);
   ospSet1f(d_light, "angularDiameter", 0.53f);
-  ospSetVec3f(d_light, "color",
-              osp::vec3f{255.f / 255.f,
-                  255.f / 255.f,
-                  255.f / 255.f});  // 127.f/255.f,178.f/255.f,255.f/255.f
+  ospSetVec3f(
+      d_light,
+      "color",
+      osp::vec3f{255.f / 255.f,
+                 255.f / 255.f,
+                 255.f / 255.f});  // 127.f/255.f,178.f/255.f,255.f/255.f
   ospSetVec3f(d_light, "direction", (const osp::vec3f &)args.disDir);
   ospCommit(d_light);
   OSPLight s_light = ospNewLight(renderer, "DirectionalLight");
@@ -186,14 +189,15 @@ int main(int ac, const char **av)
   ospCommit(s_light);
   OSPLight a_light = ospNewLight(renderer, "AmbientLight");
   ospSet1f(a_light, "intensity", 0.90f);
-  ospSetVec3f(a_light, "color",
-              osp::vec3f{255.f / 255.f,
-                  255.f / 255.f,
-                  255.f / 255.f});  // 174.f/255.f,218.f/255.f,255.f/255.f
+  ospSetVec3f(
+      a_light,
+      "color",
+      osp::vec3f{255.f / 255.f,
+                 255.f / 255.f,
+                 255.f / 255.f});  // 174.f/255.f,218.f/255.f,255.f/255.f
   ospCommit(a_light);
   std::vector<OSPLight> light_list{a_light, d_light, s_light};
-  OSPData lights = ospNewData(light_list.size(), OSP_OBJECT, 
-                              light_list.data());
+  OSPData lights = ospNewData(light_list.size(), OSP_OBJECT, light_list.data());
   ospCommit(lights);
 
   // setup world & renderer
@@ -230,8 +234,7 @@ int main(int ac, const char **av)
   // setup framebuffer
   std::cout << std::endl;
   OSPFrameBuffer fb = ospNewFrameBuffer(
-      (const osp::vec2i &)args.imgSize, OSP_FB_SRGBA, 
-      OSP_FB_COLOR | OSP_FB_ACCUM);
+      (const osp::vec2i &)args.imgSize, OSP_FB_SRGBA, OSP_FB_COLOR | OSP_FB_ACCUM);
   ospFrameBufferClear(fb, OSP_FB_COLOR | OSP_FB_ACCUM);
 
   // render 10 more frames, which are accumulated to result in a better
@@ -263,5 +266,4 @@ int main(int ac, const char **av)
 #endif
 
   return 0;
-
 }
