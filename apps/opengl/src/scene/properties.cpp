@@ -15,7 +15,6 @@ using namespace ospcommon;
 // ======================================================================== //
 //
 // ======================================================================== //
-viewer::CameraProp::CameraProp() {}
 void viewer::CameraProp::Init(OSPCamera camera, 
                               const viewer::CameraProp::Type& t) 
 {
@@ -65,7 +64,66 @@ bool viewer::CameraProp::Commit()
 // ======================================================================== //
 //
 // ======================================================================== //
-viewer::RendererProp::RendererProp() {}
+void viewer::LightProp::Init(std::string s, 
+                             OSPRenderer r, 
+                             std::vector<OSPLight>& l)
+{
+  type = s; 
+  renderer = r;
+  self = ospNewLight(r, s.c_str());
+  l.push_back(self);
+  name = std::to_string(l.size());
+}
+void viewer::LightProp::Draw()
+{
+  ImVec4 picked_color = ImColor(imgui_C.x, imgui_C.y, imgui_C.z, 1.f);
+  if (ImGui::ColorEdit4(("color##" + name).c_str(),
+                        (float *) &picked_color,
+                        ImGuiColorEditFlags_NoAlpha |
+                        ImGuiColorEditFlags_NoInputs |
+                        ImGuiColorEditFlags_NoLabel |
+                        ImGuiColorEditFlags_AlphaPreview |
+                        ImGuiColorEditFlags_NoOptions |
+                        ImGuiColorEditFlags_NoTooltip)) {
+    imgui_C.x = picked_color.x;
+    imgui_C.y = picked_color.y;
+    imgui_C.z = picked_color.z;
+    C = imgui_C;
+  }
+  ImGui::SameLine();
+  ImGui::Text((type + "-" + name).c_str());
+  if (ImGui::SliderFloat3(("direction##" + name).c_str(),
+                          &imgui_D.x, -1.f, 1.f)) {
+    D = imgui_D;
+  }
+  if (ImGui::SliderFloat(("intensity##" + name).c_str(), &imgui_I, 
+                         0.f, 100000.f, "%.3f", 5.0f)) {
+    I = imgui_I;
+  }
+}
+bool viewer::LightProp::Commit()
+{
+  bool update = false;
+  if (I.update()) {
+    ospSet1f(self, "intensity", I.ref());
+    update = true;
+  }
+  if (C.update()) {
+    ospSetVec3f(self, "color", (osp::vec3f &)C.ref());
+    update = true;
+  }
+  if(D.update()) {
+    ospSetVec3f(self, "direction", (osp::vec3f &)D.ref());
+    update = true;
+  }
+  if (update)
+    ospCommit(self);
+  return update;
+}
+
+// ======================================================================== //
+//
+// ======================================================================== //
 void viewer::RendererProp::Init(OSPRenderer renderer, 
                                 const viewer::RendererProp::Type& t) 
 {
@@ -149,7 +207,6 @@ bool viewer::RendererProp::Commit()
 // ======================================================================== //
 //
 // ======================================================================== //
-viewer::TransferFunctionProp::TransferFunctionProp() {}
 void viewer::TransferFunctionProp::Init()
 {
   using tfn::tfn_widget::TransferFunctionWidget;
@@ -220,67 +277,6 @@ bool viewer::TransferFunctionProp::Commit()
     lock.unlock();
     update = true;
   }
-  return update;
-}
-
-// ======================================================================== //
-//
-// ======================================================================== //
-viewer::LightProp::LightProp() {}
-void viewer::LightProp::Init(std::string s, 
-                             OSPRenderer r, 
-                             std::vector<OSPLight>& l)
-{
-  type = s; 
-  renderer = r;
-  self = ospNewLight(r, s.c_str());
-  l.push_back(self);
-  name = std::to_string(l.size());
-}
-void viewer::LightProp::Draw()
-{
-  ImVec4 picked_color = ImColor(imgui_C.x, imgui_C.y, imgui_C.z, 1.f);
-  if (ImGui::ColorEdit4(("color##" + name).c_str(),
-                        (float *) &picked_color,
-                        ImGuiColorEditFlags_NoAlpha |
-                        ImGuiColorEditFlags_NoInputs |
-                        ImGuiColorEditFlags_NoLabel |
-                        ImGuiColorEditFlags_AlphaPreview |
-                        ImGuiColorEditFlags_NoOptions |
-                        ImGuiColorEditFlags_NoTooltip)) {
-    imgui_C.x = picked_color.x;
-    imgui_C.y = picked_color.y;
-    imgui_C.z = picked_color.z;
-    C = imgui_C;
-  }
-  ImGui::SameLine();
-  ImGui::Text((type + "-" + name).c_str());
-  if (ImGui::SliderFloat3(("direction##" + name).c_str(),
-                          &imgui_D.x, -1.f, 1.f)) {
-    D = imgui_D;
-  }
-  if (ImGui::SliderFloat(("intensity##" + name).c_str(), &imgui_I, 
-                         0.f, 100000.f, "%.3f", 5.0f)) {
-    I = imgui_I;
-  }
-}
-bool viewer::LightProp::Commit()
-{
-  bool update = false;
-  if (I.update()) {
-    ospSet1f(self, "intensity", I.ref());
-    update = true;
-  }
-  if (C.update()) {
-    ospSetVec3f(self, "color", (osp::vec3f &)C.ref());
-    update = true;
-  }
-  if(D.update()) {
-    ospSetVec3f(self, "direction", (osp::vec3f &)D.ref());
-    update = true;
-  }
-  if (update)
-    ospCommit(self);
   return update;
 }
 

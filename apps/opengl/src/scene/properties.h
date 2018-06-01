@@ -8,10 +8,7 @@
 // ======================================================================== //
 // This is the place where to involve ospray commits
 // ======================================================================== //
-namespace viewer { namespace widgets { 
-    bool Commit(); 
-  };
-};
+namespace viewer { namespace widgets { bool Commit(); };};
 
 /* ospray */
 #include "ospray/ospray.h"
@@ -77,11 +74,48 @@ namespace viewer {
     /* orthographic camera */
     Setter(height, Height, float, 1.f);
   public:
-    CameraProp();
+    CameraProp() = default;
     OSPCamera& operator*() { return self; }
     void Init(OSPCamera camera, const Type& t);
     void Draw();
     bool Commit();
+  };
+
+  // ====================================================================== //
+  //
+  // ====================================================================== //
+  class LightProp : public Prop 
+  {
+  private:
+    OSPLight self = nullptr;
+    OSPRenderer renderer = nullptr;
+    std::string type, name;
+  public:
+    Setter(I, Intensity, float, 0.f); 
+    Setter(D, Direction, ospcommon::vec3f,
+           ospcommon::vec3f(-1.f, 0.679f, -0.754f));
+    Setter(C, Color, ospcommon::vec3f,
+           ospcommon::vec3f(1.f, 1.f, 1.f));
+    Setter(angularDiameter, AngularDiameter, float, 0.53f);
+    LightProp() = default;
+    OSPLight& operator*() { return self; }
+    void Init(std::string s, OSPRenderer r, std::vector<OSPLight>& l);
+    void Draw();
+    bool Commit();
+  };
+  class LightListProp : public Prop {
+  private:
+    std::vector<OSPLight> self;
+    std::vector<LightProp*> prop;
+  public:
+    size_t Size() { return self.size(); }
+    void Append() 
+    {
+      //self. 
+    }
+    void GetProp(const size_t i) {};
+    void Draw(){};
+    bool Commit(){};
   };
 
   // ====================================================================== //
@@ -113,7 +147,7 @@ namespace viewer {
     Setter(rouletteDepth, RouletteDepth, int, 5);
     Setter(maxContribution, MaxContribution, float, ospcommon::inf);
   public:
-    RendererProp();
+    RendererProp() = default;
     OSPRenderer& operator*() { return self; }
     void Init(OSPRenderer renderer, const Type& t);
     void Draw();
@@ -135,7 +169,7 @@ namespace viewer {
     float valueRange_default[2] = {0.f, 1.f};
     TValue<ospcommon::vec2f> valueRange;
   public:
-    TransferFunctionProp();
+    TransferFunctionProp() = default;
     OSPTransferFunction& operator*() { return self; }
     void Create(OSPTransferFunction o, 
                 const float a = 0.f, 
@@ -149,44 +183,6 @@ namespace viewer {
     void Draw();
     bool Commit();
     void Print();
-  };
-
-  // ====================================================================== //
-  //
-  // ====================================================================== //
-  class LightProp : public Prop 
-  {
-  private:
-    OSPLight self = nullptr;
-    OSPRenderer renderer = nullptr;
-    std::string type, name;
-  public:
-    Setter(I, Intensity, float, 0.f); 
-    Setter(D, Direction, ospcommon::vec3f,
-           ospcommon::vec3f(-1.f, 0.679f, -0.754f));
-    Setter(C, Color, ospcommon::vec3f,
-           ospcommon::vec3f(1.f, 1.f, 1.f));
-    Setter(angularDiameter, AngularDiameter, float, 0.53f);
-    LightProp();
-    OSPLight& operator*() { return self; }
-    void Init(std::string s, OSPRenderer r, std::vector<OSPLight>& l);
-    void Draw();
-    bool Commit();
-  };
-  class LightListProp : public Prop {
-  private:
-    std::vector<OSPLight> self;
-    std::vector<LightProp*> prop;
-  public:
-    size_t Size() { return self.size(); }
-    void Append() 
-    {
-      //self. 
-    }
-    void GetProp(const size_t i) {};
-
-    void Draw(){};
-    bool Commit(){};
   };
 };
 #undef Setter

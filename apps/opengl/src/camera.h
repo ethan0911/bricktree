@@ -6,8 +6,8 @@
 #define OSPRAY_CAMERA_H
 // local
 #include "common/constants.h"
-#include "common/properties.h"
 #include "common/trackball.h"
+#include "scene/properties.h"
 // ospray
 #include "ospray/ospray.h"
 #include "ospcommon/vec.h"

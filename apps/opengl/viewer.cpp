@@ -44,8 +44,8 @@ static inline void _glCheckError
 // ======================================================================== //
 #include "viewer.h"
 #include "common/constants.h"
-#include "common/camera.h"
-#include "common/properties.h"
+#include "scene/properties.h"
+#include "camera.h"
 #include "engine.h"
 #include "ospcommon/vec.h"
 // ======================================================================== //
