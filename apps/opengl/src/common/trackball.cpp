@@ -44,7 +44,7 @@ void viewer::Trackball::Drag(const float x, const float y)
   const auto p0 = normalize(position_old);
   const auto p1 = normalize(position_new);
   // get direction and angle
-  vec3f dir = normalize(cross(p0, p1));
+  vec3f dir = -normalize(cross(p0, p1));
   float angle = ospcommon::acos(dot(p0, p1));
   // update matrix
   if (angle < 0.001f) {

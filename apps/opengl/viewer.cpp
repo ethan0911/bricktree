@@ -183,35 +183,35 @@ void key_onhold_callback(GLFWwindow *window)
   if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
     /* UP: forward */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-      camera.CameraMoveNZ(1.f * camera.CameraFocalLength());
+      camera.CameraMoveNZ(0.5f * camera.CameraFocalLength());
     } else {
-      camera.CameraMoveNZ(0.01f * camera.CameraFocalLength());
+      camera.CameraMoveNZ(0.0001f * camera.CameraFocalLength());
     }
   } else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
     /* DOWN: backward */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
       camera.CameraMoveNZ(-0.5f * camera.CameraFocalLength());
     } else {
-      camera.CameraMoveNZ(-0.01f * camera.CameraFocalLength());
+      camera.CameraMoveNZ(-0.0001f * camera.CameraFocalLength());
     }
   } else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
     /* A: left */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-      camera.CameraMovePX(1.f * camera.CameraFocalLength());
+      camera.CameraMovePX(0.5f * camera.CameraFocalLength());
     } else {
-      camera.CameraMovePX(0.01f * camera.CameraFocalLength());
+      camera.CameraMovePX(0.0001f * camera.CameraFocalLength());
     }
   } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
     /* D: right */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
       camera.CameraMovePX(-0.5f * camera.CameraFocalLength());
     } else {
-      camera.CameraMovePX(-0.01f * camera.CameraFocalLength());
+      camera.CameraMovePX(-0.0001f * camera.CameraFocalLength());
     }
   } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
     /* S: down */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-      camera.CameraMovePY(1.f * camera.CameraFocalLength());
+      camera.CameraMovePY(0.5f * camera.CameraFocalLength());
     } else {
       camera.CameraMovePY(0.01f * camera.CameraFocalLength());
     }
