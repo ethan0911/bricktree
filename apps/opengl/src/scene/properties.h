@@ -88,34 +88,41 @@ namespace viewer {
   {
   private:
     OSPLight self = nullptr;
-    OSPRenderer renderer = nullptr;
-    std::string type, name;
+    std::string type, renderer, name;
   public:
-    Setter(I, Intensity, float, 0.f); 
+    Setter(I, Intensity, float, 0.25f); 
     Setter(D, Direction, ospcommon::vec3f,
            ospcommon::vec3f(-1.f, 0.679f, -0.754f));
     Setter(C, Color, ospcommon::vec3f,
            ospcommon::vec3f(1.f, 1.f, 1.f));
     Setter(angularDiameter, AngularDiameter, float, 0.53f);
+  public:
     LightProp() = default;
+    ~LightProp();
     OSPLight& operator*() { return self; }
-    void Init(std::string s, OSPRenderer r, std::vector<OSPLight>& l);
+    void Init(const std::string& s,
+              const std::string& r,
+              const size_t i);
     void Draw();
     bool Commit();
   };
   class LightListProp : public Prop {
   private:
-    std::vector<OSPLight> self;
+    std::vector<OSPLight>   data;
     std::vector<LightProp*> prop;
+    OSPData self = nullptr;
   public:
-    size_t Size() { return self.size(); }
-    void Append() 
-    {
-      //self. 
-    }
-    void GetProp(const size_t i) {};
-    void Draw(){};
-    bool Commit(){};
+    LightListProp() = default;
+    ~LightListProp();
+    OSPData&        operator*()       { return self; } 
+    const OSPData&  operator*() const { return self; } 
+    LightProp&       operator[](const size_t i) { return *(prop[i]); }
+    const LightProp& operator[](const size_t i) const { return *(prop[i]); }
+    size_t Size() { return data.size(); }
+    void Append(const std::string& s, const std::string& r);
+    void Finalize();
+    void Draw();
+    bool Commit();
   };
 
   // ====================================================================== //
@@ -125,6 +132,8 @@ namespace viewer {
   {
   private:
     OSPRenderer self{nullptr};
+    CameraProp& camera;
+    LightListProp& lights;
   public:
     enum Type { Scivis, Pathtracer } type;
   public:
@@ -147,7 +156,7 @@ namespace viewer {
     Setter(rouletteDepth, RouletteDepth, int, 5);
     Setter(maxContribution, MaxContribution, float, ospcommon::inf);
   public:
-    RendererProp() = default;
+    RendererProp(CameraProp& c, LightListProp& l);
     OSPRenderer& operator*() { return self; }
     void Init(OSPRenderer renderer, const Type& t);
     void Draw();

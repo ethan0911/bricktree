@@ -60,19 +60,18 @@ static std::vector<uint32_t> displaybuffer;
 // ======================================================================== //
 static OSPModel              ospMod;
 static OSPRenderer           ospRen;
-static OSPData               ospLightData;
-static std::vector<OSPLight> ospLightList;
 
 static CameraProp               camProp;
-static RendererProp             renProp;
+static LightListProp            litProp;
+static RendererProp             renProp(camProp, litProp);
 static TransferFunctionProp     tfnProp;
-static std::array<LightProp, 3> lightPropList;
 
 static Engine engine;
 static Camera camera(camProp);
 bool viewer::widgets::Commit() {
   bool update = false;
   if (camProp.Commit()) { update = true; }
+  if (litProp.Commit()) { update = true; }
   if (renProp.Commit()) { update = true; }
   if (tfnProp.Commit()) { update = true; }
   return update;
@@ -97,9 +96,7 @@ void WidgetDraw() {
     ImGui::Separator();
     renProp.Draw();
     ImGui::Separator();
-    for (auto &l : lightPropList) {
-      l.Draw();
-    }
+    litProp.Draw();    
   }
   ImGui::End();
   ImGui::Render();
@@ -124,14 +121,11 @@ namespace viewer {
   void Render(int id)
   {
     sphere.Init();
-    lightPropList[0].Init("DirectionalLight", ospRen, ospLightList);
-    lightPropList[1].Init("DirectionalLight", ospRen, ospLightList);
-    lightPropList[2].Init("AmbientLight",     ospRen, ospLightList);
-    ospLightData = ospNewData
-      (ospLightList.size(), OSP_OBJECT, ospLightList.data(),
-       OSP_DATA_SHARED_BUFFER);
-    ospCommit(ospLightData);
-    ospSetData(ospRen, "lights", ospLightData);
+    litProp.Append("ambient", "scivis");
+    litProp.Append("distant", "scivis");
+    litProp.Append("distant", "scivis");
+    litProp.Finalize();
+    ospSetData(ospRen, "lights", *litProp);
     ospCommit(ospRen);
     engine.Init(camera.CameraWidth(), camera.CameraHeight(), ospRen);
     RenderWindow(windowmap[id]);
@@ -157,7 +151,7 @@ namespace viewer {
   {
     tfnProp.Create(t, a, b);
   };
-};  // namespace viewer
+}; // namespace viewer
 
 // ======================================================================== //
 // Callback Functions

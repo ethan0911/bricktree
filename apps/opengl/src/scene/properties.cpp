@@ -64,15 +64,18 @@ bool viewer::CameraProp::Commit()
 // ======================================================================== //
 //
 // ======================================================================== //
-void viewer::LightProp::Init(std::string s, 
-                             OSPRenderer r, 
-                             std::vector<OSPLight>& l)
+viewer::LightProp::~LightProp() 
+{
+  if (self != nullptr) ospRelease(self);
+}
+void viewer::LightProp::Init(const std::string& s,
+                             const std::string& r,
+                             const size_t i)
 {
   type = s; 
   renderer = r;
-  self = ospNewLight(r, s.c_str());
-  l.push_back(self);
-  name = std::to_string(l.size());
+  self = ospNewLight2(r.c_str(), s.c_str());
+  name = std::to_string(i);
 }
 void viewer::LightProp::Draw()
 {
@@ -92,13 +95,17 @@ void viewer::LightProp::Draw()
   }
   ImGui::SameLine();
   ImGui::Text((type + "-" + name).c_str());
-  if (ImGui::SliderFloat3(("direction##" + name).c_str(),
-                          &imgui_D.x, -1.f, 1.f)) {
-    D = imgui_D;
-  }
   if (ImGui::SliderFloat(("intensity##" + name).c_str(), &imgui_I, 
                          0.f, 100000.f, "%.3f", 5.0f)) {
-    I = imgui_I;
+    I = imgui_I;    
+  }
+  /* distant light */
+  if (type == "distant" || type == "directional" ||
+      type == "DistantLight" || type == "DirectionalLight") {
+    if (ImGui::SliderFloat3(("direction##" + name).c_str(),
+                            &imgui_D.x, -1.f, 1.f)) {
+      D = imgui_D;
+    }
   }
 }
 bool viewer::LightProp::Commit()
@@ -116,14 +123,49 @@ bool viewer::LightProp::Commit()
     ospSetVec3f(self, "direction", (osp::vec3f &)D.ref());
     update = true;
   }
-  if (update)
-    ospCommit(self);
+  if (update) { ospCommit(self); }
+  return update;
+}
+viewer::LightListProp::~LightListProp() {
+  if (self != nullptr) ospRelease(self);
+  for (auto& p : prop) { delete p; }
+}
+
+void viewer::LightListProp::Append(const std::string& s,
+                                   const std::string& r)
+{
+  LightProp* p = new LightProp();
+  p->Init(s, r, this->Size());
+  data.push_back(**p);
+  prop.push_back(p);
+}
+void viewer::LightListProp::Finalize() 
+{
+  self = ospNewData(data.size(), OSP_OBJECT, data.data(),
+                    OSP_DATA_SHARED_BUFFER);
+  ospCommit(self);
+}
+void viewer::LightListProp::Draw() 
+{
+  for (size_t i = 0; i < this->Size(); ++i) {
+    prop[i]->Draw();
+  }
+}
+bool viewer::LightListProp::Commit() 
+{
+  bool update = false;
+  for (size_t i = 0; i < this->Size(); ++i) {
+    if (prop[i]->Commit()) { update = true; }
+  }
   return update;
 }
 
 // ======================================================================== //
 //
 // ======================================================================== //
+viewer::RendererProp::RendererProp(CameraProp& c, LightListProp& l)
+  : camera(c), lights(l)
+{}
 void viewer::RendererProp::Init(OSPRenderer renderer, 
                                 const viewer::RendererProp::Type& t) 
 {
@@ -199,8 +241,9 @@ bool viewer::RendererProp::Commit()
     ospSet1f(self, "minContribution", minContribution.ref());
     update = true;
   }
-  if (update)
-    ospCommit(self);
+  ospSetObject(self, "camera", *camera);
+  ospSetData(self, "lights", *lights);
+  ospCommit(self);
   return update;
 }
 
