@@ -30,7 +30,7 @@ private:                                                 \
 public:                                                  \
   void Set##name (const type& v) {                       \
     this->field = v;                                     \
-    this->imgui_##field = field.ref();                   \
+    this->imgui_##field = v;                             \
   }
 
 namespace viewer {
