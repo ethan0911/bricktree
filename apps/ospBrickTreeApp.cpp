@@ -2,16 +2,16 @@
 // Copyright SCI Institute, University of Utah, 2018
 // ======================================================================== //
 
-#include "ospray/ospray.h"
 #include "ospcommon/AffineSpace.h"
 #include "ospcommon/LinearSpace.h"
 #include "ospcommon/box.h"
 #include "ospcommon/range.h"
 #include "ospcommon/vec.h"
 
-#include "../ospray/BrickTree.h"
+#include "ospray/ospray.h"
+#include "ospray/BrickTree.h"
 
-#include "ospHelper.h"
+#include "common/helper.h"
 #include "ospCommandLine.h"
 #include "ospBrickTreeTools.h"
 

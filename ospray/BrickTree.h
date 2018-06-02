@@ -19,10 +19,9 @@
 // ospray
 #include "ospcommon/math.h"
 #include "ospray/volume/Volume.h"
-#include "../apps/ospHelper.h"
-// bt base
-#include "../bt/BrickTree.h"
-#include <mutex>
+// bricktree
+#include "bt/BrickTree.h"
+#include "common/helper.h"
 
 // hack for lerp3
 namespace ospcommon {
@@ -39,7 +38,6 @@ template<typename T>
 // other headers
 #include <mutex>
 #include <thread>
-
 
 namespace ospray {
   namespace bt {

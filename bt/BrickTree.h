@@ -21,8 +21,11 @@
 #include "ospcommon/box.h"
 // ospcommon
 #include "ospcommon/FileName.h"
-#include "mpiCommon/MPICommon.h"
 #include "ospcommon/tasking/parallel_for.h"
+// MPI
+#include "mpiCommon/MPICommon.h"
+// common
+#include "common/helper.h"
 // std
 #include <iostream>
 #include <vector>
@@ -34,7 +37,6 @@
 #include <stack>
 #include <thread>
 #include <algorithm>
-#include "../apps/ospHelper.h"
 
 namespace ospray {
   namespace bt {
