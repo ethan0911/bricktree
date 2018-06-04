@@ -54,7 +54,6 @@ namespace ospray {
     template<int N, typename T>
     BrickTree<N,T>::BrickTree(){
       brickFileBase = FileName("");
-      loadBrickNum = 0;
     }
 
     template<int N, typename T>
@@ -129,8 +128,6 @@ namespace ospray {
       valueBricksStatus.resize(numValueBricks,BrickStatus());
       // isIndexBrickLoaded.resize(numIndexBricks,false);
       // isBrickInfoLoaded.resize(numBrickInfos,false);
-
-      //vbNeed2Load.reserve(numValueBricks);
 
       sprintf(blockFileName,"%s-brick%06i.ospbin",brickFileBase.str().c_str(),(int)blockID);
 

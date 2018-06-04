@@ -47,7 +47,7 @@ namespace ospray {
     const char *typeToString();
 
     static std::mutex brickLoadMtx;
-    static const size_t numThread = 1;
+    static const size_t numThread = 2;
 
     enum BRICKTYPE {INDEXBRICK, VALUEBRICK, BRICKINFO};
 
@@ -213,28 +213,6 @@ namespace ospray {
       std::vector<vec2i> getRequestVBList()
       { 
         std::vector<vec2i> scheduledVB;
-        // size_t startIdx(0);
-        // size_t num(0);   
-        // bool loadFlag = false;
-        // for(size_t i= 0;i < numValueBricks;i++){
-        //   if (!valueBricksStatus[i].isLoaded &&
-        //       valueBricksStatus[i].isRequested) {
-        //     if (!loadFlag) {
-        //       startIdx = i;
-        //       loadFlag = true;
-        //     }
-        //     num++;
-        //     if(i == numValueBricks){ 
-        //       scheduledVB.emplace_back(vec2i(startIdx, num));
-        //     }
-        //   } else {
-        //     if (loadFlag)
-        //       scheduledVB.emplace_back(vec2i(startIdx, num));
-        //     loadFlag = false;
-        //     num      = 0;
-        //   }
-        // }
-
         std::stack<int> sIdxStack;
         for(int i=0;i<(int)numValueBricks;i++)
         {
@@ -270,9 +248,6 @@ namespace ospray {
 
 
       std::vector<BrickStatus> valueBricksStatus;
-      std::vector<size_t> vbNeed2Load;
-      size_t loadBrickNum;
-
     };
 
     
