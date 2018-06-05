@@ -80,6 +80,26 @@ then we look at cellChildID=IndexBrick[332].cell[3][3][2]. If this
 value is -1 then this particular cell of brick 773 doesn't have any
 children. Otherwise, brick[cellChildID] is the child brick.
 
+Compilation
+====================
+This bricktree module requires MPI and c17 support. There are examples 
+about how to setup environmental variables on different machines
+
+fsm.sci.utah.edu
+----------------
+```bash
+source /opt/intel/parallel_studio_xe_2018/psxevars.sh &> /dev/null
+source /opt/rh/devtoolset-7/enable
+```
+
+hastur.sci.utah.edu
+----------------
+```bash
+source /opt/intel/parallel_studio_xe_2017.2.050/bin/psxevars.sh &> /dev/null
+source /opt/rh/devtoolset-7/enable
+source /home/sci/qwu/software/cmake/source-cmake-3.9.6.sh activate
+```
+
 Building a BrickTree
 ====================
 
