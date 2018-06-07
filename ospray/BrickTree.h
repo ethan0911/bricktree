@@ -143,8 +143,6 @@ namespace ospray {
         vec3f factor = coord - (vec3f)low;
 
         float v;
-
-#if 1
         if (low.x == btv->validSize.x - 1) {
           float neighborValue[2][2];
           for (int i = 0; i < 2; i++) {
@@ -222,12 +220,6 @@ namespace ospray {
                            factor.z);
                            
         }
-#else
-        v = 0.5f;
-#endif
-
-
-
         return v;
       }
 
