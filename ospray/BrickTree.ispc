@@ -29,6 +29,7 @@
 // Functions that defined in CPP files
 extern "C" unmasked uniform float BrickTree_scalar_sample
 (void *uniform cppObject, uniform vec3f &samplePos);
+// TODO gradient shading is not working
 extern "C" unmasked uniform vec3f BrickTree_scalar_computeGradient
 (void *uniform cppObject, uniform vec3f &samplePos);
 
@@ -52,8 +53,8 @@ static float BrickTreeVolume_sample
   uniform float uReturnValue[programCount];
   uSamplePos[programIndex] = samplePos;
   foreach_active(lane) {
-    uReturnValue[lane] = BrickTree_scalar_sample(self->cppSampler,
-                                                 uSamplePos[lane]);
+    uReturnValue[lane] =
+      BrickTree_scalar_sample(self->cppSampler, uSamplePos[lane]);
   }
   return uReturnValue[programIndex];
 }
@@ -89,14 +90,6 @@ export void BrickTreeVolume_set(void *uniform _self,
     assert(self);
     self->super.boundingBox.lower = make_vec3f(0.f);
     self->super.boundingBox.upper = make_vec3f(validSize);
-    //self->super.volumeClippingBox.lower = make_vec3f(0.f);
-    //self->super.volumeClippingBox.upper = make_vec3f(validSize);
-    //self->super.adaptiveSampling = true;
-    //self->super.samplingRate = 0.125f;
-    //self->super.samplingStep = 1.0f;
-    //self->super.adaptiveMaxSamplingRate = ;
-    //self->super.gradientShadingEnabled = 0;
-    //self->super.transferFunction = (TransferFunction *uniform)_xf;
     self->super.computeGradient  = BrickTreeVolume_computeGradient;
     self->super.stepRay          = BrickTreeVolume_stepRay;
     self->super.sample           = BrickTreeVolume_sample;

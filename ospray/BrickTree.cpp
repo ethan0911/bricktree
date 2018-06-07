@@ -45,9 +45,7 @@ namespace ospray {
         validSize(-1),
         brickSize(-1),
         fileName("<none>")
-    {
-      ispcEquivalent = ispc::BrickTreeVolume_create(this);
-    }
+    {}
 
     int BrickTreeVolume::setRegion(const void *source,
                                    const vec3i &index,
@@ -111,23 +109,28 @@ namespace ospray {
     {
       if (format == "float")
         return createSamplerT<float>();
-      throw std::runtime_error("BrickTree: unsupported format '"+format +"'");
+      throw std::runtime_error("BrickTree: unsupported format '" + 
+                               format +"'");
     }
 
     //! Allocate storage and populate the volume.
     void BrickTreeVolume::commit()
     {
+      // create IE
+      if (ispcEquivalent == nullptr)
+        ispcEquivalent = ispc::BrickTreeVolume_create(this);
+      // update variables
       Volume::updateEditableParameters();
-      // right now we only support floats ...
-      this->voxelType = OSP_FLOAT;
-      gridSize   = getParam3i("gridSize", vec3i(-1));
-      brickSize  = getParam1i("brickSize", -1);
-      blockWidth = getParam1i("blockWidth", -1);
-      fileName   = getParamString("fileName", "");
-      format     = getParamString("format", "<not specified>");
-      validSize  = getParam3i("validSize",vec3i(-1));
-      validFractionOfRootGrid = vec3f(validSize) / vec3f(gridSize*blockWidth);
-      sampler = createSampler();
+      this->voxelType  = OSP_FLOAT; // TODO right now we only support floats.
+      this->gridSize   = getParam3i("gridSize", vec3i(-1));
+      this->brickSize  = getParam1i("brickSize", -1);
+      this->blockWidth = getParam1i("blockWidth", -1);
+      this->fileName   = getParamString("fileName", "");
+      this->format     = getParamString("format", "<not specified>");
+      this->validSize  = getParam3i("validSize",vec3i(-1));
+      this->validFractionOfRootGrid = 
+        vec3f(validSize) / vec3f(gridSize*blockWidth);
+      this->sampler = createSampler();
       ispc::BrickTreeVolume_set(getIE(), 
                                 (ispc::vec3i &)validSize,
                                 this, sampler);
