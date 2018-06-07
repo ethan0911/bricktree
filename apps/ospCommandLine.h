@@ -105,6 +105,7 @@ namespace ospray {
     vec2f valueRange{0.f, -1.f};
     vec2i numFrames{1 /* skipped */, 20 /* measure */};
     bool use_hacked_vol{false};
+    bool use_adaptive_sampling{false};
   };
 
   inline void CommandLine::Parse(int ac, const char **av)
@@ -137,6 +138,8 @@ namespace ospray {
         ospray::Parse<3>(ac, av, i, sunDir);
       } else if (str == "-dis") {
         ospray::Parse<3>(ac, av, i, disDir);
+      } else if (str == "-adaptive") {
+        use_adaptive_sampling = true;
       } else if (str == "-frames") {
         try {
           ospray::Parse<2>(ac, av, i, numFrames);

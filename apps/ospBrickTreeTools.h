@@ -42,5 +42,7 @@ namespace ospray{
     /*! total range of all values in the tree, so we can set the
       proper xfer fct */
     range_t<float> valueRange;
+    /*! whether to use adaptive sampling */
+    bool adaptiveSampling;
   };
 };//::ospray
