@@ -103,7 +103,7 @@ namespace ospray {
     vec3f sunDir{-1.f, 0.679f, -0.754f};
     vec3f disDir{.372f, .416f, -0.605f};
     vec2f valueRange{0.f, -1.f};
-    vec2i numFrames{1 /* skipped */, 20 /* measure */};
+    vec2i numFrames{1 /* skipped */, 100 /* measure */};
     bool use_hacked_vol{false};
     bool use_adaptive_sampling{false};
   };

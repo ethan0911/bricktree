@@ -86,7 +86,7 @@ namespace ospray {
 
     /*! map this one from a binary dump that was created by the bricktreebuilder/raw2bricks tool */
     template<int N, typename T>
-    void BrickTree<N,T>::mapOSP(const FileName &brickFileBase, size_t blockID)
+    void BrickTree<N,T>::mapOSP(const FileName &brickFileBase, int blockID, vec3i treeCoord)
     {
       this->brickFileBase = brickFileBase;
       

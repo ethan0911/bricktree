@@ -184,7 +184,7 @@ namespace ospray {
       virtual vec3i getRootGridDims() const override { return rootGridDims; }
 
       /*! map this one from a binary dump that was created by the bricktreebuilder/raw2bricks tool */
-      void mapOSP(const FileName &brickFileBase, size_t treeID);
+      void mapOSP(const FileName &brickFileBase, int treeID, vec3i treeCoord);
       void mapOspBin(const FileName &brickFileBase, size_t treeID);
       void loadBricks(FILE* file, vec2i vbListInfo);
       void loadBricks(FILE* file, LoadBricks aBrick);
@@ -291,14 +291,16 @@ namespace ospray {
         assert(numTrees > 0);
 
         std::mutex amutex;
-        tasking::parallel_for(numTrees,[&](int treeID){
+        tasking::parallel_for(numTrees, [&](int treeID) {
+          vec3i treeCoord = vec3i(treeID % forestSize.x,
+                                  (treeID / forestSize.x) % forestSize.y,
+                                  treeID / (forestSize.x * forestSize.y));
           BrickTree<N, T> aTree;
-          aTree.mapOSP(brickFileBase, treeID);
+          aTree.mapOSP(brickFileBase, treeID, treeCoord);
           std::lock_guard<std::mutex> lock(amutex);
           tree.insert(std::make_pair(treeID, aTree));
         });
-
-        //printf("#osp: %d trees have initialized!",numTrees);
+        printf("#osp: %d trees have initialized!",numTrees);
       }
 
       void loadBrickTreeForest()
