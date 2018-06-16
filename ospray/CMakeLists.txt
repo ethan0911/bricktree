@@ -5,5 +5,7 @@ OSPRAY_CREATE_LIBRARY(ospray_module_bricktree
   # MSNearestNeighbor.ispc
   # MSFinestLevel.ispc
   LINK
+  ospray
+  ospray_common
   ospray_bricktree
-  ospray)
+  ospray_module_ispc)

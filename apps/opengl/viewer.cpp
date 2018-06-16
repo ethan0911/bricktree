@@ -122,12 +122,12 @@ namespace viewer {
   {
     sphere.Init();
     litProp.Append("ambient", "scivis");
-    litProp[0].SetIntensity(0.555d);
+    litProp[0].SetIntensity(0.555f);
     litProp.Append("distant", "scivis");
-    litProp[0].SetIntensity(1.300d);
+    litProp[0].SetIntensity(1.300f);
     litProp[0].SetColor(vec3f(-0.58f,0.68f,-0.75f));
     litProp.Append("distant", "scivis");
-    litProp[0].SetIntensity(0.085d);
+    litProp[0].SetIntensity(0.085f);
     litProp[0].SetColor(vec3f(-0.75f,0.68f,-0.75f));
     litProp.Finalize();
     ospSetData(ospRen, "lights", *litProp);
@@ -345,7 +345,7 @@ GLFWwindow *CreateWindow()
   }
   // Provide Window Hints
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, 1);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
