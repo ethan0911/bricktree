@@ -250,6 +250,7 @@ namespace ospray {
       std::vector<BrickStatus> valueBricksStatus;
     };
 
+
     
     /* a entire *FOREST* of bricktrees */
     template <int N, typename T = float>
@@ -257,23 +258,6 @@ namespace ospray {
     {
       void loadTreeBrick(const FileName &brickFileBase)
       {
-        // while (!tree.empty()) {
-        //   typename std::map<size_t, BrickTree<N, T>>::iterator it;
-        //   for (it = tree.begin(); it != tree.end(); it++) {
-        //     bool needLoad = false;
-        //     std::vector<size_t> vbRequested; 
-        //     time_point t1 = Time();
-        //     needLoad= it->second.isTreeNeedLoad();
-        //     double ts1 = Time(t1);
-
-        //     time_point t2 = Time();
-        //     if(needLoad)
-        //       it->second.loadTreeByBrick(brickFileBase, it->first);
-        //     double ts2 = Time(t2);
-        //     //printf("test need load: %f, load tree: %f \n",ts1,ts2);
-        //   }
-        // }
-
         while (!tree.empty()) {
           typename std::map<size_t, BrickTree<N, T>>::iterator it;
           for (it = tree.begin(); it != tree.end(); it++) {

@@ -137,6 +137,8 @@ namespace ospray {
       {
         //PING;
 
+        //return 0.2f;
+
         vec3f coord = pos; 
 
         vec3i low    = (vec3i)coord;
@@ -192,32 +194,29 @@ namespace ospray {
                            factor.x,
                            factor.y);
         } else {
+          int blockId = btv->getBlockID((vec3f)(low));
+          auto bt     = forest->tree.find(blockId);
+          v           = bt->second.findValue(low, btv->blockWidth);
 
-          float neighborValue[2][2][2];
-          array3D::for_each(vec3i(2), [&](const vec3i &idx) {
-            int blockId = btv->getBlockID((vec3f)(low + idx));
-            auto bt = forest->tree.find(blockId);
+          // float neighborValue[2][2][2];
+          // array3D::for_each(vec3i(2), [&](const vec3i &idx) {
+          //   int blockId = btv->getBlockID((vec3f)(low + idx));
+          //   auto bt = forest->tree.find(blockId);
+          //   neighborValue[idx.z][idx.y][idx.x] =
+          //       bt->second.findValue(low + idx, btv->blockWidth);
+          // });
 
-          //time_point t1 = Time();
-            neighborValue[idx.z][idx.y][idx.x] =
-                bt->second.findValue(low + idx, btv->blockWidth);
-          // double timespan  = Time(t1);
-          // mmtx.lock();
-          // std::cout<<"Sample Time: " << timespan<< std::endl;
-          // mmtx.unlock();
-          });
-
-          v = lerp3<float>(neighborValue[0][0][0],
-                           neighborValue[0][0][1],
-                           neighborValue[0][1][0],
-                           neighborValue[0][1][1],
-                           neighborValue[1][0][0],
-                           neighborValue[1][0][1],
-                           neighborValue[1][1][0],
-                           neighborValue[1][1][1],
-                           factor.x,
-                           factor.y,
-                           factor.z);
+          // v = lerp3<float>(neighborValue[0][0][0],
+          //                  neighborValue[0][0][1],
+          //                  neighborValue[0][1][0],
+          //                  neighborValue[0][1][1],
+          //                  neighborValue[1][0][0],
+          //                  neighborValue[1][0][1],
+          //                  neighborValue[1][1][0],
+          //                  neighborValue[1][1][1],
+          //                  factor.x,
+          //                  factor.y,
+          //                  factor.z);
                            
         }
         return v;
