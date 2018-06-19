@@ -110,11 +110,15 @@ conversion or compression, use the following command:
 
 ```bash
 ./ospRaw2Bricks \
-    --format float -dims 512 512 512 \
-    ../../../data/magnetic-512-volume/magnetic-512-volume.raw \
-    -bs 4 --depth 4 -t 0.028 \
-    -o ../../../data/magnetic-512-volume/magnetic-bt-t0028/magnetic-bt \
-make -f ../../../data/magnetic-512-volume/magnetic-bt-t0028/magnetic-bt.mak
+    <input-data>.raw \
+    -dims <dimX> <dimsY> <dimsZ> \
+    --input-format float \
+    --format float \
+    -bs 4 \
+    -d  4 \
+    -t  0 \
+    -o magnetic-bt
+make -f magnetic-bt.mak
 ```
 	
 The first call to 'ospRaw2Bricks' generates the index file as well as

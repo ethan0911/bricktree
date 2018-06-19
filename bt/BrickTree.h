@@ -284,7 +284,7 @@ namespace ospray {
           std::lock_guard<std::mutex> lock(amutex);
           tree.insert(std::make_pair(treeID, aTree));
         });
-        printf("#osp: %d trees have initialized!",numTrees);
+        printf("#osp: %d trees have initialized!\n", numTrees);
       }
 
       void loadBrickTreeForest()

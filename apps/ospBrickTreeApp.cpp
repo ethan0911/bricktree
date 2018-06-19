@@ -45,7 +45,6 @@ int main(int ac, const char **av)
     return 1;
   }
 
-
   ospray::CommandLine args(ac,av);
 
   if (args.inputFiles.empty()) {
@@ -118,6 +117,7 @@ int main(int ac, const char **av)
               << std::endl;
     std::shared_ptr<ospray::BrickTree> bricktreeVolume =
       std::make_shared<ospray::BrickTree>();
+    bricktreeVolume->adaptiveSampling = args.use_adaptive_sampling;
     bricktreeVolume->setFromXML(args.inputFiles[0]);
     bricktreeVolume->createBtVolume(transferFcn);
     ospAddVolume(world,bricktreeVolume->ospVolume);

@@ -5,13 +5,14 @@ namespace ospray{
   /*! constructor */
   BrickTree::BrickTree()
     : ospVolume(NULL),
-    brickSize(-1),
-    blockWidth(-1),
-    validSize(-1),
-    gridSize(-1),
-    format("<none>"),
-    fileName("<none>"),
-    valueRange(one)
+      brickSize(-1),
+      blockWidth(-1),
+      validSize(-1),
+      gridSize(-1),
+      format("<none>"),
+      fileName("<none>"),
+      valueRange(one),
+      adaptiveSampling{false}
   {}; 
 
   BrickTree::~BrickTree(){
@@ -59,7 +60,8 @@ namespace ospray{
   }
 
 
-  void BrickTree::loadOSP(const ospcommon::xml::Node &node){
+  void BrickTree::loadOSP(const ospcommon::xml::Node &node)
+  {
     // -------------------------------------------------------
     // parameter parsing
     // -------------------------------------------------------
@@ -83,20 +85,20 @@ namespace ospray{
     this->voxelType = typeForString(format.c_str());
   }
 
-  void BrickTree::createBtVolume(OSPTransferFunction& tfn){
-    if(ospVolume)
-      ospVolume = nullptr;
-
+  void BrickTree::createBtVolume(OSPTransferFunction& tfn)
+  {
+    if(ospVolume) { ospVolume = nullptr; }
     ospVolume = ospNewVolume("BrickTreeVolume");
     if(!ospVolume)
       throw std::runtime_error("Could not create ospray BrickTreeVolume");
-    // -----------------=--------------------------------------
-    ospSet1i(ospVolume,"blockWidth",blockWidth);
-    ospSet1i(ospVolume,"brickSize",brickSize);
-    ospSet3i(ospVolume,"gridSize",gridSize.x,gridSize.y,gridSize.z);
-    ospSetString(ospVolume,"fileName",fileName.c_str());
-    ospSetString(ospVolume,"format",format.c_str());
-    ospSet3i(ospVolume, "validSize",validSize.x,validSize.y,validSize.z);
+    // -------------------------------------------------------
+    ospSet1i(ospVolume,"adaptiveSampling", adaptiveSampling);
+    ospSet1i(ospVolume,"blockWidth", blockWidth);
+    ospSet1i(ospVolume,"brickSize", brickSize);
+    ospSet3i(ospVolume,"gridSize", gridSize.x, gridSize.y, gridSize.z);
+    ospSetString(ospVolume,"fileName", fileName.c_str());
+    ospSetString(ospVolume,"format", format.c_str());
+    ospSet3i(ospVolume, "validSize", validSize.x, validSize.y, validSize.z);
     ospSetObject(ospVolume,"transferFunction",tfn);
     ospCommit(ospVolume);
   }
