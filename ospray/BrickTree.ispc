@@ -95,12 +95,12 @@ export void BrickTreeVolume_set(void *uniform _self,
     self->super.sample           = BrickTreeVolume_sample;
     self->cppObject              = cppObject;
     self->cppSampler             = cppSampler;
-    print("#osp:bt: bounds (%\t%\t%\t)\n"
-          "                (%\t%\t%\t)\n",
-	  self->super.boundingBox.lower.x,
-	  self->super.boundingBox.lower.y,
-	  self->super.boundingBox.lower.z,
-	  self->super.boundingBox.upper.x,
-	  self->super.boundingBox.upper.y,
-	  self->super.boundingBox.upper.z);
+    // print("#osp:bt: bounds (%\t%\t%\t)\n"
+    //       "                (%\t%\t%\t)\n",
+	  // self->super.boundingBox.lower.x,
+	  // self->super.boundingBox.lower.y,
+	  // self->super.boundingBox.lower.z,
+	  // self->super.boundingBox.upper.x,
+	  // self->super.boundingBox.upper.y,
+	  // self->super.boundingBox.upper.z);
 }
