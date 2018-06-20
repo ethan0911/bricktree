@@ -22,16 +22,14 @@
 #include "ospray/geometry/Geometry.ih"
 #include "ospray/transferFunction/LinearTransferFunction.ih"
 // this module
-#include "BrickTree.ih"
+#include "BrickTreeVolume.ih"
 // embree
 #include "rtcore.isph"
 
 // Functions that defined in CPP files
-extern "C" unmasked uniform float BrickTree_scalar_sample
-(void *uniform cppObject, uniform vec3f &samplePos);
+extern "C" unmasked uniform float BrickTree_scalar_sample(void *uniform cppObject, uniform vec3f &samplePos);
 // TODO gradient shading is not working
-extern "C" unmasked uniform vec3f BrickTree_scalar_computeGradient
-(void *uniform cppObject, uniform vec3f &samplePos);
+extern "C" unmasked uniform vec3f BrickTree_scalar_computeGradient(void *uniform cppObject, uniform vec3f &samplePos);
 
 // Find the next hit point in the volume for ray casting based renderers.
 static void BrickTreeVolume_stepRay(void *uniform _self, 
@@ -45,8 +43,7 @@ static void BrickTreeVolume_stepRay(void *uniform _self,
   ray.t0 += step;
 }
 
-static float BrickTreeVolume_sample
-(void *uniform _self, const vec3f &samplePos)
+static float BrickTreeVolume_sample(void *uniform _self, const vec3f &samplePos)
 {
   BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
   uniform vec3f uSamplePos[programCount];
@@ -59,8 +56,7 @@ static float BrickTreeVolume_sample
   return uReturnValue[programIndex];
 }
 
-static vec3f BrickTreeVolume_computeGradient
-(void *uniform _self, const vec3f &samplePos)
+static vec3f BrickTreeVolume_computeGradient(void *uniform _self, const vec3f &samplePos)
 {
   BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
   uniform vec3f uSamplePos[programCount];

@@ -1,6 +1,6 @@
 OSPRAY_CREATE_LIBRARY(ospray_module_bricktree 
-  BrickTree.ispc
-  BrickTree.cpp
+  BrickTreeVolume.ispc
+  BrickTreeVolume.cpp
   Module.cpp
   # MSNearestNeighbor.ispc
   # MSFinestLevel.ispc

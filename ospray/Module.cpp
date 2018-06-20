@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "BrickTree.h"
+#include "BrickTreeVolume.h"
 
 /*! this function has to be present for a module to be loadable ... */
 extern "C" void ospray_init_module_bricktree()

@@ -9,7 +9,7 @@
 #include "ospcommon/vec.h"
 
 #include "ospray/ospray.h"
-#include "ospray/BrickTree.h"
+#include "ospray/BrickTreeVolume.h"
 
 #include "common/helper.h"
 #include "ospCommandLine.h"

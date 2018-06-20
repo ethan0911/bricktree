@@ -15,7 +15,7 @@
 // ======================================================================== //
 
 // this - ospray plugin
-#include "BrickTree.h"
+#include "BrickTreeVolume.h"
 // this - actual bricktree data structure
 #include "../bt/BrickTree.h"
 // ospray
