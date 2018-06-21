@@ -100,13 +100,21 @@ namespace ospray {
 
       bool finished = false;
 
+      //! block size in each axis, e.g., 2x2x2
       vec3i gridSize;
+      //! the original demension of the volume, e.g 512x512x512
       vec3i validSize;
       vec3f validFractionOfRootGrid;
+      //! depth of the bricktree, eg. 4 
       int depth;
+      //! bricksize of the bricktree eg. 4
       int brickSize;
+      //! block with is acutally a brick tree width
+      //! calculated by N^D x N^D x N^D
       int blockWidth;
+      
       std::string fileName;
+
       std::string format;
       OSPDataType voxelType;
       // actual volume bounds for distributed parallel rendering

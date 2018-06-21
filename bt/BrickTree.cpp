@@ -53,7 +53,6 @@ namespace ospray {
 
     template<int N, typename T>
     BrickTree<N,T>::BrickTree(){
-      brickFileBase = FileName("");
     }
 
     template<int N, typename T>
@@ -88,8 +87,6 @@ namespace ospray {
     template<int N, typename T>
     void BrickTree<N,T>::mapOSP(const FileName &brickFileBase, int blockID, vec3i treeCoord)
     {
-      this->brickFileBase = brickFileBase;
-      
       char blockFileName[10000];
       sprintf(blockFileName,"%s-brick%06i.osp",brickFileBase.str().c_str(),(int)blockID);
 
@@ -113,13 +110,13 @@ namespace ospray {
       std::shared_ptr<xml::Node> indexBrickOfNode = std::make_shared<xml::Node>(brickTreeNode->child[2]);
 
       numIndexBricks = std::stoll(indexBricksNode->getProp("num"));
-      binBlockInfo.indexBricksOfs = std::stoll(indexBricksNode->getProp("ofs"));
+      indexBricksOfs = std::stoll(indexBricksNode->getProp("ofs"));
 
       numValueBricks = std::stoll(valueBricksNode->getProp("num"));
-      binBlockInfo.valueBricksOfs = std::stoll(valueBricksNode->getProp("ofs"));
+      valueBricksOfs = std::stoll(valueBricksNode->getProp("ofs"));
 
       numBrickInfos= std::stoll(indexBrickOfNode->getProp("num"));
-      binBlockInfo.indexBrickOfOfs = std::stoll(indexBrickOfNode->getProp("ofs"));
+      indexBrickOfOfs = std::stoll(indexBrickOfNode->getProp("ofs"));
 
       valueBrick = (ValueBrick*) malloc(sizeof(ValueBrick) * numValueBricks);
       indexBrick = (IndexBrick*) malloc(sizeof(IndexBrick) * numIndexBricks);
@@ -135,9 +132,9 @@ namespace ospray {
       if (!file)
         throw std::runtime_error("could not open brick bin file " +
                                  std::string(blockFileName));
-      fseek(file, binBlockInfo.indexBricksOfs, SEEK_SET);
+      fseek(file, indexBricksOfs, SEEK_SET);
       fread(indexBrick, sizeof(IndexBrick), numIndexBricks, file);
-      fseek(file, binBlockInfo.indexBrickOfOfs, SEEK_SET);
+      fseek(file, indexBrickOfOfs, SEEK_SET);
       fread(brickInfo, sizeof(BrickInfo), numBrickInfos, file);
       
       fclose(file);
@@ -155,13 +152,13 @@ namespace ospray {
         throw std::runtime_error("could not open brick bin file " +
                                  std::string(blockFileName));
 
-      fseek(file, binBlockInfo.indexBricksOfs, SEEK_SET);
+      fseek(file, indexBricksOfs, SEEK_SET);
 
       fread(indexBrick, sizeof(IndexBrick), numIndexBricks, file);
-      fseek(file, binBlockInfo.valueBricksOfs, SEEK_SET);
+      fseek(file, valueBricksOfs, SEEK_SET);
 
       fread(valueBrick, sizeof(ValueBrick), numValueBricks, file);
-      fseek(file, binBlockInfo.indexBrickOfOfs, SEEK_SET);
+      fseek(file, indexBrickOfOfs, SEEK_SET);
 
       fread(brickInfo, sizeof(BrickInfo), numBrickInfos, file);
       fclose(file);
@@ -204,7 +201,7 @@ namespace ospray {
     template<int N, typename T>
     void BrickTree<N,T>::loadBricks(FILE* file, vec2i vbListInfo)
     {
-      fseek(file, binBlockInfo.valueBricksOfs + vbListInfo.x * sizeof(ValueBrick), SEEK_SET);
+      fseek(file, valueBricksOfs + vbListInfo.x * sizeof(ValueBrick), SEEK_SET);
       fread((ValueBrick *)(valueBrick + vbListInfo.x), sizeof(ValueBrick), vbListInfo.y, file);
       for(int i = 0; i < vbListInfo.y;i++)
         valueBricksStatus[vbListInfo.x + i].isLoaded = true;
@@ -213,7 +210,7 @@ namespace ospray {
     template<int N, typename T>
     void BrickTree<N,T>::loadBricks(FILE* file, LoadBricks aBrick)
     {
-      fseek(file, binBlockInfo.valueBricksOfs + aBrick.brickID * sizeof(ValueBrick), SEEK_SET);
+      fseek(file, valueBricksOfs + aBrick.brickID * sizeof(ValueBrick), SEEK_SET);
       fread((ValueBrick *)(valueBrick + aBrick.brickID), sizeof(ValueBrick), 1, file);
       valueBricksStatus[aBrick.brickID].isLoaded = true;
     }
@@ -250,6 +247,7 @@ namespace ospray {
     template <int N, typename T>
     const T BrickTree<N, T>::findValue(const vec3i &coord, int blockWidth)
     {
+      //return 0.2f;
       // start with the root brick
       int brickSize = blockWidth;
 

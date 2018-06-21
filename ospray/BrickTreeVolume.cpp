@@ -25,7 +25,7 @@
 // ospcommon
 #include "ospcommon/FileName.h"
 // ispc exports
-#include "BrickTree_ispc.h"
+#include "BrickTreeVolume_ispc.h"
 // stl
 #include <map>
 #include <set>
@@ -133,6 +133,9 @@ namespace ospray {
       this->sampler = createSampler();
       ispc::BrickTreeVolume_set(getIE(), 
                                 (ispc::vec3i &)validSize,
+                                (ispc::vec3i &)gridSize,
+                                brickSize,
+                                blockWidth,
                                 this, sampler);
       if(!finished)
       {
