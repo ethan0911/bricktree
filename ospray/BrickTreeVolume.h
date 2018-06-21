@@ -143,8 +143,6 @@ namespace ospray {
       /*! compute sample at given position */
       virtual float sample(const vec3f &pos) const override
       {
-        //PING;
-
         //return 0.2f;
 
         vec3f coord = pos; 
@@ -153,80 +151,34 @@ namespace ospray {
         vec3f factor = coord - (vec3f)low;
 
         float v;
-        if (low.x == btv->validSize.x - 1) {
-          float neighborValue[2][2];
-          for (int i = 0; i < 2; i++) {
-            for (int j = 0; j < 2; j++) {
-              int blockId = btv->getBlockID((vec3f)(low + vec3i(0, j, i)));
-              auto bt = forest->tree.find(blockId);
-              neighborValue[i][j] =
-                  bt->second.findValue(low + vec3i(0, j, j), btv->blockWidth);
-            }
-          }
-          v = lerp2<float>(neighborValue[0][0],
-                           neighborValue[0][1],
-                           neighborValue[1][0],
-                           neighborValue[1][1],
-                           factor.y,
-                           factor.z);
-        } else if (low.y == btv->validSize.y - 1) {
-          float neighborValue[2][2];
-          for (int i = 0; i < 2; i++) {
-            for (int j = 0; j < 2; j++) {
-              int blockId = btv->getBlockID((vec3f)(low + vec3i(j, 0, i)));
-              auto bt = forest->tree.find(blockId);
-              neighborValue[i][j] =
-                  bt->second.findValue(low + vec3i(j, 0, i), btv->blockWidth);
-            }
-          }
-          v = lerp2<float>(neighborValue[0][0],
-                           neighborValue[0][1],
-                           neighborValue[1][0],
-                           neighborValue[1][1],
-                           factor.x,
-                           factor.z);
-        } else if (low.z == btv->validSize.z - 1) {
-          float neighborValue[2][2];
-          for (int i = 0; i < 2; i++) {
-            for (int j = 0; j < 2; j++) {
-              int blockId = btv->getBlockID((vec3f)(low + vec3i(j, i, 0)));
-              auto bt = forest->tree.find(blockId);
-              neighborValue[i][j] =
-                  bt->second.findValue(low + vec3i(j, i, 0), btv->blockWidth);
-            }
-          }
-          v = lerp2<float>(neighborValue[0][0],
-                           neighborValue[0][1],
-                           neighborValue[1][0],
-                           neighborValue[1][1],
-                           factor.x,
-                           factor.y);
-        } else {
-          int blockId = btv->getBlockID((vec3f)(low));
-          auto bt     = forest->tree.find(blockId);
-          v           = bt->second.findValue(low, btv->blockWidth);
 
-          // float neighborValue[2][2][2];
-          // array3D::for_each(vec3i(2), [&](const vec3i &idx) {
-          //   int blockId = btv->getBlockID((vec3f)(low + idx));
-          //   auto bt = forest->tree.find(blockId);
-          //   neighborValue[idx.z][idx.y][idx.x] =
-          //       bt->second.findValue(low + idx, btv->blockWidth);
-          // });
+        int blockId = btv->getBlockID((vec3f)(low));
+        auto& bt    = forest->tree[blockId];
+        v           = bt.findValue(low, btv->blockWidth);
 
-          // v = lerp3<float>(neighborValue[0][0][0],
-          //                  neighborValue[0][0][1],
-          //                  neighborValue[0][1][0],
-          //                  neighborValue[0][1][1],
-          //                  neighborValue[1][0][0],
-          //                  neighborValue[1][0][1],
-          //                  neighborValue[1][1][0],
-          //                  neighborValue[1][1][1],
-          //                  factor.x,
-          //                  factor.y,
-          //                  factor.z);
+        // float neighborValue[2][2][2];
+          
+        //   array3D::for_each(vec3i(2), [&](const vec3i &idx) {
+
+        //     int blockId = btv->getBlockID((vec3f)(low + idx));
+        //     auto& bt    = forest->tree[blockId];
+        //     neighborValue[idx.z][idx.y][idx.x] =
+        //         bt.findValue(low + idx, btv->blockWidth);
+          
+        //   });
+
+        //   v = lerp3<float>(neighborValue[0][0][0],
+        //                    neighborValue[0][0][1],
+        //                    neighborValue[0][1][0],
+        //                    neighborValue[0][1][1],
+        //                    neighborValue[1][0][0],
+        //                    neighborValue[1][0][1],
+        //                    neighborValue[1][1][0],
+        //                    neighborValue[1][1][1],
+        //                    factor.x,
+        //                    factor.y,
+        //                    factor.z);
                            
-        }
         return v;
       }
 

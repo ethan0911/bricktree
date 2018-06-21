@@ -310,9 +310,9 @@ namespace ospray {
 
       box3f forestBounds; 
 
-      std::map<size_t, BrickTree<N,T>> tree;
+      //std::map<size_t, BrickTree<N,T>> tree;
 
-      //std::vector<BrickTree<N, T>> tree;
+      std::vector<BrickTree<N, T>> tree;
 
 
 
@@ -321,14 +321,25 @@ namespace ospray {
 
       void loadTreeBrick(const FileName &brickFileBase)
       {
+        // while (!tree.empty()) {
+        //   typename std::map<size_t, BrickTree<N, T>>::iterator it;
+        //   for (it = tree.begin(); it != tree.end(); it++) {
+        //     std::vector<vec2i> vbReqList = it->second.getRequestVBList();
+        //     if (!vbReqList.empty())
+        //       it->second.loadTreeByBrick(brickFileBase, it->first, vbReqList);
+        //   }
+        // }
+        std::cout << ">>> loadTreeBrick \n";
         while (!tree.empty()) {
-          typename std::map<size_t, BrickTree<N, T>>::iterator it;
-          for (it = tree.begin(); it != tree.end(); it++) {
-            std::vector<vec2i> vbReqList = it->second.getRequestVBList();
+          for (size_t i = 0;i < tree.size();i++) {
+            std::vector<vec2i> vbReqList = tree[i].getRequestVBList();
             if (!vbReqList.empty())
-              it->second.loadTreeByBrick(brickFileBase, it->first, vbReqList);
+              tree[i].loadTreeByBrick(brickFileBase, i, vbReqList);
           }
         }
+        std::cout << "<<< loadTreeBrick \n";
+        
+        
       }
 
       void Initialize()
@@ -336,6 +347,10 @@ namespace ospray {
         std::cout<<"#osp: start to initialize bricktree forest!"<<std::endl;
         int numTrees = forestSize.product();
         assert(numTrees > 0);
+
+        tree.resize(numTrees);
+
+        std::cout << ">>> Initialize \n";
 
         std::mutex amutex;
         tasking::parallel_for(numTrees, [&](int treeID) {
@@ -345,8 +360,12 @@ namespace ospray {
           BrickTree<N, T> aTree;
           aTree.mapOSP(brickFileBase, treeID, treeCoord);
           std::lock_guard<std::mutex> lock(amutex);
-          tree.insert(std::make_pair(treeID, aTree));
+          //tree.insert(std::make_pair(treeID, aTree));
+          tree[treeID] = aTree;
         });
+        
+        std::cout << "<<< Initialize \n";
+
         printf("#osp: %d trees have initialized!\n", numTrees);
       }
 
