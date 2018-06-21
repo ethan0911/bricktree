@@ -21,24 +21,23 @@
 #include "ospray/math/AffineSpace.ih"
 #include "ospray/geometry/Geometry.ih"
 
-struct range1f {
-    float lo, hi;
-};
-
-//! hard code right now, Need to change
+#define T float
+#define N 4 
 struct ValueBrick{
-    float value[4][4][4];
+    T value[N][N][N];
 };
-
 struct IndexBrick{
-    int childID[4][4][4];
+    int childID[N][N][N];
 };
-
 struct BrickInfo{
     int indexBrickID;
 };
 
-
+struct BrickStatus
+{
+  bool isRequested;
+  bool isLoaded;
+};
 /*! \brief ispc-side implementation of the bricktree object 
  *
  * note we don't actually do anything serious on the ispc side fo this
@@ -49,28 +48,31 @@ struct BrickInfo{
 */
 struct BrickTree
 {
-  uniform ValueBrick *valueBrick;
-  uniform IndexBrick *indexBrick;
-  uniform BrickInfo *brickInfo;
+    uniform unsigned int64 numValueBricks;
+    uniform unsigned int64 numIndexBricks;
+    uniform unsigned int64 numBrickInfos;
 
-  uniform float avgValue;
-  uniform vec2f valueRange;
-  uniform vec3i validSize;
-  uniform int brickSize;
+   uniform unsigned int64 indexBricksOfs;
+   uniform unsigned int64 valueBricksOfs;
+   uniform unsigned int64 indexBrickOfOfs;
 
-  uniform unsigned int numValueBricks;
-  uniform unsigned int numIndexBricks;
-  uniform unsigned int numBrickInfos;
+   uniform float avgValue;
+   uniform int   nBrickSize;
+   uniform float valueRange[2];
+   uniform int   validSize[3];
+   uniform int   rootGridDims[3];
 
-  uniform unsigned int indexBricksOfs;
-  uniform unsigned int valueBricksOfs;
-  uniform unsigned int indexBrickOfOfs;
+   uniform ValueBrick * uniform valueBrick;
+   uniform IndexBrick * uniform indexBrick;
+   uniform BrickInfo  * uniform brickInfo;
+   uniform BrickStatus* uniform valueBricksStatus;
+
 };
 
 
 struct BrickTreeForest{
-    void* brickTreeForest;
+    uniform BrickTree *brickTreeForest;
     uniform unsigned int numTrees;
-}
+};
 
 

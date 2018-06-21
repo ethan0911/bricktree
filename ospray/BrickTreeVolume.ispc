@@ -166,3 +166,26 @@ export void BrickTreeVolume_set(void *uniform _self,
     self->brickSize = brickSize;
     self->blockWidth = blockWidth;
 }
+
+export void BrickTreeVolume_set_BricktreeForest(void *uniform _self,
+                                                void *uniform _forest,
+                                                uniform unsigned int size)
+{
+    BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
+    assert(self); 
+    BrickTree *uniform forest = (BrickTree *uniform)_forest;
+    self->forest.brickTreeForest = forest;
+    self->forest.numTrees = size;
+
+    print("[ispc] sizeof(BrickTree) %\n", sizeof(BrickTree));
+    // print("[ispc] sizeof(uniform unsigned int64) %\n", sizeof(uniform unsigned int64));
+    // print("[ispc] sizeof(uniform float) %\n", sizeof(uniform float));
+    // print("[ispc] sizeof(vec2f) %\n", sizeof(vec2f));
+    // print("[ispc] sizeof(vec3i) %\n", sizeof(vec3i));
+    // print("[ispc] sizeof(uniform ValueBrick* uniform) %\n", sizeof(uniform ValueBrick* uniform));
+    // print("[ispc] sizeof(uniform IndexBrick*) %\n", sizeof(uniform IndexBrick*));
+
+    for (int i = 0; i < size; ++i) {
+      print("ispc %\n", forest[i].avgValue);
+    }
+}

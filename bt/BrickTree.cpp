@@ -52,8 +52,7 @@ namespace ospray {
     const char *typeToString<double>() { return "double"; };
 
     template<int N, typename T>
-    BrickTree<N,T>::BrickTree(){
-    }
+    BrickTree<N,T>::BrickTree(){}
 
     template<int N, typename T>
     BrickTree<N,T>::~BrickTree(){
@@ -63,6 +62,8 @@ namespace ospray {
         free(indexBrick);
       if(!brickInfo)
         free(brickInfo);
+      if (!valueBricksStatus)
+        delete valueBricksStatus;
     }
 
 
@@ -122,7 +123,8 @@ namespace ospray {
       indexBrick = (IndexBrick*) malloc(sizeof(IndexBrick) * numIndexBricks);
       brickInfo = (BrickInfo*) malloc(sizeof(BrickInfo) * numBrickInfos);
 
-      valueBricksStatus.resize(numValueBricks,BrickStatus());
+      //valueBricksStatus.resize(numValueBricks,BrickStatus());
+      valueBricksStatus = new BrickStatus[numValueBricks]();
       // isIndexBrickLoaded.resize(numIndexBricks,false);
       // isBrickInfoLoaded.resize(numBrickInfos,false);
 

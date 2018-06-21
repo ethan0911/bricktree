@@ -137,6 +137,16 @@ namespace ospray {
                                 brickSize,
                                 blockWidth,
                                 this, sampler);
+
+      std::cout << "[cpp]  size of sizeof(BrickTree<4,float>) " << sizeof(BrickTree<4,float>) << std::endl;
+      auto& forest = dynamic_cast<BrickTreeForestSampler<float,4>*>(sampler)->forest->tree;
+      ispc::BrickTreeVolume_set_BricktreeForest(getIE(),
+                                                forest.data(),
+                                                forest.size());
+      for (int i = 0; i < forest.size(); ++i) {
+        std::cout << "cpp " << forest[i].avgValue << std::endl;
+      }
+      
       if(!finished)
       {
         finish();

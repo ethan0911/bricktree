@@ -71,60 +71,7 @@ namespace ospray {
       bool isLoaded;
     };
 
-    /*! the superblock we'll store at the end of the binary
-    memory/file region for a binary bricktree */
-    // struct BinaryFileSuperBlock
-    // {
-    //   size_t indexBricksOfs;
-    //   size_t valueBricksOfs;
-    //   size_t indexBrickOfOfs;
-    // };
 
-    // struct BrickTreeBase {
-    //   virtual std::string voxelType() const = 0;
-    //   virtual int         brickSize() const = 0;
-    //   // virtual const void *brickInfoPtr()  const = 0;
-    //   // virtual const void *valueBrickPtr()  const = 0;
-    //   // virtual const void *indexBrickPtr() const = 0;
-    //   virtual vec3i getRootGridDims() const = 0;
-    //   // virtual const int *firstIndexBrickOfTreePtr() const = 0;
-    //   // virtual const int *firstValueBrickOfTreePtr() const = 0;
-
-    //   static BrickTreeBase *mapFrom(const void *ptr, 
-    //                                 const std::string &format, 
-    //                                 int BS, 
-    //                                 size_t superBlockOfs);
-    //   // virtual void saveTo(FILE *bin, size_t &superBlockOfs) = 0;
-
-    //   size_t numValueBricks;
-    //   size_t numIndexBricks;
-    //   size_t numBrickInfos;
-
-    //   size_t indexBricksOfs;
-    //   size_t valueBricksOfs;
-    //   size_t indexBrickOfOfs;
-
-    //   float avgValue;
-    //   vec2f valueRange;
-    //   int nBrickSize;
-    //   vec3i validSize;
-    //   vec3i rootGridDims;
-    //   vec3f validFractionOfRootGrid;
-    // };
-
-    /* hierarchical tree of bricks. if N is the template parameter,
-       this tree will encode bricks of NxNxN cells (a so-called value
-       brick). child pointers are encoded in 'index bricks', with each
-       value brick possibly having one associated index brick. For each
-       value brick, we store as 'indexBrickOf' value (in a separate
-       array); if this value is 'invalidID' the given value brick is a
-       complete leaf brick that doesn't ahve an index brick (and thus,
-       no children at all); otherwise this ID refers to a index brick
-       in the index brick array, with the index brick having exactly
-       one child index value (referring to value brick IDs) for each
-       cell (though it is possible that some (or even, many) cells do
-       not have a child at all, in which the corresponding child index
-       in the index brick is 'invalidID'  */
     template<int N, typename T=float>
     struct BrickTree {
       
@@ -161,74 +108,29 @@ namespace ospray {
         int32_t indexBrickID; 
       }; 
 
+      size_t numValueBricks; /*8*/
+      size_t numIndexBricks; /*8*/
+      size_t numBrickInfos; /*8*/
 
+      size_t indexBricksOfs; /*8*/
+      size_t valueBricksOfs; /*8*/
+      size_t indexBrickOfOfs; /*8*/
 
-      size_t numValueBricks;
-      size_t numIndexBricks;
-      size_t numBrickInfos;
+      float avgValue;  /*4*/
+      int32_t nBrickSize; /*4*/
 
-      size_t indexBricksOfs;
-      size_t valueBricksOfs;
-      size_t indexBrickOfOfs;
+      ValueBrick *valueBrick = nullptr; /*4*/
+      IndexBrick *indexBrick = nullptr; /*4*/
+      BrickInfo  *brickInfo = nullptr;  /*4*/
+      BrickStatus *valueBricksStatus = nullptr; /*4*/
 
-      float avgValue;
-      vec2f valueRange;
-      int nBrickSize;
-      vec3i validSize;
-      vec3i rootGridDims;
-      vec3f validFractionOfRootGrid;
-
-
-      ValueBrick *valueBrick;
-      IndexBrick *indexBrick;
-      BrickInfo  *brickInfo;
+      vec2f valueRange;  /*8*/
+      vec3i validSize;  /*12*/
+      vec3i rootGridDims;  /*12*/
       
 
 
 
-      /* gives, for each root cell / tree in the root grid, the ID of
-         the first index brick in the (shared) value brick array */
-      const int32_t *firstIndexBrickOfTree;
-
-      // virtual const int *firstIndexBrickOfTreePtr() const override { return firstIndexBrickOfTree; } ;
-      // virtual const int *firstValueBrickOfTreePtr() const override { return firstValueBrickOfTree; } ;
-
-      /* gives, for each root cell / tree in the rwhileoot grid, the ID of
-         the first value brick in the (shared) value brick array */
-      const int32_t *firstValueBrickOfTree;
-
-
-      std::vector<BrickStatus> valueBricksStatus;
-
-
-
-
-
-
-      //////////////////////////////////
-      //////////////////////////////////
-      //////////////////////////////////
-      //////////////////////////////////
-
-    
-      //virtual std::string voxelType() const = 0;
-      //virtual int         brickSize() const = 0;
-
-      // virtual const void *brickInfoPtr()  const = 0;
-      // virtual const void *valueBrickPtr()  const = 0;
-      // virtual const void *indexBrickPtr() const = 0;
-
-      //virtual vec3i getRootGridDims() const = 0;
-
-      // virtual const int *firstIndexBrickOfTreePtr() const = 0;
-      // virtual const int *firstValueBrickOfTreePtr() const = 0;
-
-      // static BrickTreeBase *mapFrom(const void *ptr, 
-      //                               const std::string &format, 
-      //                               int BS, 
-      //                               size_t superBlockOfs);
-
-      // virtual void saveTo(FILE *bin, size_t &superBlockOfs) = 0;
 
 
       BrickTree();
@@ -236,11 +138,11 @@ namespace ospray {
 
       static inline int invalidID() { return -1; }
 
-      virtual std::string voxelType() const  { return typeToString<T>(); };
-      virtual int         brickSize() const  { return N; };
+      std::string voxelType() const  { return typeToString<T>(); };
+      int         brickSize() const  { return N; };
       
 
-      virtual vec3i getRootGridDims() const  { return rootGridDims; }
+      vec3i getRootGridDims() const  { return rootGridDims; }
 
       /*! map this one from a binary dump that was created by the bricktreebuilder/raw2bricks tool */
       void mapOSP(const FileName &brickFileBase, int treeID, vec3i treeCoord);
@@ -310,8 +212,6 @@ namespace ospray {
 
       box3f forestBounds; 
 
-      //std::map<size_t, BrickTree<N,T>> tree;
-
       std::vector<BrickTree<N, T>> tree;
 
 
@@ -321,15 +221,7 @@ namespace ospray {
 
       void loadTreeBrick(const FileName &brickFileBase)
       {
-        // while (!tree.empty()) {
-        //   typename std::map<size_t, BrickTree<N, T>>::iterator it;
-        //   for (it = tree.begin(); it != tree.end(); it++) {
-        //     std::vector<vec2i> vbReqList = it->second.getRequestVBList();
-        //     if (!vbReqList.empty())
-        //       it->second.loadTreeByBrick(brickFileBase, it->first, vbReqList);
-        //   }
-        // }
-        std::cout << ">>> loadTreeBrick \n";
+
         while (!tree.empty()) {
           for (size_t i = 0;i < tree.size();i++) {
             std::vector<vec2i> vbReqList = tree[i].getRequestVBList();
@@ -337,8 +229,7 @@ namespace ospray {
               tree[i].loadTreeByBrick(brickFileBase, i, vbReqList);
           }
         }
-        std::cout << "<<< loadTreeBrick \n";
-        
+
         
       }
 
@@ -349,8 +240,6 @@ namespace ospray {
         assert(numTrees > 0);
 
         tree.resize(numTrees);
-
-        std::cout << ">>> Initialize \n";
 
         std::mutex amutex;
         tasking::parallel_for(numTrees, [&](int treeID) {
@@ -363,8 +252,7 @@ namespace ospray {
           //tree.insert(std::make_pair(treeID, aTree));
           tree[treeID] = aTree;
         });
-        
-        std::cout << "<<< Initialize \n";
+      
 
         printf("#osp: %d trees have initialized!\n", numTrees);
       }

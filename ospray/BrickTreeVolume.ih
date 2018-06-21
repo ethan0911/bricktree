@@ -21,6 +21,8 @@
 #include "ospray/math/AffineSpace.ih"
 #include "ospray/geometry/Geometry.ih"
 
+#include "../bt/BrickTree.ih"
+
 struct range1f {
     float lo, hi;
 };
@@ -47,6 +49,7 @@ struct BrickTreeVolume {
     uniform vec3i validSize;
     uniform int brickSize;
     uniform int blockWidth;
+    uniform BrickTreeForest forest;
 };
 
 
