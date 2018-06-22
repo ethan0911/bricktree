@@ -26,32 +26,124 @@
 // embree
 #include "rtcore.isph"
 
+#define STREAM_DATA 1
+
 // Functions that defined in CPP files
 extern "C" unmasked uniform float BrickTree_scalar_sample(void *uniform cppObject, uniform vec3f &samplePos);
 // TODO gradient shading is not working
 extern "C" unmasked uniform vec3f BrickTree_scalar_computeGradient(void *uniform cppObject, uniform vec3f &samplePos);
 
-inline void getVoxelAddress(void *uniform _self,
-                     const varying vec3i &coord,
-                     varying int &blockID)
+inline varying int getBlockID(BrickTreeVolume *uniform self,
+                              const varying vec3i &coord)
 {
-  BrickTreeVolume *uniform self = (BrickTreeVolume *uniform) _self;
   int x = coord.x / self->blockWidth;
   int y = coord.y / self->blockWidth;
   int z = coord.z / self->blockWidth;
   x = (x >= self->gridSize.x) ? (self->gridSize.x -1) : x;
   y = (y >= self->gridSize.y) ? (self->gridSize.y -1) : y;
   z = (z >= self->gridSize.z) ? (self->gridSize.z -1) : z;
-  blockID = x + y * self->gridSize.x + z * self->gridSize.y * self->gridSize.x;
+  return x + y * self->gridSize.x + z * self->gridSize.y * self->gridSize.x;
 }
 
-inline void getVoxel(void *uniform _self,
-                     const varying vec3i &coord,
-                     varying float &value)
+inline varying float findBrickValue(BrickTreeVolume *uniform self,
+                                    int   blockID,
+                                    int   brickID,
+                                    vec3i cellPos,
+                                    int   parentBrickID,
+                                    vec3i parentCellPos)
 {
-  int blockID;
-  getVoxelAddress(_self, coord, blockID);
-  value = 0.2f;
+  
+  // return 0.2;
+
+  BrickTree  *bt = &(self->forest.data[blockID]);
+  ValueBrick *vb = NULL;
+
+#if STREAM_DATA
+
+  // print("%\n", bt->valueBricksStatus[brickID].isLoaded);
+
+  if (!bt->valueBricksStatus[brickID].isLoaded) {
+    // request this brick if it is not requested
+    if (!bt->valueBricksStatus[brickID].isRequested) {
+      bt->valueBricksStatus[brickID].isRequested = true;
+    }
+    // return average value if this brick is requested but not loaded
+    if (brickID == 0)  // root node, return average value of the tree
+      return bt->avgValue;
+    else {
+      // inner node, return the average value of this node which is stored
+      // in the parent node
+      if (!bt->valueBricksStatus[parentBrickID].isLoaded)
+        return bt->avgValue;
+      else {
+        vb = (ValueBrick *)(bt->valueBrick + parentBrickID);
+        return vb->value[parentCellPos.z][parentCellPos.y][parentCellPos.x];
+      }
+    }
+  } else {
+    vb = (ValueBrick *)(bt->valueBrick + brickID);
+    return vb->value[cellPos.z][cellPos.y][cellPos.x];
+  }
+  return bt->avgValue;
+
+#else
+
+  vb = (ValueBrick *)(bt->valueBrick + brickID);
+  return vb->value[cellPos.z][cellPos.y][cellPos.x];
+
+#endif
+}
+
+inline varying float getVoxel(void *uniform _self,
+                              const varying vec3i &coord)
+{
+  // return 0.2f;
+
+  BrickTreeVolume *uniform self = (BrickTreeVolume *uniform) _self;
+
+  // findValue
+  int blockID       = getBlockID(self, coord);
+  int brickSize     = self->blockWidth;
+  int brickID       = 0;
+  int parentBrickID = -1;  // parent brick ID
+  vec3i cpos          = make_vec3i(0,0,0);
+  vec3i parentCellPos = make_vec3i(0,0,0);
+
+  while (brickSize > self->brickSize) {
+
+    int cellSize = brickSize / self->brickSize;
+
+    cpos.x = (coord.x % brickSize) / cellSize;
+    cpos.y = (coord.y % brickSize) / cellSize;
+    cpos.z = (coord.z % brickSize) / cellSize;
+
+    parentCellPos.x = (coord.x % (brickSize * self->brickSize)) / brickSize;
+    parentCellPos.y = (coord.y % (brickSize * self->brickSize)) / brickSize;
+    parentCellPos.z = (coord.z % (brickSize * self->brickSize)) / brickSize;
+
+    int ibID = self->forest.data[blockID].brickInfo[brickID].indexBrickID;
+
+    if (ibID == -1) {
+      return findBrickValue(self, blockID, brickID, cpos, parentBrickID, parentCellPos);
+    } else {
+      int childBrickID = self->forest.data[blockID].indexBrick[ibID].childID[cpos.z][cpos.y][cpos.x];
+      if (childBrickID == -1) {
+        return findBrickValue(self, blockID, brickID, cpos, parentBrickID, parentCellPos);
+      } else {
+        parentBrickID = brickID;
+        brickID       = childBrickID;
+      }
+    }
+
+    brickSize = cellSize;
+
+  }
+  
+  cpos.x = coord.x % brickSize;
+  cpos.y = coord.y % brickSize;
+  cpos.z = coord.z % brickSize;
+
+  return findBrickValue(self, blockID, brickID,cpos,parentBrickID,parentCellPos);
 }
 
 // Find the next hit point in the volume for ray casting based renderers.
@@ -68,50 +160,50 @@ static void BrickTreeVolume_stepRay(void *uniform _self,
 
 static float BrickTreeVolume_sample(void *uniform _self, const vec3f &samplePos)
 {
-  // BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
-  // // Lower and upper corners of the box straddling the voxels to be interpolated.
-  // const vec3i voxelIndex_0 = to_int(samplePos);
-  // const vec3i voxelIndex_1 = voxelIndex_0 + 1;
-  // // Fractional coordinates within the lower corner voxel used during interpolation.
-  // const vec3f fractionalLocalCoordinates = samplePos - to_float(voxelIndex_0);
-  // // Look up the voxel values to be interpolated.
-  // float voxelValue_000;
-  // float voxelValue_001;
-  // float voxelValue_010;
-  // float voxelValue_011;
-  // float voxelValue_100;
-  // float voxelValue_101;
-  // float voxelValue_110;
-  // float voxelValue_111;
-  // getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_0.y, voxelIndex_0.z), voxelValue_000);
-  // getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_0.y, voxelIndex_0.z), voxelValue_001);
-  // getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_1.y, voxelIndex_0.z), voxelValue_010);
-  // getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_1.y, voxelIndex_0.z), voxelValue_011);
-  // getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_0.y, voxelIndex_1.z), voxelValue_100);
-  // getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_0.y, voxelIndex_1.z), voxelValue_101);
-  // getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_1.y, voxelIndex_1.z), voxelValue_110);
-  // getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_1.y, voxelIndex_1.z), voxelValue_111);
+#if 1
 
-  // // Interpolate the voxel values.
-  // const float voxelValue_00 = voxelValue_000 + fractionalLocalCoordinates.x * (voxelValue_001 - voxelValue_000);
-  // const float voxelValue_01 = voxelValue_010 + fractionalLocalCoordinates.x * (voxelValue_011 - voxelValue_010);
-  // const float voxelValue_10 = voxelValue_100 + fractionalLocalCoordinates.x * (voxelValue_101 - voxelValue_100);
-  // const float voxelValue_11 = voxelValue_110 + fractionalLocalCoordinates.x * (voxelValue_111 - voxelValue_110);
-  // const float voxelValue_0  = voxelValue_00  + fractionalLocalCoordinates.y * (voxelValue_01  - voxelValue_00 );
-  // const float voxelValue_1  = voxelValue_10  + fractionalLocalCoordinates.y * (voxelValue_11  - voxelValue_10 );
-  // const float volumeSample  = voxelValue_0   + fractionalLocalCoordinates.z * (voxelValue_1   - voxelValue_0  );
+  BrickTreeVolume *uniform self = (BrickTreeVolume * uniform) _self;
+  // Lower and upper corners of the box straddling the voxels to be
+  // interpolated.
+  const vec3i voxelIndex_0 = to_int(samplePos);
+  const vec3i voxelIndex_1 = voxelIndex_0 + 1;
+  // Fractional coordinates within the lower corner voxel used during interpolation.
+  const vec3f fractionalLocalCoordinates = samplePos - to_float(voxelIndex_0);
+  // Look up the voxel values to be interpolated.
+  float voxelValue_000 = getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_0.y, voxelIndex_0.z));
+  float voxelValue_001 = getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_0.y, voxelIndex_0.z));
+  float voxelValue_010 = getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_1.y, voxelIndex_0.z));
+  float voxelValue_011 = getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_1.y, voxelIndex_0.z));
+  float voxelValue_100 = getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_0.y, voxelIndex_1.z));
+  float voxelValue_101 = getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_0.y, voxelIndex_1.z));
+  float voxelValue_110 = getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_1.y, voxelIndex_1.z));
+  float voxelValue_111 = getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_1.y, voxelIndex_1.z));
 
-  // return volumeSample;
+  // Interpolate the voxel values.
+  const float voxelValue_00 = voxelValue_000 + fractionalLocalCoordinates.x * (voxelValue_001 - voxelValue_000);
+  const float voxelValue_01 = voxelValue_010 + fractionalLocalCoordinates.x * (voxelValue_011 - voxelValue_010);
+  const float voxelValue_10 = voxelValue_100 + fractionalLocalCoordinates.x * (voxelValue_101 - voxelValue_100);
+  const float voxelValue_11 = voxelValue_110 + fractionalLocalCoordinates.x * (voxelValue_111 - voxelValue_110);
+  const float voxelValue_0  = voxelValue_00  + fractionalLocalCoordinates.y * (voxelValue_01  - voxelValue_00 );
+  const float voxelValue_1  = voxelValue_10  + fractionalLocalCoordinates.y * (voxelValue_11  - voxelValue_10 );
+  const float volumeSample  = voxelValue_0   + fractionalLocalCoordinates.z * (voxelValue_1   - voxelValue_0  );
 
-  BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
+  return volumeSample;
+
+#else
+
+  BrickTreeVolume *uniform self = (BrickTreeVolume * uniform) _self;
   uniform vec3f uSamplePos[programCount];
   uniform float uReturnValue[programCount];
   uSamplePos[programIndex] = samplePos;
-  foreach_active(lane) {
+  foreach_active(lane)
+  {
     uReturnValue[lane] =
-      BrickTree_scalar_sample(self->cppSampler, uSamplePos[lane]);
+        BrickTree_scalar_sample(self->cppSampler, uSamplePos[lane]);
   }
   return uReturnValue[programIndex];
+
+#endif
 }
 
 static vec3f BrickTreeVolume_computeGradient(void *uniform _self, const vec3f &samplePos)
@@ -174,8 +266,8 @@ export void BrickTreeVolume_set_BricktreeForest(void *uniform _self,
     BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
     assert(self); 
     BrickTree *uniform forest = (BrickTree *uniform)_forest;
-    self->forest.brickTreeForest = forest;
-    self->forest.numTrees = size;
+    self->forest.data = forest;
+    self->forest.size = size;
 
     print("[ispc] sizeof(BrickTree) %\n", sizeof(BrickTree));
     // print("[ispc] sizeof(uniform unsigned int64) %\n", sizeof(uniform unsigned int64));
@@ -184,8 +276,13 @@ export void BrickTreeVolume_set_BricktreeForest(void *uniform _self,
     // print("[ispc] sizeof(vec3i) %\n", sizeof(vec3i));
     // print("[ispc] sizeof(uniform ValueBrick* uniform) %\n", sizeof(uniform ValueBrick* uniform));
     // print("[ispc] sizeof(uniform IndexBrick*) %\n", sizeof(uniform IndexBrick*));
+    // for (int i = 0; i < size; ++i) {
+    //   print("ispc %\n", forest[i].brickInfo);
+    //   print("ispc %\n", forest[i].brickInfo[0].indexBrickID);
+    // }
+    // for (int x = 0; x < 4; ++x) 
+    // for (int y = 0; y < 4; ++y) 
+    // for (int z = 0; z < 4; ++z) 
+    // print("ispc %\n", forest[2].valueBrick[1000].value[x][y][z]);
 
-    for (int i = 0; i < size; ++i) {
-      print("ispc %\n", forest[i].avgValue);
-    }
 }

@@ -128,8 +128,7 @@ namespace ospray {
       this->fileName   = getParamString("fileName", "");
       this->format     = getParamString("format", "<not specified>");
       this->validSize  = getParam3i("validSize",vec3i(-1));
-      this->validFractionOfRootGrid = 
-        vec3f(validSize) / vec3f(gridSize*blockWidth);
+      this->validFractionOfRootGrid = vec3f(validSize) / vec3f(gridSize*blockWidth);
       this->sampler = createSampler();
       ispc::BrickTreeVolume_set(getIE(), 
                                 (ispc::vec3i &)validSize,
@@ -138,14 +137,23 @@ namespace ospray {
                                 blockWidth,
                                 this, sampler);
 
-      std::cout << "[cpp]  size of sizeof(BrickTree<4,float>) " << sizeof(BrickTree<4,float>) << std::endl;
+      // std::cout << "[cpp]  sizeof(BrickTree) " << sizeof(BrickTree<4,float>) << std::endl;
+      
       auto& forest = dynamic_cast<BrickTreeForestSampler<float,4>*>(sampler)->forest->tree;
+      
+      // for (int i = 0; i < forest.size(); ++i) {
+      //   PRINT(forest[i].brickInfo);
+      //   std::cout << "cpp  " << forest[i].brickInfo[0].indexBrickID << std::endl;
+      // }
+      // for (int x = 0; x < 4; ++x) 
+      // for (int y = 0; y < 4; ++y) 
+      // for (int z = 0; z < 4; ++z) 
+      // printf("cpp  %f\n", forest[2].valueBrick[1000].value[x][y][z]);
+
       ispc::BrickTreeVolume_set_BricktreeForest(getIE(),
                                                 forest.data(),
                                                 forest.size());
-      for (int i = 0; i < forest.size(); ++i) {
-        std::cout << "cpp " << forest[i].avgValue << std::endl;
-      }
+
       
       if(!finished)
       {

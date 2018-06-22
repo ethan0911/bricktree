@@ -71,8 +71,8 @@ struct BrickTree
 
 
 struct BrickTreeForest{
-    uniform BrickTree *brickTreeForest;
-    uniform unsigned int numTrees;
+    uniform BrickTree * data;
+    uniform unsigned int size;
 };
 
 

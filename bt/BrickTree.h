@@ -38,6 +38,8 @@
 #include <thread>
 #include <algorithm>
 
+#define STREAM_DATA 1
+
 namespace ospray {
   namespace bt {
 
@@ -49,157 +51,181 @@ namespace ospray {
     static std::mutex brickLoadMtx;
     static const size_t numThread = 2;
 
-    enum BRICKTYPE {INDEXBRICK, VALUEBRICK, BRICKINFO};
+    enum BRICKTYPE
+    {
+      INDEXBRICK,
+      VALUEBRICK,
+      BRICKINFO
+    };
 
     struct LoadBricks
     {
-      LoadBricks(BRICKTYPE btype, size_t offset):bricktype(btype),brickID(offset){};
+      LoadBricks(BRICKTYPE btype, size_t offset)
+          : bricktype(btype), brickID(offset){};
       BRICKTYPE bricktype;
-      size_t brickID; //N th of a specific brick
+      size_t brickID;  // N th of a specific brick
     };
 
     struct BrickStatus
     {
-      BrickStatus(){
+      BrickStatus()
+      {
         isRequested = false;
-        isLoaded = false;
+        isLoaded    = false;
       }
 
-      BrickStatus(bool request, bool load): isRequested(request), isLoaded(load){}
-      
+      BrickStatus(bool request, bool load)
+          : isRequested(request), isLoaded(load)
+      {
+      }
+
       bool isRequested;
       bool isLoaded;
     };
 
-
-    template<int N, typename T=float>
-    struct BrickTree {
-      
-     /*! 4x4x4 brick/brick of value. */
-      struct ValueBrick {
+    template <int N, typename T = float>
+    struct BrickTree
+    {
+      /*! 4x4x4 brick/brick of value. */
+      struct ValueBrick
+      {
         void clear();
         // Range<float> getValueRange() const;
-        double computeWeightedAverage(// coordinates of lower-left-front
-                                      // voxel, in resp level
-                                      const vec3i &brickCoord,
-                                      // size of bricks in current level
-                                      const int brickSize,
-                                      // maximum size in finest level
-                                      const vec3i &maxSize) const;
+        double computeWeightedAverage(  // coordinates of lower-left-front
+                                        // voxel, in resp level
+            const vec3i &brickCoord,
+            // size of bricks in current level
+            const int brickSize,
+            // maximum size in finest level
+            const vec3i &maxSize) const;
 
         T value[N][N][N];
       };
-      
+
       /*! gives the _value_ brick ID of NxNxN children. if a
         nodes does NOT have a child, it will use ID "invalidID". if NO
         childID is valid, the brick shouldn't exist in the first place
         ... (see BrickInfo description) */
-      struct IndexBrick {
-        void clear(); 
+      struct IndexBrick
+      {
+        void clear();
         int32_t childID[N][N][N];
       };
 
-      struct BrickInfo {
-        BrickInfo(int32_t ID=invalidID()) : indexBrickID(ID) {};
-        
+      struct BrickInfo
+      {
+        BrickInfo(int32_t ID = invalidID()) : indexBrickID(ID){};
+
         /*! gives the ID of the index brick that encodes the children
           for the current brick. if the current brick doesn't HAVE any
           children, this will be (int32)-1 */
-        int32_t indexBrickID; 
-      }; 
+        int32_t indexBrickID;
+      };
 
       size_t numValueBricks; /*8*/
       size_t numIndexBricks; /*8*/
-      size_t numBrickInfos; /*8*/
+      size_t numBrickInfos;  /*8*/
 
-      size_t indexBricksOfs; /*8*/
-      size_t valueBricksOfs; /*8*/
+      size_t indexBricksOfs;  /*8*/
+      size_t valueBricksOfs;  /*8*/
       size_t indexBrickOfOfs; /*8*/
 
-      float avgValue;  /*4*/
+      float avgValue;     /*4*/
       int32_t nBrickSize; /*4*/
 
-      ValueBrick *valueBrick = nullptr; /*4*/
-      IndexBrick *indexBrick = nullptr; /*4*/
-      BrickInfo  *brickInfo = nullptr;  /*4*/
+      vec2f valueRange;   /*8*/
+      vec3i validSize;    /*12*/
+      vec3i rootGridDims; /*12*/
+
+      ValueBrick *valueBrick         = nullptr; /*4*/
+      IndexBrick *indexBrick         = nullptr; /*4*/
+      BrickInfo *brickInfo           = nullptr; /*4*/
       BrickStatus *valueBricksStatus = nullptr; /*4*/
-
-      vec2f valueRange;  /*8*/
-      vec3i validSize;  /*12*/
-      vec3i rootGridDims;  /*12*/
-      
-
-
-
-
 
       BrickTree();
       ~BrickTree();
 
-      static inline int invalidID() { return -1; }
+      static inline int invalidID()
+      {
+        return -1;
+      }
 
-      std::string voxelType() const  { return typeToString<T>(); };
-      int         brickSize() const  { return N; };
-      
+      std::string voxelType() const
+      {
+        return typeToString<T>();
+      };
+      int brickSize() const
+      {
+        return N;
+      };
 
-      vec3i getRootGridDims() const  { return rootGridDims; }
+      vec3i getRootGridDims() const
+      {
+        return rootGridDims;
+      }
 
-      /*! map this one from a binary dump that was created by the bricktreebuilder/raw2bricks tool */
+      /*! map this one from a binary dump that was created by the
+       * bricktreebuilder/raw2bricks tool */
       void mapOSP(const FileName &brickFileBase, int treeID, vec3i treeCoord);
       void mapOspBin(const FileName &brickFileBase, size_t treeID);
-      void loadBricks(FILE* file, vec2i vbListInfo);
-      void loadBricks(FILE* file, LoadBricks aBrick);
-      void loadTreeByBrick(const FileName &brickFileBase, size_t treeID,std::vector<vec2i> vbReqList);
+      void loadBricks(FILE *file, vec2i vbListInfo);
+      void loadBricks(FILE *file, LoadBricks aBrick);
+      void loadTreeByBrick(const FileName &brickFileBase,
+                           size_t treeID,
+                           std::vector<vec2i> vbReqList);
       void loadTreeByBrick(const FileName &brickFileBase, size_t treeID);
 
-      // const typename BrickTree<N,T>::ValueBrick * findValueBrick(const vec3i &coord,int blockWidth,int xIdx, int yIdx, int zIdx);
-      const T findValue(const vec3i &coord,int blockWidth);
+      // const typename BrickTree<N,T>::ValueBrick * findValueBrick(const vec3i
+      // &coord,int blockWidth,int xIdx, int yIdx, int zIdx);
+      const T findValue(const vec3i &coord, int blockWidth);
 
-      const T findBrickValue(size_t brickID,vec3i cellPos, size_t parentBrickID,vec3i parentCellPos);
+      const T findBrickValue(size_t brickID,
+                             vec3i cellPos,
+                             size_t parentBrickID,
+                             vec3i parentCellPos);
 
       bool isTreeNeedLoad()
-      {   
-        for(size_t i= 0;i < numValueBricks;i++){
-          if(!valueBricksStatus[i].isLoaded && valueBricksStatus[i].isRequested)
-          {
+      {
+        for (size_t i = 0; i < numValueBricks; i++) {
+          if (!valueBricksStatus[i].isLoaded &&
+              valueBricksStatus[i].isRequested) {
             return true;
           }
         }
         return false;
       }
 
-      //get the request value brick list (L = need to load, F = no need to load)
+      // get the request value brick list (L = need to load, F = no need to
+      // load)
       // L,L,F,F,F,L,L,L,F,L,F,F,L
-      //return (0,2),(5,3)...
+      // return (0,2),(5,3)...
       std::vector<vec2i> getRequestVBList()
-      { 
+      {
         std::vector<vec2i> scheduledVB;
         std::stack<int> sIdxStack;
-        for(int i=0;i<(int)numValueBricks;i++)
-        {
-          if (!valueBricksStatus[i].isLoaded && valueBricksStatus[i].isRequested) {
-            if(sIdxStack.empty()){
+        for (int i = 0; i < (int)numValueBricks; i++) {
+          if (!valueBricksStatus[i].isLoaded &&
+              valueBricksStatus[i].isRequested) {
+            if (sIdxStack.empty()) {
               sIdxStack.push(i);
             }
-            if(i == (int)numValueBricks -1){
-              scheduledVB.emplace_back(vec2i(sIdxStack.top(), i - sIdxStack.top() + 1));
+            if (i == (int)numValueBricks - 1) {
+              scheduledVB.emplace_back(
+                  vec2i(sIdxStack.top(), i - sIdxStack.top() + 1));
               sIdxStack.pop();
             }
-          }else{
-            if(!sIdxStack.empty()){
-              scheduledVB.emplace_back(vec2i(sIdxStack.top(), i - sIdxStack.top()));
+          } else {
+            if (!sIdxStack.empty()) {
+              scheduledVB.emplace_back(
+                  vec2i(sIdxStack.top(), i - sIdxStack.top()));
               sIdxStack.pop();
             }
           }
         }
         return scheduledVB;
       }
-
-
     };
 
-
-    
     /* a entire *FOREST* of bricktrees */
     template <int N, typename T = float>
     struct BrickTreeForest
@@ -210,32 +236,24 @@ namespace ospray {
 
       std::thread loadBrickTreeThread[numThread];
 
-      box3f forestBounds; 
+      box3f forestBounds;
 
       std::vector<BrickTree<N, T>> tree;
 
-
-
-
-
-
       void loadTreeBrick(const FileName &brickFileBase)
       {
-
         while (!tree.empty()) {
-          for (size_t i = 0;i < tree.size();i++) {
+          for (size_t i = 0; i < tree.size(); i++) {
             std::vector<vec2i> vbReqList = tree[i].getRequestVBList();
             if (!vbReqList.empty())
               tree[i].loadTreeByBrick(brickFileBase, i, vbReqList);
           }
         }
-
-        
       }
 
       void Initialize()
       {
-        std::cout<<"#osp: start to initialize bricktree forest!"<<std::endl;
+        std::cout << "#osp: start to initialize bricktree forest!" << std::endl;
         int numTrees = forestSize.product();
         assert(numTrees > 0);
 
@@ -248,11 +266,13 @@ namespace ospray {
                                   treeID / (forestSize.x * forestSize.y));
           BrickTree<N, T> aTree;
           aTree.mapOSP(brickFileBase, treeID, treeCoord);
+#if !(STREAM_DATA)
+          aTree.mapOspBin(brickFileBase, treeID);
+#endif
           std::lock_guard<std::mutex> lock(amutex);
-          //tree.insert(std::make_pair(treeID, aTree));
+          // tree.insert(std::make_pair(treeID, aTree));
           tree[treeID] = aTree;
         });
-      
 
         printf("#osp: %d trees have initialized!\n", numTrees);
       }
@@ -276,58 +296,60 @@ namespace ospray {
             brickFileBase(brickFileBase)
       {
         Initialize();
+#if STREAM_DATA
         loadBrickTreeForest();
+#endif
       }
 
       ~BrickTreeForest()
       {
         tree.clear();
       }
-
     };
 
     // =======================================================
-    // INLINE IMPLEMENTATION SECTION 
+    // INLINE IMPLEMENTATION SECTION
     // =======================================================
-    
+
     /*! print a value brick */
-    template<int N, typename T>
-    inline std::ostream &operator<<(std::ostream &o, 
-                                    const typename BrickTree<N,T>::ValueBrick &db)
-    {      
-      for (int iz=0;iz<N;iz++) {
-        for (int iy=0;iy<N;iy++) {
-          if (N > 2) std::cout << std::endl;
-          for (int ix=0;ix<N;ix++)
+    template <int N, typename T>
+    inline std::ostream &operator<<(
+        std::ostream &o, const typename BrickTree<N, T>::ValueBrick &db)
+    {
+      for (int iz = 0; iz < N; iz++) {
+        for (int iy = 0; iy < N; iy++) {
+          if (N > 2)
+            std::cout << std::endl;
+          for (int ix = 0; ix < N; ix++)
             o << db.value[iz][iy][ix] << " ";
           o << "| ";
         }
-        if (iz < 3) o << std::endl;
+        if (iz < 3)
+          o << std::endl;
       }
-        
+
       return o;
     }
-    
+
     /*! print an index brick */
-    template<int N, typename T>
-    inline std::ostream &operator<<(std::ostream &o, 
-                                    const typename BrickTree<N,T>::IndexBrick &db)
-    {      
-      for (int iz=0;iz<N;iz++) {
-        for (int iy=0;iy<N;iy++) {
-          if (N > 2) std::cout << std::endl;
-          for (int ix=0;ix<N;ix++)
+    template <int N, typename T>
+    inline std::ostream &operator<<(
+        std::ostream &o, const typename BrickTree<N, T>::IndexBrick &db)
+    {
+      for (int iz = 0; iz < N; iz++) {
+        for (int iy = 0; iy < N; iy++) {
+          if (N > 2)
+            std::cout << std::endl;
+          for (int ix = 0; ix < N; ix++)
             o << db.childID[iz][iy][ix] << " ";
           o << "| ";
         }
-        if (iz < 3) o << std::endl;
+        if (iz < 3)
+          o << std::endl;
       }
-        
+
       return o;
     }
 
-  } // ::ospray::bt
-} // ::ospray
-
-
-
+  }  // namespace bt
+}  // namespace ospray
