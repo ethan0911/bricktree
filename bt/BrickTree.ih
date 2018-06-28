@@ -22,15 +22,18 @@
 #include "ospray/geometry/Geometry.ih"
 
 #define T float
-#define N 4 
-struct ValueBrick{
-    T value[N][N][N];
+#define N 4
+struct ValueBrick
+{
+  T value[N][N][N];
 };
-struct IndexBrick{
-    int childID[N][N][N];
+struct IndexBrick
+{
+  int childID[N][N][N];
 };
-struct BrickInfo{
-    int indexBrickID;
+struct BrickInfo
+{
+  int indexBrickID;
 };
 
 struct BrickStatus
@@ -38,41 +41,38 @@ struct BrickStatus
   bool isRequested;
   bool isLoaded;
 };
-/*! \brief ispc-side implementation of the bricktree object 
+/*! \brief ispc-side implementation of the bricktree object
  *
  * note we don't actually do anything serious on the ispc side fo this
  * object, yet, but the rest of ospray requires some ispc side object
  * to exist for any of its actors; so this 'dummy' exists mainly to be
  * able to plug it into ospray - it will actually call back to the
- * scalar c++ implementation for each sample 
-*/
+ * scalar c++ implementation for each sample
+ */
 struct BrickTree
 {
-    uniform unsigned int64 numValueBricks;
-    uniform unsigned int64 numIndexBricks;
-    uniform unsigned int64 numBrickInfos;
+  uniform unsigned int64 numValueBricks;
+  uniform unsigned int64 numIndexBricks;
+  uniform unsigned int64 numBrickInfos;
 
-   uniform unsigned int64 indexBricksOfs;
-   uniform unsigned int64 valueBricksOfs;
-   uniform unsigned int64 indexBrickOfOfs;
+  uniform unsigned int64 indexBricksOfs;
+  uniform unsigned int64 valueBricksOfs;
+  uniform unsigned int64 indexBrickOfOfs;
 
-   uniform float avgValue;
-   uniform int   nBrickSize;
-   uniform float valueRange[2];
-   uniform int   validSize[3];
-   uniform int   rootGridDims[3];
+  uniform float avgValue;
+  uniform int nBrickSize;
+  uniform float valueRange[2];
+  uniform int validSize[3];
+  uniform int rootGridDims[3];
 
-   uniform ValueBrick * uniform valueBrick;
-   uniform IndexBrick * uniform indexBrick;
-   uniform BrickInfo  * uniform brickInfo;
-   uniform BrickStatus* uniform valueBricksStatus;
-
+  uniform ValueBrick *uniform valueBrick;
+  uniform IndexBrick *uniform indexBrick;
+  uniform BrickInfo *uniform brickInfo;
+  uniform BrickStatus *uniform valueBricksStatus;
 };
 
-
-struct BrickTreeForest{
-    uniform BrickTree * data;
-    uniform unsigned int size;
+struct BrickTreeForest
+{
+  uniform BrickTree *uniform data;
+  uniform unsigned int size;
 };
-
-

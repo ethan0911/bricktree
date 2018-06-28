@@ -23,6 +23,9 @@
 #include "bt/BrickTree.h"
 #include "common/helper.h"
 
+#include <mutex>
+#include <thread>
+
 // hack for lerp3
 namespace ospcommon {
 template<typename T>
@@ -75,6 +78,8 @@ namespace ospray {
 
       //! Allocate storage and populate the volume.
       virtual void commit();
+
+      void updateBTForest();
 
       //! Copy voxels into the volume at the given index
       //  (non-zero return value indicates success).
@@ -152,32 +157,30 @@ namespace ospray {
 
         float v;
 
-        int blockId = btv->getBlockID((vec3f)(low));
-        auto& bt    = forest->tree[blockId];
-        v           = bt.findValue(low, btv->blockWidth);
+        // int blockId = btv->getBlockID((vec3f)(low));
+        // auto& bt    = forest->tree[blockId];
+        // v           = bt.findValue(blockId, low, btv->blockWidth);
 
-        // float neighborValue[2][2][2];
+        float neighborValue[2][2][2];
           
-        //   array3D::for_each(vec3i(2), [&](const vec3i &idx) {
+          array3D::for_each(vec3i(2), [&](const vec3i &idx) {
+            int blockId = btv->getBlockID((vec3f)(low + idx));
+            auto& bt    = forest->tree[blockId];
+            neighborValue[idx.z][idx.y][idx.x] =
+                bt.findValue(blockId,low + idx, btv->blockWidth);
+          });
 
-        //     int blockId = btv->getBlockID((vec3f)(low + idx));
-        //     auto& bt    = forest->tree[blockId];
-        //     neighborValue[idx.z][idx.y][idx.x] =
-        //         bt.findValue(low + idx, btv->blockWidth);
-          
-        //   });
-
-        //   v = lerp3<float>(neighborValue[0][0][0],
-        //                    neighborValue[0][0][1],
-        //                    neighborValue[0][1][0],
-        //                    neighborValue[0][1][1],
-        //                    neighborValue[1][0][0],
-        //                    neighborValue[1][0][1],
-        //                    neighborValue[1][1][0],
-        //                    neighborValue[1][1][1],
-        //                    factor.x,
-        //                    factor.y,
-        //                    factor.z);
+          v = lerp3<float>(neighborValue[0][0][0],
+                           neighborValue[0][0][1],
+                           neighborValue[0][1][0],
+                           neighborValue[0][1][1],
+                           neighborValue[1][0][0],
+                           neighborValue[1][0][1],
+                           neighborValue[1][1][0],
+                           neighborValue[1][1][1],
+                           factor.x,
+                           factor.y,
+                           factor.z);
                            
         return v;
       }

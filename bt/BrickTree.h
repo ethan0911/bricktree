@@ -137,10 +137,10 @@ namespace ospray {
       vec3i validSize;    /*12*/
       vec3i rootGridDims; /*12*/
 
-      ValueBrick *valueBrick         = nullptr; /*4*/
-      IndexBrick *indexBrick         = nullptr; /*4*/
-      BrickInfo *brickInfo           = nullptr; /*4*/
-      BrickStatus *valueBricksStatus = nullptr; /*4*/
+      ValueBrick *valueBrick         = nullptr; /*8*/
+      IndexBrick *indexBrick         = nullptr; /*8*/
+      BrickInfo *brickInfo           = nullptr; /*8*/
+      BrickStatus *valueBricksStatus = nullptr; /*8*/
 
       BrickTree();
       ~BrickTree();
@@ -177,12 +177,13 @@ namespace ospray {
 
       // const typename BrickTree<N,T>::ValueBrick * findValueBrick(const vec3i
       // &coord,int blockWidth,int xIdx, int yIdx, int zIdx);
-      const T findValue(const vec3i &coord, int blockWidth);
+      const T findValue(const int blockID, const vec3i &coord, int blockWidth);
 
-      const T findBrickValue(size_t brickID,
-                             vec3i cellPos,
-                             size_t parentBrickID,
-                             vec3i parentCellPos);
+      const T findBrickValue(const int blockID,
+                             const size_t brickID,
+                             const vec3i cellPos,
+                             const size_t parentBrickID,
+                             const vec3i parentCellPos);
 
       bool isTreeNeedLoad()
       {
@@ -195,8 +196,7 @@ namespace ospray {
         return false;
       }
 
-      // get the request value brick list (L = need to load, F = no need to
-      // load)
+      // get the request value brick list (L = need to load, F = no need to load)
       // L,L,F,F,F,L,L,L,F,L,F,F,L
       // return (0,2),(5,3)...
       std::vector<vec2i> getRequestVBList()
@@ -244,11 +244,23 @@ namespace ospray {
       {
         while (!tree.empty()) {
           for (size_t i = 0; i < tree.size(); i++) {
-            std::vector<vec2i> vbReqList = tree[i].getRequestVBList();
-            if (!vbReqList.empty())
-              tree[i].loadTreeByBrick(brickFileBase, i, vbReqList);
+            //tree[i].loadTreeByBrick(brickFileBase, i);
+            bool needLoad = false;
+            needLoad      = tree[i].isTreeNeedLoad();
+            if (needLoad)
+            {
+              tree[i].loadTreeByBrick(brickFileBase, i);
+            }
           }
         }
+
+        // while (!tree.empty()) {
+        //   for (size_t i = 0; i < tree.size(); i++) {
+        //     std::vector<vec2i> vbReqList = tree[i].getRequestVBList();
+        //     if (!vbReqList.empty())
+        //       tree[i].loadTreeByBrick(brickFileBase, i, vbReqList);
+        //   }
+        // }
       }
 
       void Initialize()

@@ -113,6 +113,20 @@ namespace ospray {
                                format +"'");
     }
 
+    void BrickTreeVolume::updateBTForest()
+    {
+      auto &forest = dynamic_cast<BrickTreeForestSampler<float, 4> *>(sampler)->forest->tree;
+      ispc::BrickTreeVolume_set_BricktreeForest(getIE(), forest.data(), forest.size());
+
+      // for (uint32_t i = 0; i < forest.size(); ++i) {
+      //   BrickTree<4, float> *bt = &forest[i];
+      //   std::cout << bt->numValueBricks << std::endl;
+      //   for (size_t j = 0; j < bt->numValueBricks; ++j) {
+      //     bt->valueBricksStatus[j].isRequested = true;
+      //   }
+      // }
+    }
+
     //! Allocate storage and populate the volume.
     void BrickTreeVolume::commit()
     {
@@ -136,23 +150,26 @@ namespace ospray {
                                 brickSize,
                                 blockWidth,
                                 this, sampler);
-
-      // std::cout << "[cpp]  sizeof(BrickTree) " << sizeof(BrickTree<4,float>) << std::endl;
       
-      auto& forest = dynamic_cast<BrickTreeForestSampler<float,4>*>(sampler)->forest->tree;
+      std::cout << "[cpp]  sizeof(BrickTree) " << sizeof(BrickTree<4,float>) << std::endl;
       
-      // for (int i = 0; i < forest.size(); ++i) {
-      //   PRINT(forest[i].brickInfo);
-      //   std::cout << "cpp  " << forest[i].brickInfo[0].indexBrickID << std::endl;
-      // }
-      // for (int x = 0; x < 4; ++x) 
-      // for (int y = 0; y < 4; ++y) 
-      // for (int z = 0; z < 4; ++z) 
-      // printf("cpp  %f\n", forest[2].valueBrick[1000].value[x][y][z]);
+      updateBTForest();
 
-      ispc::BrickTreeVolume_set_BricktreeForest(getIE(),
-                                                forest.data(),
-                                                forest.size());
+      
+      // auto& forest = dynamic_cast<BrickTreeForestSampler<float,4>*>(sampler)->forest->tree;
+      
+      // // for (int i = 0; i < forest.size(); ++i) {
+      // //   PRINT(forest[i].brickInfo);
+      // //   std::cout << "cpp  " << forest[i].brickInfo[0].indexBrickID << std::endl;
+      // // }
+      // // for (int x = 0; x < 4; ++x) 
+      // // for (int y = 0; y < 4; ++y) 
+      // // for (int z = 0; z < 4; ++z) 
+      // // printf("cpp  %f\n", forest[2].valueBrick[1000].value[x][y][z]);
+
+      // ispc::BrickTreeVolume_set_BricktreeForest(getIE(),
+      //                                           forest.data(),
+      //                                           forest.size());
 
       
       if(!finished)
@@ -163,6 +180,16 @@ namespace ospray {
     }
 
     OSP_REGISTER_VOLUME(BrickTreeVolume, BrickTreeVolume);
+
+    void BrickTree_make_request(void * cppObject, 
+                                 int blockID, 
+                                 int brickID)
+    {
+      BrickTreeVolume* volume = (BrickTreeVolume*)cppObject;
+      auto &trees = dynamic_cast<BrickTreeForestSampler<float, 4> *>(volume->sampler)->forest->tree;
+      trees[blockID].valueBricksStatus[brickID].isLoaded = true;
+    }
+
 
   }  // namespace bt
 }  // namespace ospray

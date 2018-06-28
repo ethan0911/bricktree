@@ -101,41 +101,26 @@ namespace ospray {
                                  vec3i treeCoord)
     {
       char blockFileName[10000];
-      sprintf(blockFileName,
-              "%s-brick%06i.osp",
-              brickFileBase.str().c_str(),
-              (int)blockID);
+      sprintf(blockFileName,"%s-brick%06i.osp",brickFileBase.str().c_str(),(int)blockID);
 
       std::shared_ptr<xml::XMLDoc> doc = xml::readXML(blockFileName);
       if (!doc)
         throw std::runtime_error("could not read brick tree .osp file '" +
                                  std::string(blockFileName) + "'");
-      std::shared_ptr<xml::Node> osprayNode =
-          std::make_shared<xml::Node>(doc->child[0]);
+      std::shared_ptr<xml::Node> osprayNode =std::make_shared<xml::Node>(doc->child[0]);
       assert(osprayNode->name == "ospray");
 
-      std::shared_ptr<xml::Node> brickTreeNode =
-          std::make_shared<xml::Node>(osprayNode->child[0]);
+      std::shared_ptr<xml::Node> brickTreeNode =std::make_shared<xml::Node>(osprayNode->child[0]);
       assert(brickTreeNode->name == "BrickTree");
 
       avgValue = std::stof(brickTreeNode->getProp("averageValue"));
-      sscanf(brickTreeNode->getProp("valueRange").c_str(),
-             "%f %f",
-             &valueRange.x,
-             &valueRange.y);
+      sscanf(brickTreeNode->getProp("valueRange").c_str(),"%f %f",&valueRange.x,&valueRange.y);
       nBrickSize = std::stoi(brickTreeNode->getProp("brickSize"));
-      sscanf(brickTreeNode->getProp("validSize").c_str(),
-             "%i %i %i",
-             &validSize.x,
-             &validSize.y,
-             &validSize.z);
+      sscanf(brickTreeNode->getProp("validSize").c_str(),"%i %i %i",&validSize.x,&validSize.y,&validSize.z);
 
-      std::shared_ptr<xml::Node> indexBricksNode =
-          std::make_shared<xml::Node>(brickTreeNode->child[0]);
-      std::shared_ptr<xml::Node> valueBricksNode =
-          std::make_shared<xml::Node>(brickTreeNode->child[1]);
-      std::shared_ptr<xml::Node> indexBrickOfNode =
-          std::make_shared<xml::Node>(brickTreeNode->child[2]);
+      std::shared_ptr<xml::Node> indexBricksNode =std::make_shared<xml::Node>(brickTreeNode->child[0]);
+      std::shared_ptr<xml::Node> valueBricksNode =std::make_shared<xml::Node>(brickTreeNode->child[1]);
+      std::shared_ptr<xml::Node> indexBrickOfNode =std::make_shared<xml::Node>(brickTreeNode->child[2]);
 
       numIndexBricks = std::stoll(indexBricksNode->getProp("num"));
       indexBricksOfs = std::stoll(indexBricksNode->getProp("ofs"));
@@ -149,6 +134,15 @@ namespace ospray {
       valueBrick = (ValueBrick *)malloc(sizeof(ValueBrick) * numValueBricks);
       indexBrick = (IndexBrick *)malloc(sizeof(IndexBrick) * numIndexBricks);
       brickInfo  = (BrickInfo *)malloc(sizeof(BrickInfo) * numBrickInfos);
+
+      // ValueBrick *vb;
+      // for (int i = 0; i < numValueBricks; i++) {
+      //   vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + i);
+      //   for (int x = 0; x < N; ++x)
+      //     for (int y = 0; y < N; ++y)
+      //       for (int z = 0; z < N; ++z)
+      //         vb->value[z][y][x] = 0.2f * blockID + 0.1f;
+      // }
 
       valueBricksStatus = new BrickStatus[numValueBricks]();
 
@@ -194,8 +188,7 @@ namespace ospray {
       fseek(file, valueBricksOfs, SEEK_SET);
 
       fread(valueBrick, sizeof(ValueBrick), numValueBricks, file);
-      fseek(file, indexBrickOfOfs, SEEK_SET);// valueBricksStatus.resize(numValueBricks,BrickStatus());
-      
+      fseek(file, indexBrickOfOfs, SEEK_SET); // valueBricksStatus.resize(numValueBricks,BrickStatus());
 
       fread(brickInfo, sizeof(BrickInfo), numBrickInfos, file);
       fclose(file);
@@ -207,16 +200,14 @@ namespace ospray {
                                           std::vector<vec2i> vbReqList)
     {
       char blockFileName[10000];
-      sprintf(blockFileName,
-              "%s-brick%06i.ospbin",
-              brickFileBase.str().c_str(),
-              (int)blockID);
+      sprintf(blockFileName,"%s-brick%06i.ospbin",brickFileBase.str().c_str(),(int)blockID);
 
       FILE *file = fopen(blockFileName, "rb");
       if (!file)
         throw std::runtime_error("could not open brick bin file " +
                                  std::string(blockFileName));
 
+      PING;
       std::vector<vec2i>::iterator it = vbReqList.begin();
       for (; it != vbReqList.end(); it++) {
         loadBricks(file, *it);
@@ -225,25 +216,22 @@ namespace ospray {
     }
 
     template <int N, typename T>
-    void BrickTree<N, T>::loadTreeByBrick(const FileName &brickFileBase,
-                                          size_t treeID)
+    void BrickTree<N, T>::loadTreeByBrick(const FileName &brickFileBase,size_t treeID)
     {
       char blockFileName[10000];
-      sprintf(blockFileName,
-              "%s-brick%06i.ospbin",
-              brickFileBase.str().c_str(),
-              (int)treeID);
+      sprintf(blockFileName,"%s-brick%06i.ospbin",brickFileBase.str().c_str(),(int)treeID);
 
       FILE *file = fopen(blockFileName, "rb");
       if (!file)
-        throw std::runtime_error("could not open brick bin file " +
-                                 std::string(blockFileName));
+        throw std::runtime_error("could not open brick bin file " +std::string(blockFileName));
       for (size_t i = 0; i < numValueBricks; i++) {
-        if (!valueBricksStatus[i].isLoaded &&
-            valueBricksStatus[i].isRequested) {
-          LoadBricks aBrick(VALUEBRICK, i);
-          loadBricks(file, aBrick);
-        }
+         LoadBricks aBrick(VALUEBRICK, i);
+         loadBricks(file,aBrick);
+        // if (!valueBricksStatus[i].isLoaded &&
+        //     valueBricksStatus[i].isRequested) {
+        //   LoadBricks aBrick(VALUEBRICK, i);
+        //   loadBricks(file,aBrick);
+        // }
       }
       fclose(file);
     }
@@ -252,10 +240,7 @@ namespace ospray {
     void BrickTree<N, T>::loadBricks(FILE *file, vec2i vbListInfo)
     {
       fseek(file, valueBricksOfs + vbListInfo.x * sizeof(ValueBrick), SEEK_SET);
-      fread((ValueBrick *)(valueBrick + vbListInfo.x),
-            sizeof(ValueBrick),
-            vbListInfo.y,
-            file);
+      fread((ValueBrick *)(valueBrick + vbListInfo.x),sizeof(ValueBrick),vbListInfo.y,file);
       for (int i = 0; i < vbListInfo.y; i++)
         valueBricksStatus[vbListInfo.x + i].isLoaded = true;
     }
@@ -263,48 +248,76 @@ namespace ospray {
     template <int N, typename T>
     void BrickTree<N, T>::loadBricks(FILE *file, LoadBricks aBrick)
     {
-      fseek(
-          file, valueBricksOfs + aBrick.brickID * sizeof(ValueBrick), SEEK_SET);
-      fread((ValueBrick *)(valueBrick + aBrick.brickID),
-            sizeof(ValueBrick),
-            1,
-            file);
+      fseek(file, valueBricksOfs + aBrick.brickID * sizeof(ValueBrick), SEEK_SET);
+      fread((ValueBrick *)(valueBrick + aBrick.brickID),sizeof(ValueBrick),1,file);
+
       valueBricksStatus[aBrick.brickID].isLoaded = true;
     }
 
     template <int N, typename T>
-    const T BrickTree<N, T>::findBrickValue(size_t brickID,
-                                            vec3i cellPos,
-                                            size_t parentBrickID,
-                                            vec3i parentCellPos)
+    const T BrickTree<N, T>::findBrickValue(const int blockID, 
+                                            const size_t brickID,
+                                            const vec3i cellPos,
+                                            const size_t parentBrickID,
+                                            const vec3i parentCellPos)
     {
+      //return 0.2f;
       ValueBrick *vb = NULL;
 
 #if STREAM_DATA
-
-      if (!valueBricksStatus[brickID].isLoaded) {
-        // request this brick if it is not requested
-        if (!valueBricksStatus[brickID].isRequested) {
-          valueBricksStatus[brickID].isRequested = true;
-        }
+      if(!valueBricksStatus[brickID].isRequested){
+        valueBricksStatus[brickID].isRequested = true; // request this brick if it is not requested
+      }else if(!valueBricksStatus[brickID].isLoaded){
         // return average value if this brick is requested but not loaded
         if (brickID == 0)  // root node, return average value of the tree
           return this->avgValue;
         else {
-          // inner node, return the average value of this node which is stored
-          // in the parent node
+          // inner node, return the average value of this node which is stored in the parent node
           if (!valueBricksStatus[parentBrickID].isLoaded)
             return this->avgValue;
           else {
-            vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick +
-                                                          parentBrickID);
+            vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + parentBrickID);
             return vb->value[parentCellPos.z][parentCellPos.y][parentCellPos.x];
           }
         }
-      } else {
+      }else {
         vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
         return vb->value[cellPos.z][cellPos.y][cellPos.x];
       }
+
+      // if (!valueBricksStatus[brickID].isLoaded) {
+      //   // request this brick if it is not requested
+      //   if (!valueBricksStatus[brickID].isRequested) {
+      //     valueBricksStatus[brickID].isRequested = true;
+      //   }
+      //   // return average value if this brick is requested but not loaded
+      //   if (brickID == 0)  // root node, return average value of the tree
+      //     return this->avgValue;
+      //   else {
+      //     // inner node, return the average value of this node which is stored
+      //     // in the parent node
+      //     if (!valueBricksStatus[parentBrickID].isLoaded)
+      //       return this->avgValue;
+      //     else {
+      //       vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick +
+      //                                                     parentBrickID);
+      //       return vb->value[parentCellPos.z][parentCellPos.y][parentCellPos.x];
+      //     }
+      //   }
+      // } else {
+      //   vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
+
+      //   // blockID 3 brickID 265097 cellPos 2 0 1 value 2.39878
+      //   // if (vb->value[cellPos.z][cellPos.y][cellPos.x] > 1.f)
+      //   // if (blockID == 3 && brickID == 265097 && cellPos.x == 2 && cellPos.y == 0 && cellPos.z == 1)
+      //   // std::cout << "blockID " << blockID << " "
+      //   //           << "brickID " << brickID << " "
+      //   //           << "cellPos " << cellPos.x << " " << cellPos.y << " " << cellPos.z << " "
+      //   //           << "value " << vb->value[cellPos.z][cellPos.y][cellPos.x]
+      //   //           << std::endl;
+        
+      //   return vb->value[cellPos.z][cellPos.y][cellPos.x];
+      // }
       return this->avgValue;
 
 #else
@@ -316,12 +329,11 @@ namespace ospray {
     }
 
     template <int N, typename T>
-    const T BrickTree<N, T>::findValue(const vec3i &coord, int blockWidth)
+    const T BrickTree<N, T>::findValue(const int blockID, const vec3i &coord, int blockWidth)
     {
       // return 0.2f;
       // start with the root brick
       int brickSize = blockWidth;
-
       assert(reduce_max(coord) < brickSize);
       int32_t brickID       = 0;
       int32_t parentBrickID = BrickTree<N, T>::invalidID();
@@ -340,12 +352,12 @@ namespace ospray {
 
         int32_t ibID = brickInfo[brickID].indexBrickID;
         if (ibID == BrickTree<N, T>::invalidID()) {
-          return findBrickValue(brickID, cpos, parentBrickID, parentCellPos);
+          return findBrickValue(blockID, brickID, cpos, parentBrickID, parentCellPos);
         } else {
           IndexBrick ib        = indexBrick[ibID];
           int32_t childBrickID = ib.childID[cpos.z][cpos.y][cpos.x];
           if (childBrickID == BrickTree<N, T>::invalidID()) {
-            return findBrickValue(brickID, cpos, parentBrickID, parentCellPos);
+            return findBrickValue(blockID, brickID, cpos, parentBrickID, parentCellPos);
           } else {
             parentBrickID = brickID;
             brickID       = childBrickID;
@@ -357,12 +369,11 @@ namespace ospray {
       cpos.x = coord.x % brickSize;
       cpos.y = coord.y % brickSize;
       cpos.z = coord.z % brickSize;
-      return findBrickValue(brickID, cpos, parentBrickID, parentCellPos);
+      return findBrickValue(blockID, brickID, cpos, parentBrickID, parentCellPos);
     }
 
     template <int N, typename T>
-    double BrickTree<N, T>::ValueBrick::
-        computeWeightedAverage(  // coordinates of lower-left-front
+    double BrickTree<N, T>::ValueBrick::computeWeightedAverage(  // coordinates of lower-left-front
                                  // voxel, in resp level
             const vec3i &brickCoord,
             // size of bricks in current level
@@ -378,9 +389,7 @@ namespace ospray {
       for (int iz = 0; iz < N; iz++)
         for (int iy = 0; iy < N; iy++)
           for (int ix = 0; ix < N; ix++) {
-            vec3i cellBegin = min(brickCoord * vec3i(brickSize) +
-                                      vec3i(ix, iy, iz) * vec3i(cellSize),
-                                  maxSize);
+            vec3i cellBegin = min(brickCoord * vec3i(brickSize) +vec3i(ix, iy, iz) * vec3i(cellSize),maxSize);
             vec3i cellEnd   = min(cellBegin + vec3i(cellSize), maxSize);
 
             float weight = (cellEnd - cellBegin).product();
