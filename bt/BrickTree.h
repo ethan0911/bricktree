@@ -245,8 +245,15 @@ namespace ospray {
         while (!tree.empty()) {
           for (size_t i = 0; i < tree.size(); i++) {
             //tree[i].loadTreeByBrick(brickFileBase, i);
+            // if(i == 3)
+            // {
+            //   bool  isR= (bool)tree[i].valueBricksStatus[192412].isRequested;
+            //   std::cout << "cpp  " << tree[i].valueBricksStatus[192412].isRequested << std::endl;
+            // }
+
             bool needLoad = false;
             needLoad      = tree[i].isTreeNeedLoad();
+            //PRINT(needLoad);
             if (needLoad)
             {
               tree[i].loadTreeByBrick(brickFileBase, i);

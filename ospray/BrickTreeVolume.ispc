@@ -63,37 +63,16 @@ inline varying float findBrickValue(BrickTreeVolume *uniform self,
   //BrickTree  *bt = &(self->forest.data[blockID]);
   BrickTree  *bt = (BrickTree *)(self->forest.data + blockID);
   ValueBrick *vb = NULL;
-  //print("block % brick % \n", blockID, brickID);
 
 #if STREAM_DATA
 
-
-  // if (bt->valueBricksStatus[brickID].isRequested) {
-  //   if (bt->valueBricksStatus[brickID].isLoaded) {
-  //     vb = (ValueBrick *)(bt->valueBrick + brickID);
-  //     return vb->value[cellPos.z][cellPos.y][cellPos.x];
-  //   } else {
-  //     if (brickID != 0) {  // root node, return average value of the tree
-  //       // inner node, return the average value of this node which is
-  //       // stored in the parent node 
-  //       if (bt->valueBricksStatus[parentBrickID].isLoaded){
-  //         vb = (ValueBrick *)(bt->valueBrick + parentBrickID);
-  //         return vb->value[parentCellPos.z][parentCellPos.y][parentCellPos.x];
-  //       } else{
-  //         return bt->avgValue;
-  //       }
-  //     } else {
-  //       return bt->avgValue;
-  //     }
-  //   }
-  // } else {
-  //   // print("block % brick % \n", blockID, brickID);
-  //   bt->valueBricksStatus[brickID].isRequested = true;  // request this brick if it is not requested
-  // }
-
   if (!bt->valueBricksStatus[brickID].isRequested) {
-    bt->valueBricksStatus[brickID].isRequested = 1;  // request this brick if it is not requested
-  } else if (bt->valueBricksStatus[brickID].isLoaded) {
+    bt->valueBricksStatus[brickID].isRequested = true;  // request this brick if it is not requested
+    // if(blockID == 3 && brickID == 192412)
+    //   print("ispc % v % \n", brickID, bt->valueBricksStatus[brickID].isRequested);
+  } 
+  
+  if (bt->valueBricksStatus[brickID].isLoaded) {
     vb = (ValueBrick *)(bt->valueBrick + brickID);
     return vb->value[cellPos.z][cellPos.y][cellPos.x];
   } else {
@@ -111,36 +90,6 @@ inline varying float findBrickValue(BrickTreeVolume *uniform self,
       }
     }
   }
-
-  // if (!bt->valueBricksStatus[brickID].isLoaded) {
-  //   // request this brick if it is not requested
-  //   if (!bt->valueBricksStatus[brickID].isRequested) {
-  //     bt->valueBricksStatus[brickID].isRequested = true;
-  //   }
-  //   // return average value if this brick is requested but not loaded
-  //   if (brickID == 0)  // root node, return average value of the tree
-  //     return bt->avgValue;
-  //   else {
-  //     // inner node, return the average value of this node which is stored
-  //     // in the parent node
-  //     if (!bt->valueBricksStatus[parentBrickID].isLoaded)
-  //       return bt->avgValue;
-  //     else {
-  //       vb = (ValueBrick *)(bt->valueBrick + parentBrickID);
-  //       return vb->value[parentCellPos.z][parentCellPos.y][parentCellPos.x];
-  //     }
-  //   }
-  // } else {
-  //   vb = (ValueBrick *)(bt->valueBrick + brickID);
-  //
-  //   // if (blockID == 3 && brickID == 265097 && cellPos.x == 2 && cellPos.y == 0 && cellPos.z == 1)
-  //   // { 
-  //   //   print("ispc % \n", vb);
-  //   //   //print("ispc % \n", vb->value[cellPos.z][cellPos.y][cellPos.x]); 
-  //   // }
-  //
-  //   return vb->value[cellPos.z][cellPos.y][cellPos.x];
-  // }
 
   return bt->avgValue;
 
@@ -169,6 +118,8 @@ inline varying float getVoxel(void *uniform _self,
   int parentBrickID = -1;  // parent brick ID
   vec3i cpos          = make_vec3i(0,0,0);
   vec3i parentCellPos = make_vec3i(0,0,0);
+  
+  BrickTree * bt       = (BrickTree *)(self->forest.data + blockID);
 
   while (brickSize > self->brickSize) {
 
@@ -182,7 +133,6 @@ inline varying float getVoxel(void *uniform _self,
     parentCellPos.y = (coord.y % (brickSize * self->brickSize)) / brickSize;
     parentCellPos.z = (coord.z % (brickSize * self->brickSize)) / brickSize;
 
-    BrickTree  *bt = (BrickTree *)(self->forest.data + blockID);
     int ibID       = bt->brickInfo[brickID].indexBrickID;
     if (ibID == -1) {
       return findBrickValue(self, blockID, brickID, cpos, parentBrickID, parentCellPos);

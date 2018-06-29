@@ -74,7 +74,8 @@ namespace ospray {
       if (!brickInfo)
         free(brickInfo);
       if (!valueBricksStatus)
-        delete valueBricksStatus;
+        //delete valueBricksStatus;
+        free(valueBricksStatus);
     }
 
     template <int N, typename T>
@@ -144,7 +145,10 @@ namespace ospray {
       //         vb->value[z][y][x] = 0.2f * blockID + 0.1f;
       // }
 
-      valueBricksStatus = new BrickStatus[numValueBricks]();
+      //valueBricksStatus = new BrickStatus[numValueBricks]();
+      valueBricksStatus = (BrickStatus*)malloc(sizeof(BrickStatus)*numValueBricks);
+
+      //valueBricksStatus[0].isRequested = true;
 
       // isIndexBrickLoaded.resize(numIndexBricks,false);
       // isBrickInfoLoaded.resize(numBrickInfos,false);
@@ -227,6 +231,7 @@ namespace ospray {
       for (size_t i = 0; i < numValueBricks; i++) {
          LoadBricks aBrick(VALUEBRICK, i);
          loadBricks(file,aBrick);
+         
         // if (!valueBricksStatus[i].isLoaded &&
         //     valueBricksStatus[i].isRequested) {
         //   LoadBricks aBrick(VALUEBRICK, i);
