@@ -289,10 +289,10 @@ void viewer::TransferFunctionProp::Print()
     std::cout << "};" << std::endl << std::endl;
   }
 }
-void viewer::TransferFunctionProp::Draw()
+void viewer::TransferFunctionProp::Draw(bool* p_open)
 {
   if (self != nullptr) {
-    if (widget->drawUI()) { widget->render(128); };
+    if (widget->drawUI(p_open)) { widget->render(128); };
   }
 }
 bool viewer::TransferFunctionProp::Commit()

@@ -190,7 +190,8 @@ namespace viewer {
       valueRange_default[1] = b;
     }
     void Init();
-    void Draw();
+    void Draw(bool* p_open = NULL);
+    void Draw() { Draw(NULL); };
     bool Commit();
     void Print();
   };

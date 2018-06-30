@@ -52,6 +52,8 @@ void viewer::Engine::Start() {
           fbHasNewFrame = true;
           fbMutex.unlock();
         }
+        // finalize
+        CountFPS();
       }
     });
 }
