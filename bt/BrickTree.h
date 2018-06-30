@@ -68,19 +68,15 @@ namespace ospray {
 
     struct BrickStatus
     {
-      BrickStatus()
+      BrickStatus() 
+          : isRequested(0), isLoaded(0)
       {
-        isRequested = false;
-        isLoaded    = false;
       }
-
-      BrickStatus(bool request, bool load)
+      BrickStatus(int request, int load)
           : isRequested(request), isLoaded(load)
-      {
-      }
-
-      bool isRequested;
-      bool isLoaded;
+      {}
+      int32_t isRequested;
+      int32_t isLoaded;
     };
 
     template <int N, typename T = float>
@@ -175,10 +171,7 @@ namespace ospray {
                            std::vector<vec2i> vbReqList);
       void loadTreeByBrick(const FileName &brickFileBase, size_t treeID);
 
-      // const typename BrickTree<N,T>::ValueBrick * findValueBrick(const vec3i
-      // &coord,int blockWidth,int xIdx, int yIdx, int zIdx);
       const T findValue(const int blockID, const vec3i &coord, int blockWidth);
-
       const T findBrickValue(const int blockID,
                              const size_t brickID,
                              const vec3i cellPos,
@@ -196,7 +189,8 @@ namespace ospray {
         return false;
       }
 
-      // get the request value brick list (L = need to load, F = no need to load)
+      // get the request value brick list 
+      //      (L = need to load, F = no need to load)
       // L,L,F,F,F,L,L,L,F,L,F,F,L
       // return (0,2),(5,3)...
       std::vector<vec2i> getRequestVBList()
@@ -247,8 +241,10 @@ namespace ospray {
             //tree[i].loadTreeByBrick(brickFileBase, i);
             // if(i == 3)
             // {
-            //   bool  isR= (bool)tree[i].valueBricksStatus[192412].isRequested;
-            //   std::cout << "cpp  " << tree[i].valueBricksStatus[192412].isRequested << std::endl;
+            //   bool isR = tree[i].valueBricksStatus[192412].isRequested;
+            //   std::cout << "cpp  " 
+            //             << tree[i].valueBricksStatus[192412].isRequested
+            //             << std::endl;
             // }
             bool needLoad = false;
             needLoad      = tree[i].isTreeNeedLoad();
@@ -270,7 +266,8 @@ namespace ospray {
 
       void Initialize()
       {
-        std::cout << "#osp: start to initialize bricktree forest!" << std::endl;
+        std::cout << "#osp: start to initialize bricktree forest!" 
+        << std::endl;
         int numTrees = forestSize.product();
         assert(numTrees > 0);
 
@@ -322,6 +319,7 @@ namespace ospray {
       {
         tree.clear();
       }
+
     };
 
     // =======================================================
@@ -344,7 +342,6 @@ namespace ospray {
         if (iz < 3)
           o << std::endl;
       }
-
       return o;
     }
 
@@ -364,7 +361,6 @@ namespace ospray {
         if (iz < 3)
           o << std::endl;
       }
-
       return o;
     }
 

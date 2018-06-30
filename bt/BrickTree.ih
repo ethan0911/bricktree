@@ -21,15 +21,15 @@
 #include "ospray/math/AffineSpace.ih"
 #include "ospray/geometry/Geometry.ih"
 
-#define T float
-#define N 4
+#define _bt_T float
+#define _bt_N 4
 struct ValueBrick
 {
-  T value[N][N][N];
+  _bt_T value[_bt_N][_bt_N][_bt_N];
 };
 struct IndexBrick
 {
-  int childID[N][N][N];
+  int childID[_bt_N][_bt_N][_bt_N];
 };
 struct BrickInfo
 {
@@ -38,8 +38,8 @@ struct BrickInfo
 
 struct BrickStatus
 {
-  bool isRequested;
-  bool isLoaded;
+  int isRequested;
+  int isLoaded;
 };
 /*! \brief ispc-side implementation of the bricktree object
  *
@@ -76,3 +76,5 @@ struct BrickTreeForest
   uniform BrickTree *uniform data;
   uniform unsigned int size;
 };
+#undef _bt_T
+#undef _bt_N

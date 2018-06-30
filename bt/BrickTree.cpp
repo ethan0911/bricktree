@@ -154,8 +154,8 @@ namespace ospray {
       // }
 
       //valueBricksStatus = new BrickStatus[numValueBricks]();
-      valueBricksStatus = (BrickStatus*)malloc(sizeof(BrickStatus)*numValueBricks);
-      //valueBricksStatus[0].isRequested = true;
+      valueBricksStatus = 
+        (BrickStatus*)malloc(sizeof(BrickStatus)*numValueBricks);
 
       sprintf(blockFileName,
               "%s-brick%06i.ospbin",
@@ -231,7 +231,6 @@ namespace ospray {
       char blockFileName[10000];
       sprintf(blockFileName,"%s-brick%06i.ospbin",
               brickFileBase.str().c_str(),(int)treeID);
-
       FILE *file = fopen(blockFileName, "rb");
       if (!file)
         throw std::runtime_error("could not open brick bin file " +
@@ -242,7 +241,7 @@ namespace ospray {
         if (!valueBricksStatus[i].isLoaded &&
             valueBricksStatus[i].isRequested) {
           LoadBricks aBrick(VALUEBRICK, i);
-          loadBricks(file,aBrick);
+          loadBricks(file, aBrick);
         }
       }
       fclose(file);
@@ -251,7 +250,8 @@ namespace ospray {
     template <int N, typename T>
     void BrickTree<N, T>::loadBricks(FILE *file, vec2i vbListInfo)
     {
-      fseek(file, valueBricksOfs + vbListInfo.x * sizeof(ValueBrick), SEEK_SET);
+      fseek(file, valueBricksOfs + vbListInfo.x * sizeof(ValueBrick), 
+            SEEK_SET);
       fread((ValueBrick *)(valueBrick + vbListInfo.x),
             sizeof(ValueBrick),vbListInfo.y,file);
       for (int i = 0; i < vbListInfo.y; i++)
@@ -261,79 +261,84 @@ namespace ospray {
     template <int N, typename T>
     void BrickTree<N, T>::loadBricks(FILE *file, LoadBricks aBrick)
     {
-      fseek(file, valueBricksOfs + aBrick.brickID * sizeof(ValueBrick), SEEK_SET);
-      fread((ValueBrick *)(valueBrick + aBrick.brickID),sizeof(ValueBrick),1,file);
-
+      fseek(file, valueBricksOfs + aBrick.brickID * sizeof(ValueBrick), 
+            SEEK_SET);
+      fread((ValueBrick *)(valueBrick + aBrick.brickID),
+            sizeof(ValueBrick),1,file);
       valueBricksStatus[aBrick.brickID].isLoaded = true;
     }
 
     template <int N, typename T>
     const T BrickTree<N, T>::findBrickValue(const int blockID, 
-                                            const size_t brickID,
-                                            const vec3i cellPos,
-                                            const size_t parentBrickID,
-                                            const vec3i parentCellPos)
+                                            const size_t cBrickID,
+                                            const vec3i cPos,
+                                            const size_t pBrickID,
+                                            const vec3i pPos)
     {
-      //return 0.2f;
       ValueBrick *vb = NULL;
 
 #if STREAM_DATA
-      if (!valueBricksStatus[brickID].isRequested) {
+      if (!valueBricksStatus[cBrickID].isRequested) {
         // request this brick if it is not requested
-        valueBricksStatus[brickID].isRequested = true;
-      } else if(!valueBricksStatus[brickID].isLoaded) {
+        valueBricksStatus[cBrickID].isRequested = 1;
+      } else if(!valueBricksStatus[cBrickID].isLoaded) {
         // return average value if this brick is requested but not loaded
-        if (brickID == 0) { // root node, return average value of the tree
+        if (cBrickID == 0) { // root node, return average value of the tree
           return this->avgValue;
         } else {
           // inner node, return the average value of this node which is 
           // stored in the parent node
-          if (!valueBricksStatus[parentBrickID].isLoaded)
+          if (!valueBricksStatus[pBrickID].isLoaded)
             return this->avgValue;
           else {
             vb = (typename BrickTree<N, T>::ValueBrick *)
-              (valueBrick + parentBrickID);
-            return vb->value[parentCellPos.z][parentCellPos.y][parentCellPos.x];
+              (valueBrick + pBrickID);
+            return vb->value[pPos.z][pPos.y][pPos.x];
           }
         }
-      }else {
-        vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
-        return vb->value[cellPos.z][cellPos.y][cellPos.x];
+      } else {
+        vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + cBrickID);
+        return vb->value[cPos.z][cPos.y][cPos.x];
       }
 
-      // if (!valueBricksStatus[brickID].isLoaded) {
+      // if (!valueBricksStatus[cBrickID].isLoaded) {
       //   // request this brick if it is not requested
-      //   if (!valueBricksStatus[brickID].isRequested) {
-      //     valueBricksStatus[brickID].isRequested = true;
+      //   if (!valueBricksStatus[cBrickID].isRequested) {
+      //     valueBricksStatus[cBrickID].isRequested = 1;
       //   }
       //   // return average value if this brick is requested but not loaded
-      //   if (brickID == 0)  // root node, return average value of the tree
+      //   if (cBrickID == 0)  // root node, return average value of the tree
       //     return this->avgValue;
       //   else {
-      //     // inner node, return the average value of this node which is stored
+      //     // inner node, return the average value of this node which is 
+      //     // stored
       //     // in the parent node
-      //     if (!valueBricksStatus[parentBrickID].isLoaded)
+      //     if (!valueBricksStatus[pBrickID].isLoaded)
       //       return this->avgValue;
       //     else {
       //       vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick +
-      //                                                     parentBrickID);
-      //       return vb->value[parentCellPos.z][parentCellPos.y][parentCellPos.x];
+      //                                                     pBrickID);
+      //       return vb->value[pPos.z][pPos.y][pPos.x];
       //     }
       //   }
       // } else {
-      //   vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
-      // 
-      //   // blockID 3 brickID 265097 cellPos 2 0 1 value 2.39878
-      //   // if (vb->value[cellPos.z][cellPos.y][cellPos.x] > 1.f)
-      //   // if (blockID == 3 && brickID == 265097 && cellPos.x == 2 && cellPos.y == 0 && cellPos.z == 1)
+      //   vb = (typename BrickTree<N, T>::ValueBrick *)
+      //     (valueBrick + cBrickID);      
+      //   // blockID 3 cBrickID 265097 cPos 2 0 1 value 2.39878
+      //   // if (vb->value[cPos.z][cPos.y][cPos.x] > 1.f)
+      //   // if (blockID == 3 && cBrickID == 265097 && 
+      //   //     cPos.x == 2 && cPos.y == 0 && cPos.z == 1)
       //   // std::cout << "blockID " << blockID << " "
-      //   //           << "brickID " << brickID << " "
-      //   //           << "cellPos " << cellPos.x << " " << cellPos.y << " " << cellPos.z << " "
-      //   //           << "value " << vb->value[cellPos.z][cellPos.y][cellPos.x]
-      //   //           << std::endl;
-      //   
-      //   return vb->value[cellPos.z][cellPos.y][cellPos.x];
+      //   //           << "cBrickID " << cBrickID << " "
+      //   //           << "cPos " 
+      //   //           << cPos.x << " " 
+      //   //           << cPos.y << " " 
+      //   //           << cPos.z << " "
+      //   //           << "value " << vb->value[cPos.z][cPos.y][cPos.x]
+      //   //           << std::endl;        
+      //   return vb->value[cPos.z][cPos.y][cPos.x];
       // }
+
       return this->avgValue;
 
 #else
