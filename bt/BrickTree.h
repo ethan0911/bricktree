@@ -250,7 +250,6 @@ namespace ospray {
             //   bool  isR= (bool)tree[i].valueBricksStatus[192412].isRequested;
             //   std::cout << "cpp  " << tree[i].valueBricksStatus[192412].isRequested << std::endl;
             // }
-
             bool needLoad = false;
             needLoad      = tree[i].isTreeNeedLoad();
             //PRINT(needLoad);
@@ -260,7 +259,6 @@ namespace ospray {
             }
           }
         }
-
         // while (!tree.empty()) {
         //   for (size_t i = 0; i < tree.size(); i++) {
         //     std::vector<vec2i> vbReqList = tree[i].getRequestVBList();

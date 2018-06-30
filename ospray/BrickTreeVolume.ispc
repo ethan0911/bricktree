@@ -27,7 +27,7 @@
 #include "rtcore.isph"
 
 #define STREAM_DATA 1
-#define VECTORIZE 1
+#define VECTORIZE 0
 
 // Functions that defined in CPP files
 extern "C" unmasked uniform float BrickTree_scalar_sample(void *uniform cppObject, uniform vec3f &samplePos);
@@ -57,9 +57,6 @@ inline varying float findBrickValue(BrickTreeVolume *uniform self,
                                     int parentBrickID,
                                     vec3i parentCellPos)
 {
-  
-  //return 0.2;
-
   //BrickTree  *bt = &(self->forest.data[blockID]);
   BrickTree  *bt = (BrickTree *)(self->forest.data + blockID);
   ValueBrick *vb = NULL;
@@ -67,7 +64,8 @@ inline varying float findBrickValue(BrickTreeVolume *uniform self,
 #if STREAM_DATA
 
   if (!bt->valueBricksStatus[brickID].isRequested) {
-    bt->valueBricksStatus[brickID].isRequested = true;  // request this brick if it is not requested
+    // request this brick if it is not requested
+    bt->valueBricksStatus[brickID].isRequested = true;
     // if(blockID == 3 && brickID == 192412)
     //   print("ispc % v % \n", brickID, bt->valueBricksStatus[brickID].isRequested);
   } 
