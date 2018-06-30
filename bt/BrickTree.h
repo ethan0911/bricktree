@@ -75,8 +75,8 @@ namespace ospray {
       BrickStatus(int request, int load)
           : isRequested(request), isLoaded(load)
       {}
-      int32_t isRequested;
-      int32_t isLoaded;
+      int8_t isRequested;
+      int8_t isLoaded;
     };
 
     template <int N, typename T = float>

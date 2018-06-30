@@ -30,11 +30,9 @@
 #define VECTORIZE 1
 
 // Functions that defined in CPP files
-extern "C" unmasked uniform float BrickTree_scalar_sample
-(void *uniform cppObject, uniform vec3f &samplePos);
+extern "C" unmasked uniform float BrickTree_scalar_sample(void *uniform cppObject, uniform vec3f &samplePos);
 // TODO gradient shading is not working
-extern "C" unmasked uniform vec3f BrickTree_scalar_computeGradient
-(void *uniform cppObject, uniform vec3f &samplePos);
+extern "C" unmasked uniform vec3f BrickTree_scalar_computeGradient(void *uniform cppObject, uniform vec3f &samplePos);
 
 static varying int getBlockID(BrickTreeVolume *uniform self,
                               const varying vec3i &coord)
@@ -69,18 +67,26 @@ static varying float findBrickValue(BrickTreeVolume *uniform self,
     // here make sure each brick (in each gang) has been requested but
     // not yet loaded. we return average value if this brick is requested 
     // but not loaded
-    if (brickID == 0) { // root node, return average value of the tree
+//    if (brickID == 0) { // root node, return average value of the tree
+//      return bt->avgValue;
+//    } else {
+//      // inner node, return the average value of this node which is stored in
+//      // the parent node
+//      if (bt->valueBricksStatus[parentBrickID].isLoaded != 0) {
+//        vb = (ValueBrick *)(bt->valueBrick + parentBrickID);
+//        return vb->value[parentCellPos.z][parentCellPos.y][parentCellPos.x];
+//      } else {
+//        return bt->avgValue;
+//      }
+//    }
+//    
+    if (bt->valueBricksStatus[parentBrickID].isLoaded != 0) {
+      vb = (ValueBrick *)(bt->valueBrick + parentBrickID);
+      return vb->value[parentCellPos.z][parentCellPos.y][parentCellPos.x];
+    } else{
       return bt->avgValue;
-    } else {
-      // inner node, return the average value of this node which is stored in
-      // the parent node
-      if (bt->valueBricksStatus[parentBrickID].isLoaded != 0) {
-        vb = (ValueBrick *)(bt->valueBrick + parentBrickID);
-        return vb->value[parentCellPos.z][parentCellPos.y][parentCellPos.x];
-      } else {
-        return bt->avgValue;
-      }
-    }
+    } 
+
   } else {
     // request this brick if it is not requested
     bt->valueBricksStatus[brickID].isRequested = 1;
