@@ -89,16 +89,79 @@ void WidgetStop() {
 }
 void WidgetDraw() {
   ImGui_Impi_NewFrame();
-  tfnProp.Draw();
-  ImGui::Begin("Rendering Properties");
-  {
-    camProp.Draw();
-    ImGui::Separator();
-    renProp.Draw();
-    ImGui::Separator();
-    litProp.Draw();    
+
+  // -- ImGUI Example:  
+  // ImGui::ShowTestWindow();
+
+  // -- Main Menu
+  // parameters
+  static bool show_app_camera = false;
+  static bool show_app_lights = false;
+  static bool show_app_renderer = false;
+  static bool show_app_tfn = false;
+  // metrics
+  static bool show_app_fps = false;
+  if (ImGui::BeginMainMenuBar()) {
+    if (ImGui::BeginMenu("Parameters"))
+    {
+      // ImGui::MenuItem("Camera", NULL, &show_app_camera);
+      ImGui::MenuItem("Lights", NULL, &show_app_lights);
+      ImGui::MenuItem("Renderer", NULL, &show_app_renderer);
+      ImGui::MenuItem("Transfer Function", NULL, &show_app_tfn);
+      ImGui::EndMenu();                 
+    }
+    if (ImGui::BeginMenu("Metrics"))
+    {
+      ImGui::MenuItem("FPS", NULL, &show_app_fps);
+      ImGui::EndMenu();
+    }
+    ImGui::EndMainMenuBar();
   }
-  ImGui::End();
+
+  if (show_app_camera) {
+    if (ImGui::Begin("Camera Parameters", &show_app_camera, NULL))
+    { camProp.Draw(); }
+    ImGui::End();
+  }
+  if (show_app_lights) {
+    if (ImGui::Begin("Light Parameters", &show_app_lights, NULL))
+    { litProp.Draw(); }
+    ImGui::End();
+  }
+  if (show_app_renderer) {
+    if (ImGui::Begin("Renderer Parameters", &show_app_renderer, NULL))
+    { renProp.Draw(); }
+    ImGui::End();
+  }
+  if (show_app_tfn) tfnProp.Draw(&show_app_tfn);
+
+  // -- draw FPS
+  if (show_app_fps) {
+    static const float DISTANCE = 10.0f;
+    static int corner = 0;
+    ImVec2 window_pos = ImVec2((corner & 1) ? 
+                               ImGui::GetIO().DisplaySize.x - DISTANCE : 
+                               DISTANCE, 
+                               (corner & 2) ? 
+                               ImGui::GetIO().DisplaySize.y - DISTANCE :
+                               DISTANCE + 18.f);
+    ImVec2 window_pos_pivot = ImVec2((corner & 1) ? 1.0f : 0.0f, 
+                                     (corner & 2) ? 1.0f : 0.0f);
+    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.3f));
+    if (ImGui::Begin("Metrics", &show_app_tfn, 
+                     ImGuiWindowFlags_NoTitleBar|
+                     ImGuiWindowFlags_NoResize|
+                     ImGuiWindowFlags_AlwaysAutoResize|
+                     ImGuiWindowFlags_NoMove|
+                     ImGuiWindowFlags_NoSavedSettings))
+    {
+      ImGui::Text(("FPS: " + std::to_string(engine.GetFPS())).c_str());
+    }
+    ImGui::End();
+    ImGui::PopStyleColor();
+  }
+
   ImGui::Render();
 }
 
