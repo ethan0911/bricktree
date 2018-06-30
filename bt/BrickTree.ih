@@ -38,8 +38,8 @@ struct BrickInfo
 
 struct BrickStatus
 {
-  int isRequested;
-  int isLoaded;
+  int8 isRequested;
+  int8 isLoaded;
 };
 /*! \brief ispc-side implementation of the bricktree object
  *
