@@ -331,8 +331,8 @@ void RenderWindow(GLFWwindow *window)
     glfwPollEvents();
   }
   // ShutDown
-  WidgetStop();
   engine.Stop();
+  WidgetStop();
   glfwDestroyWindow(window);
   glfwTerminate();
 }
