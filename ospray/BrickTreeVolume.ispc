@@ -34,6 +34,20 @@ extern "C" unmasked uniform float BrickTree_scalar_sample(void *uniform cppObjec
 // TODO gradient shading is not working
 extern "C" unmasked uniform vec3f BrickTree_scalar_computeGradient(void *uniform cppObject, uniform vec3f &samplePos);
 
+
+struct Address
+{
+  //! The 1D offset of the voxel in the brick buffer
+  varying int cBrickID;
+  //! The offset of the voxel in the enclosing brick.
+  varying vec3i cpos;
+  //! The 1D offset of the voxel's parent brick in the enclosing block.
+  varying int pBrickID;
+  //! The offset of the voxel's parent brick in the enclosing brick.
+  varying vec3i ppos;
+};
+
+
 static varying int getBlockID(BrickTreeVolume *uniform self,
                               const varying vec3i &coord)
 {
@@ -67,19 +81,6 @@ static varying float findBrickValue(BrickTreeVolume *uniform self,
     // here make sure each brick (in each gang) has been requested but
     // not yet loaded. we return average value if this brick is requested 
     // but not loaded
-//    if (brickID == 0) { // root node, return average value of the tree
-//      return bt->avgValue;
-//    } else {
-//      // inner node, return the average value of this node which is stored in
-//      // the parent node
-//      if (bt->valueBricksStatus[parentBrickID].isLoaded != 0) {
-//        vb = (ValueBrick *)(bt->valueBrick + parentBrickID);
-//        return vb->value[parentCellPos.z][parentCellPos.y][parentCellPos.x];
-//      } else {
-//        return bt->avgValue;
-//      }
-//    }
-//    
     if (bt->valueBricksStatus[parentBrickID].isLoaded != 0) {
       vb = (ValueBrick *)(bt->valueBrick + parentBrickID);
       return vb->value[parentCellPos.z][parentCellPos.y][parentCellPos.x];
