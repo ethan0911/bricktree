@@ -100,7 +100,7 @@ void WidgetDraw() {
   static bool show_app_renderer = false;
   static bool show_app_tfn = false;
   // metrics
-  static bool show_app_fps = false;
+  static bool show_app_fps = true;
   if (ImGui::BeginMainMenuBar()) {
     if (ImGui::BeginMenu("Parameters"))
     {
