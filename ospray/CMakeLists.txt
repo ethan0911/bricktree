@@ -7,5 +7,5 @@ OSPRAY_CREATE_LIBRARY(ospray_module_bricktree
   LINK
   ospray
   ospray_common
-  ospray_bricktree
-  ospray_module_ispc)
+  ospray_module_ispc
+  ospray_module_bricktree_core)

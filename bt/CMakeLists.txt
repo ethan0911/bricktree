@@ -1,7 +1,7 @@
 # -------------------------------------------------------
 # data format loaders etc
 # -------------------------------------------------------
-OSPRAY_CREATE_LIBRARY(ospray_bricktree 
+OSPRAY_CREATE_LIBRARY(ospray_module_bricktree_core
   BrickTree.cpp
   BrickTreeBuilder.cpp
   LINK

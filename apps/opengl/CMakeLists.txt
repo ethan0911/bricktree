@@ -29,7 +29,7 @@ include_directories(src external
   ${OPENGL_INCLUDE_DIR})
 
 # build everything as a library
-ospray_create_library(ospray_bt_app_viewer
+ospray_create_library(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
   viewer.cpp
   src/engine.cpp
   src/camera.cpp
@@ -46,5 +46,5 @@ ospray_create_library(ospray_bt_app_viewer
   ${OPENGL_LIBRARIES})
 
 # setup properties
-set_target_properties(ospray_bt_app_viewer
+set_target_properties(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
   PROPERTIES CXX_STANDARD 14)
