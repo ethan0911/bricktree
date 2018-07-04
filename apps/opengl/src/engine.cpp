@@ -14,7 +14,7 @@ void viewer::Engine::Start() {
     return;
   // start the thread
   fbState = ExecState::RUNNING;
-  fbThread = std::make_unique<std::thread>([&] {
+  fbThread = ospcommon::make_unique<std::thread>([&] {
       while (fbState != ExecState::STOPPED) {
         // check if we need to resize
         if (fbSize.update()) {
@@ -26,7 +26,7 @@ void viewer::Engine::Start() {
           // resize ospray framebuffer
           if (ospFB != nullptr) {
             ospUnmapFrameBuffer(ospFBPtr, ospFB);
-            ospFreeFrameBuffer(ospFB);
+            ospRelease(ospFB);
             ospFB = nullptr;
           }
           ospFB = ospNewFrameBuffer((osp::vec2i&)size, 
@@ -92,7 +92,7 @@ void viewer::Engine::Delete()
 {
   if (ospFB != nullptr) {
     ospUnmapFrameBuffer(ospFBPtr, ospFB); 
-    ospFreeFrameBuffer(ospFB);
+    ospRelease(ospFB);
     ospFB = nullptr;
   }
 }

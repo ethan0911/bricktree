@@ -1,7 +1,5 @@
-ospray_disable_compiler_warnings()
-
-# find openGL
-find_package(OpenGL REQUIRED)
+# find packages
+include(packages.cmake)
 
 # transfer function widget
 set(TFN_MODULE_DEFAULT_ROOT 
@@ -22,14 +20,8 @@ if (TFN_MODULE)
     ${TFN_MODULE_ROOT}/src/widgets/TransferFunctionWidget.cpp)
 endif (TFN_MODULE)
 
-# set correct include path
-include_directories(src external
-  ${PROJECT_SOURCE_DIR}/apps/exampleViewer/common/imgui
-  ${TFN_MODULE_INCLUDE_DIR}
-  ${OPENGL_INCLUDE_DIR})
-
 # build everything as a library
-ospray_create_library(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
+add_library(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
   viewer.cpp
   src/engine.cpp
   src/camera.cpp
@@ -37,14 +29,28 @@ ospray_create_library(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
   src/common/trackball.cpp
   ${TFN_MODULE_SRC}
   external/glad.c
-  external/imgui_glfw_impi.cpp
-  LINK
-  ospray
-  ospray_common
-  ospray_imgui
-  ospray_imgui3d_sg
-  ${OPENGL_LIBRARIES})
-
-# setup properties
+  external/imgui_glfw_impi.cpp)
 set_target_properties(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
-  PROPERTIES CXX_STANDARD 14)
+  PROPERTIES CXX_STANDARD 11)
+target_include_directories(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
+  PUBLIC
+  "$<BUILD_INTERFACE:"
+  "${TFN_MODULE_INCLUDE_DIR};"
+  "${CMAKE_CURRENT_LIST_DIR}/src;"
+  "${CMAKE_CURRENT_LIST_DIR}/external;"
+  ">")
+target_link_libraries(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
+  glfw OpenGL)
+if (TARGET ospray_package)
+  target_link_libraries(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
+    imgui ospray_package)
+else ()
+  target_include_directories(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
+    PUBLIC "$<BUILD_INTERFACE:"
+    "${PROJECT_SOURCE_DIR}/apps/exampleViewer/common/imgui;>")
+  target_link_libraries(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
+    ospray
+    ospray_common
+    ospray_imgui
+    ospray_imgui3d_sg)
+endif ()
