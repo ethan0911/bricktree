@@ -12,7 +12,13 @@ endif ()
 #--- GLFW
 #
 if (NOT TARGET glfw)
-  message(FATAL_ERROR "cannot find glfw")
+  find_package(glfw3 REQUIRED)
+  if (NOT TARGET glfw)
+    add_library(glfw INTERFACE IMPORTED)
+  endif ()
+  set_target_properties(glfw PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${GLFW_INCLUDE_DIRS}"
+    INTERFACE_LINK_LIBRARIES "${GLFW_LIBRARIES}")
 endif ()
 #
 #--- ImGUI
