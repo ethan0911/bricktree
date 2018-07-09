@@ -90,17 +90,15 @@ void WidgetStop() {
 void WidgetDraw() {
   ImGui_Impi_NewFrame();
 
-  // -- ImGUI Example:  
-  // ImGui::ShowTestWindow();
-
   // -- Main Menu
   // parameters
   static bool show_app_camera = false;
   static bool show_app_lights = false;
   static bool show_app_renderer = false;
-  static bool show_app_tfn = false;
-  // metrics
+  static bool show_app_tfn = true;
+  // debug
   static bool show_app_fps = true;
+  static bool show_imgui_test_win = false;
   if (ImGui::BeginMainMenuBar()) {
     if (ImGui::BeginMenu("Parameters"))
     {
@@ -110,26 +108,27 @@ void WidgetDraw() {
       ImGui::MenuItem("Transfer Function", NULL, &show_app_tfn);
       ImGui::EndMenu();                 
     }
-    if (ImGui::BeginMenu("Metrics"))
+    if (ImGui::BeginMenu("Debug"))
     {
       ImGui::MenuItem("FPS", NULL, &show_app_fps);
+      ImGui::MenuItem("Show ImGui Test Window", NULL, &show_imgui_test_win);
       ImGui::EndMenu();
     }
     ImGui::EndMainMenuBar();
   }
 
   if (show_app_camera) {
-    if (ImGui::Begin("Camera Parameters", &show_app_camera, NULL))
+    if (ImGui::Begin("Camera Parameters", &show_app_camera, 0))
     { camProp.Draw(); }
     ImGui::End();
   }
   if (show_app_lights) {
-    if (ImGui::Begin("Light Parameters", &show_app_lights, NULL))
+    if (ImGui::Begin("Light Parameters", &show_app_lights, 0))
     { litProp.Draw(); }
     ImGui::End();
   }
   if (show_app_renderer) {
-    if (ImGui::Begin("Renderer Parameters", &show_app_renderer, NULL))
+    if (ImGui::Begin("Renderer Parameters", &show_app_renderer, 0))
     { renProp.Draw(); }
     ImGui::End();
   }
@@ -156,10 +155,15 @@ void WidgetDraw() {
                      ImGuiWindowFlags_NoMove|
                      ImGuiWindowFlags_NoSavedSettings))
     {
-      ImGui::Text(("FPS: " + std::to_string(engine.GetFPS())).c_str());
+      ImGui::Text("FPS: %s", std::to_string(engine.GetFPS()).c_str());
     }
     ImGui::End();
     ImGui::PopStyleColor();
+  }
+
+  // -- ImGUI Example:  
+  if (show_imgui_test_win) {
+    ImGui::ShowTestWindow(&show_imgui_test_win);
   }
 
   ImGui::Render();
@@ -226,16 +230,13 @@ namespace viewer {
 // ======================================================================== //
 static GLuint texID;
 static GLuint fboID;
-void error_callback(int error, const char *description)
+void error_callback(int error, const char* description)
 {
   fprintf(stderr, "Error: %s\n", description);
 }
-void char_callback(GLFWwindow *window, unsigned int c)
+void char_callback(GLFWwindow* window, unsigned int key)
 {
-  ImGuiIO &io = ImGui::GetIO();
-  if (c > 0 && c < 0x10000) {
-    io.AddInputCharacter((unsigned short)c);
-  }
+  ImGui_Impi_CharCallback(window, key);
 }
 void key_onhold_callback(GLFWwindow *window)
 {
@@ -286,7 +287,7 @@ void key_onhold_callback(GLFWwindow *window)
     }
   }
 }
-void key_onpress_callback(GLFWwindow *window, int key, 
+void key_callback(GLFWwindow *window, int key, 
                           int scancode, int action, int mods)
 {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
@@ -319,9 +320,20 @@ void key_onpress_callback(GLFWwindow *window, int key,
     ImGui_Impi_KeyCallback(window, key, scancode, action, mods);
   }
 }
+void mouse_button_callback(GLFWwindow* window, int button, 
+                                  int action, int mods)
+{
+  ImGui_Impi_MouseButtonCallback(window, button, action, mods);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+  ImGui_Impi_ScrollCallback(window, xoffset, yoffset);
+}
 void cursor_position_callback(GLFWwindow *window, double xpos, double ypos)
 {
-  if (!ImGui::GetIO().WantCaptureMouse) {
+  if (!ImGui::GetIO().WantCaptureMouse) 
+  {
     int left_state  = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
     int right_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
     if (left_state == GLFW_PRESS) {
@@ -423,10 +435,12 @@ GLFWwindow *CreateWindow()
     exit(EXIT_FAILURE);
   }
   // Callback
-  glfwSetKeyCallback(window, key_onpress_callback);
   glfwSetWindowSizeCallback(window, window_size_callback);
-  glfwSetCursorPosCallback(window, cursor_position_callback);
   glfwSetCharCallback(window, char_callback);
+  glfwSetKeyCallback(window, key_callback);
+  glfwSetMouseButtonCallback(window, mouse_button_callback);
+  glfwSetScrollCallback(window, scroll_callback);
+  glfwSetCursorPosCallback(window, cursor_position_callback);
   // Ready
   glfwMakeContextCurrent(window);
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
