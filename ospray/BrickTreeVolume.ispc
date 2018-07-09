@@ -29,12 +29,6 @@
 #define STREAM_DATA 1
 #define VECTORIZE 1
 
-// Functions that defined in CPP files
-extern "C" unmasked uniform float BrickTree_scalar_sample(void *uniform cppObject, uniform vec3f &samplePos);
-// TODO gradient shading is not working
-extern "C" unmasked uniform vec3f BrickTree_scalar_computeGradient(void *uniform cppObject, uniform vec3f &samplePos);
-
-
 struct Address
 {
   //! The 1D offset of the voxel in the brick buffer
@@ -46,6 +40,11 @@ struct Address
   //! The offset of the voxel's parent brick in the enclosing brick.
   varying vec3i ppos;
 };
+
+// Functions that defined in CPP files
+extern "C" unmasked uniform float BrickTree_scalar_sample(void *uniform cppObject, uniform vec3f &samplePos);
+// TODO gradient shading is not working
+extern "C" unmasked uniform vec3f BrickTree_scalar_computeGradient(void *uniform cppObject, uniform vec3f &samplePos);
 
 
 static varying int getBlockID(BrickTreeVolume *uniform self,
@@ -60,99 +59,6 @@ static varying int getBlockID(BrickTreeVolume *uniform self,
   return x + y * self->gridSize.x + z * self->gridSize.y * self->gridSize.x;
 }
 
-static varying float findBrickValue(BrickTreeVolume *uniform self,
-                                    int blockID,
-                                    int brickID,
-                                    vec3i cellPos,
-                                    int parentBrickID,
-                                    vec3i parentCellPos)
-{
-
-  BrickTree  *bt = (BrickTree *)(self->forest.data + blockID);
-  ValueBrick *vb = NULL;
-
-#if STREAM_DATA
-
-  if (bt->valueBricksStatus[brickID].isLoaded) {
-    // here make sure each brick (in each gang) is loaded 
-    vb = (ValueBrick *)(bt->valueBrick + brickID);
-    return vb->value[cellPos.z][cellPos.y][cellPos.x];
-  } else if (bt->valueBricksStatus[brickID].isRequested != 0) {
-    // here make sure each brick (in each gang) has been requested but
-    // not yet loaded. we return average value if this brick is requested 
-    // but not loaded
-    if (bt->valueBricksStatus[parentBrickID].isLoaded != 0) {
-      vb = (ValueBrick *)(bt->valueBrick + parentBrickID);
-      return vb->value[parentCellPos.z][parentCellPos.y][parentCellPos.x];
-    } else{
-      return bt->avgValue;
-    } 
-
-  } else {
-    // request this brick if it is not requested
-    bt->valueBricksStatus[brickID].isRequested = 1;
-  }
-
-  return bt->avgValue;
-
-#else
-
-  vb = (ValueBrick *)(bt->valueBrick + brickID);
-  return vb->value[cellPos.z][cellPos.y][cellPos.x];
-
-#endif
-}
-
-static varying float getVoxel(void *uniform _self,
-                              const varying vec3i &coord)
-{
-  BrickTreeVolume *uniform self = (BrickTreeVolume *uniform) _self;
-  // constants
-  const int       N    = self->brickSize;
-  const float rcp_N    = 1.f / (float)N;
-  const int blockID    = getBlockID(self, coord);
-  BrickTree * bt = (BrickTree *)(self->forest.data + blockID);
-  // variables  
-  int cBrickID = 0;
-  int pBrickID = -1; // parent brick ID
-  vec3i cpos = make_vec3i(0,0,0);
-  vec3i ppos = make_vec3i(0,0,0);
-  // compute sample values
-  int brickW = self->blockWidth;
-  while (brickW > N) {
-    // compute target cell position (indices)
-    const int cellW = brickW / N; // <- N    
-    cpos.x = (coord.x % brickW) / cellW;
-    cpos.y = (coord.y % brickW) / cellW;
-    cpos.z = (coord.z % brickW) / cellW;    
-    ppos.x = (coord.x % (brickW * N)) / brickW;
-    ppos.y = (coord.y % (brickW * N)) / brickW;
-    ppos.z = (coord.z % (brickW * N)) / brickW;
-    // query
-    const int ibID = bt->brickInfo[cBrickID].indexBrickID;
-    if (ibID == -1) {
-      // has no children
-      return findBrickValue(self, blockID, cBrickID, cpos, pBrickID, ppos);
-    } else {
-      // has children
-      const int cbID = 
-        bt->indexBrick[ibID].childID[cpos.z][cpos.y][cpos.x];
-      if (cbID == -1) { // this children is not ready
-        return findBrickValue(self, blockID, cBrickID, cpos, pBrickID, ppos);
-      } else { // this children has a children still
-        pBrickID = cBrickID;
-        cBrickID = cbID;
-      }
-    }
-    brickW = cellW;
-  }
-  // now we reached a leaf child
-  cpos.x = coord.x % brickW;
-  cpos.y = coord.y % brickW;
-  cpos.z = coord.z % brickW;
-  return findBrickValue(self, blockID, cBrickID, cpos, pBrickID, ppos);
-}
-
 // Find the next hit point in the volume for ray casting based renderers.
 static void BrickTreeVolume_stepRay(void *uniform _self, 
                                     varying Ray &ray,
@@ -165,8 +71,119 @@ static void BrickTreeVolume_stepRay(void *uniform _self,
   ray.t0 += step;
 }
 
+inline Address BrickTreeVolume_getVoxelAddress(void *uniform _self,
+                                               const uniform int &blockID,
+                                               const varying vec3i &coord)
+{
+  /* Cast to the actual volume subtype. */
+  BrickTreeVolume *uniform self = (BrickTreeVolume * uniform) _self;
+  BrickTree * bt = (BrickTree *)(self->forest.data + blockID);
+  const int       N    = self->brickSize;
+  const float rcp_N    = 1.f / (float)N;
+
+  Address address;
+  // variables  
+  int cBrickID = 0;
+  int pBrickID = -1; // parent brick ID
+  vec3i cpos = make_vec3i(0,0,0);
+  vec3i ppos = make_vec3i(0,0,0);
+  // compute sample values
+  int brickW = self->blockWidth;
+  while (brickW > N) {
+    // compute target cell position (indices)
+    const int cellW = brickW / N;  // <- N
+    cpos.x          = (coord.x % brickW) / cellW;
+    cpos.y          = (coord.y % brickW) / cellW;
+    cpos.z          = (coord.z % brickW) / cellW;
+    ppos.x          = (coord.x % (brickW * N)) / brickW;
+    ppos.y          = (coord.y % (brickW * N)) / brickW;
+    ppos.z          = (coord.z % (brickW * N)) / brickW;
+    // query
+    const int ibID = bt->brickInfo[cBrickID].indexBrickID;
+    if (ibID == -1) {
+      address.cBrickID = cBrickID;
+      address.cpos     = cpos;
+      address.pBrickID = pBrickID;
+      address.ppos     = ppos;
+      // has no children
+      return address;
+    } else {
+      // has children
+      const int cbID = bt->indexBrick[ibID].childID[cpos.z][cpos.y][cpos.x];
+      if (cbID == -1) {  // this children is not ready
+        address.cBrickID = cBrickID;
+        address.cpos     = cpos;
+        address.pBrickID = pBrickID;
+        address.ppos     = ppos;
+        // has no children
+        return address;
+      } else {  // this children has a children still
+        pBrickID = cBrickID;
+        cBrickID = cbID;
+      }
+    }
+    brickW = cellW;
+  }
+  // now we reached a leaf child
+  cpos.x           = coord.x % brickW;
+  cpos.y           = coord.y % brickW;
+  cpos.z           = coord.z % brickW;
+  address.cBrickID = cBrickID;
+  address.cpos     = cpos;
+  address.pBrickID = pBrickID;
+  address.ppos     = ppos;
+  // has no children
+  return address;
+}
+
+static varying float getBrickValue(BrickTreeVolume *uniform self,
+                                   const uniform int blockID,
+                                   const varying Address &address)
+{
+  /* Cast to the actual volume subtype. */
+  BrickTree *bt  = (BrickTree *)(self->forest.data + blockID);
+  ValueBrick *vb = NULL;
+
+  if (bt->valueBricksStatus[address.cBrickID].isLoaded) {
+    // here make sure each brick (in each gang) is loaded
+    vb = (ValueBrick *)(bt->valueBrick + address.cBrickID);
+    return vb->value[address.cpos.z][address.cpos.y][address.cpos.x];
+  } else if (bt->valueBricksStatus[address.cBrickID].isRequested != 0) {
+    // here make sure each brick (in each gang) has been requested but
+    // not yet loaded. we return average value if this brick is requested
+    // but not loaded
+    if (bt->valueBricksStatus[address.pBrickID].isLoaded != 0) {
+      vb = (ValueBrick *)(bt->valueBrick + address.pBrickID);
+      return vb->value[address.ppos.z][address.ppos.y][address.ppos.x];
+    } else {
+      return bt->avgValue;
+    }
+
+  } else {
+    // request this brick if it is not requested
+    bt->valueBricksStatus[address.cBrickID].isRequested = 1;
+  }
+
+  return bt->avgValue;
+}
+
+inline void BrickTreeVolume_getVoxel(void *uniform _self,
+    const varying vec3i &coord,
+    varying float &value)
+{
+  /* Cast to the actual volume subtype. */
+  BrickTreeVolume *uniform self = (BrickTreeVolume * uniform) _self;
+  const int blockID    = getBlockID(self, coord);
+
+  foreach_unique(bID in blockID)
+  {
+    Address address = BrickTreeVolume_getVoxelAddress(self, bID, coord);
+    value           = getBrickValue(self, bID, address);
+  }
+}
+
 static float BrickTreeVolume_sample(void *uniform _self, 
-                                    const vec3f &samplePos)
+    const vec3f &samplePos)
 {
 
   BrickTreeVolume *uniform self = (BrickTreeVolume * uniform) _self;
@@ -174,30 +191,28 @@ static float BrickTreeVolume_sample(void *uniform _self,
 
 #if VECTORIZE
 
-  // Lower and upper corners of the box straddling the voxels to be
-  // interpolated.
+  // Lower and upper corners of the box straddling the voxels to be interpolated.
   const vec3i voxelIndex_0 = to_int(samplePos);
   const vec3i voxelIndex_1 = voxelIndex_0 + 1;
-  // Fractional coordinates within the lower corner voxel used during
-  // interpolation.
+  // Fractional coordinates within the lower corner voxel used during interpolation.
   const vec3f fractionalLocalCoordinates = samplePos - to_float(voxelIndex_0);
   // Look up the voxel values to be interpolated.
-  float v_000 = 
-    getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_0.y, voxelIndex_0.z));
-  float v_001 =
-    getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_0.y, voxelIndex_0.z));
-  float v_010 = 
-    getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_1.y, voxelIndex_0.z));
-  float v_011 =
-    getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_1.y, voxelIndex_0.z));
-  float v_100 = 
-    getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_0.y, voxelIndex_1.z));
-  float v_101 = 
-    getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_0.y, voxelIndex_1.z));
-  float v_110 = 
-    getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_1.y, voxelIndex_1.z));
-  float v_111 = 
-    getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_1.y, voxelIndex_1.z));
+  float v_000;
+  float v_001;
+  float v_010;
+  float v_011;
+  float v_100;
+  float v_101;
+  float v_110;
+  float v_111;
+  BrickTreeVolume_getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_0.y, voxelIndex_0.z), v_000);
+  BrickTreeVolume_getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_0.y, voxelIndex_0.z), v_001);
+  BrickTreeVolume_getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_1.y, voxelIndex_0.z), v_010);
+  BrickTreeVolume_getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_1.y, voxelIndex_0.z), v_011);
+  BrickTreeVolume_getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_0.y, voxelIndex_1.z), v_100);
+  BrickTreeVolume_getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_0.y, voxelIndex_1.z), v_101);
+  BrickTreeVolume_getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_1.y, voxelIndex_1.z), v_110);
+  BrickTreeVolume_getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_1.y, voxelIndex_1.z), v_111);
 
   // Interpolate the voxel values.
   const float v_00 = v_000 + fractionalLocalCoordinates.x * (v_001 - v_000);
@@ -206,8 +221,7 @@ static float BrickTreeVolume_sample(void *uniform _self,
   const float v_11 = v_110 + fractionalLocalCoordinates.x * (v_111 - v_110);
   const float v_0  = v_00  + fractionalLocalCoordinates.y * (v_01  - v_00 );
   const float v_1  = v_10  + fractionalLocalCoordinates.y * (v_11  - v_10 );
-  const float volumeSample = 
-    v_0 + fractionalLocalCoordinates.z * (v_1 - v_0);
+  const float volumeSample = v_0 + fractionalLocalCoordinates.z * (v_1 - v_0);
 
   result = volumeSample;
 
@@ -291,36 +305,117 @@ export void BrickTreeVolume_set_BricktreeForest(void *uniform _self,
     uniform BrickTree *uniform forest = (uniform BrickTree *uniform)_forest;
     self->forest.data = forest;
     self->forest.size = size;
-
-    // print("[ispc] sizeof(BrickTree) %\n", sizeof(BrickTree));
-    // print("[ispc] sizeof(uniform unsigned int64) %\n", 
-    //       sizeof(uniform unsigned int64));
-    // print("[ispc] sizeof(uniform float) %\n", sizeof(uniform float));
-    // print("[ispc] sizeof(vec2f) %\n", sizeof(vec2f));
-    // print("[ispc] sizeof(vec3i) %\n", sizeof(vec3i));
-    // print("[ispc] sizeof(uniform ValueBrick* uniform) %\n", 
-    //       sizeof(uniform ValueBrick* uniform));
-    // print("[ispc] sizeof(uniform IndexBrick*) %\n",
-    //       sizeof(uniform IndexBrick*));
-    // for (int i = 0; i < size; ++i) {
-    //   print("ispc %\n", forest[i].brickInfo);
-    //   print("ispc %\n", forest[i].brickInfo[0].indexBrickID);
-    // }
-    // for (int x = 0; x < 4; ++x) 
-    // for (int y = 0; y < 4; ++y) 
-    // for (int z = 0; z < 4; ++z) 
-    // print("ispc %\n", forest[2].valueBrick[1000].value[x][y][z]);
-    // 
-    // foreach_active(lane)
-    // {
-    //   if (lane == 0) {
-    //     for (uniform unsigned int i = 0; i < size; ++i) {
-    //       uniform BrickTree &bt = forest[i];
-    //       for (uniform unsigned int64 j = 0; j < bt.numValueBricks; ++j) {
-    //         bt.valueBricksStatus[j].isRequested = true;
-    //       }
-    //     }
-    //   }
-    // }
-
 }
+
+
+
+// static varying float findBrickValue(BrickTreeVolume *uniform self,
+//                                     int blockID,
+//                                     int brickID,
+//                                     vec3i cellPos,
+//                                     int parentBrickID,
+//                                     vec3i parentCellPos)
+// {
+
+//   BrickTree  *bt = (BrickTree *)(self->forest.data + blockID);
+//   ValueBrick *vb = NULL;
+
+// #if STREAM_DATA
+
+//   if (bt->valueBricksStatus[brickID].isLoaded) {
+//     // here make sure each brick (in each gang) is loaded 
+//     vb = (ValueBrick *)(bt->valueBrick + brickID);
+//     return vb->value[cellPos.z][cellPos.y][cellPos.x];
+//   } else if (bt->valueBricksStatus[brickID].isRequested != 0) {
+//     // here make sure each brick (in each gang) has been requested but
+//     // not yet loaded. we return average value if this brick is requested 
+//     // but not loaded
+//     if (bt->valueBricksStatus[parentBrickID].isLoaded != 0) {
+//       vb = (ValueBrick *)(bt->valueBrick + parentBrickID);
+//       return vb->value[parentCellPos.z][parentCellPos.y][parentCellPos.x];
+//     } else{
+//       return bt->avgValue;
+//     } 
+
+//   } else {
+//     // request this brick if it is not requested
+//     bt->valueBricksStatus[brickID].isRequested = 1;
+//   }
+
+//   return bt->avgValue;
+
+// #else
+
+//   vb = (ValueBrick *)(bt->valueBrick + brickID);
+//   return vb->value[cellPos.z][cellPos.y][cellPos.x];
+
+// #endif
+// }
+
+// static varying float getVoxel(void *uniform _self,
+//                               const varying vec3i &coord)
+// {
+//   BrickTreeVolume *uniform self = (BrickTreeVolume *uniform) _self;
+//   // constants
+//   const int       N    = self->brickSize;
+//   const float rcp_N    = 1.f / (float)N;
+//   const int blockID    = getBlockID(self, coord);
+//   BrickTree * bt = (BrickTree *)(self->forest.data + blockID);
+//   // variables  
+//   int cBrickID = 0;
+//   int pBrickID = -1; // parent brick ID
+//   vec3i cpos = make_vec3i(0,0,0);
+//   vec3i ppos = make_vec3i(0,0,0);
+//   // compute sample values
+//   int brickW = self->blockWidth;
+//   while (brickW > N) {
+//     // compute target cell position (indices)
+//     const int cellW = brickW / N; // <- N    
+//     cpos.x = (coord.x % brickW) / cellW;
+//     cpos.y = (coord.y % brickW) / cellW;
+//     cpos.z = (coord.z % brickW) / cellW;    
+//     ppos.x = (coord.x % (brickW * N)) / brickW;
+//     ppos.y = (coord.y % (brickW * N)) / brickW;
+//     ppos.z = (coord.z % (brickW * N)) / brickW;
+//     // query
+//     const int ibID = bt->brickInfo[cBrickID].indexBrickID;
+//     if (ibID == -1) {
+//       // has no children
+//       return findBrickValue(self, blockID, cBrickID, cpos, pBrickID, ppos);
+//     } else {
+//       // has children
+//       const int cbID = 
+//         bt->indexBrick[ibID].childID[cpos.z][cpos.y][cpos.x];
+//       if (cbID == -1) { // this children is not ready
+//         return findBrickValue(self, blockID, cBrickID, cpos, pBrickID, ppos);
+//       } else { // this children has a children still
+//         pBrickID = cBrickID;
+//         cBrickID = cbID;
+//       }
+//     }
+//     brickW = cellW;
+//   }
+//   // now we reached a leaf child
+//   cpos.x = coord.x % brickW;
+//   cpos.y = coord.y % brickW;
+//   cpos.z = coord.z % brickW;
+//   return findBrickValue(self, blockID, cBrickID, cpos, pBrickID, ppos);
+// }
+
+
+//  float v_000 = 
+//    getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_0.y, voxelIndex_0.z));
+//  float v_001 =
+//    getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_0.y, voxelIndex_0.z));
+//  float v_010 = 
+//    getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_1.y, voxelIndex_0.z));
+//  float v_011 =
+//    getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_1.y, voxelIndex_0.z));
+//  float v_100 = 
+//    getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_0.y, voxelIndex_1.z));
+//  float v_101 = 
+//    getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_0.y, voxelIndex_1.z));
+//  float v_110 = 
+//    getVoxel(self, make_vec3i(voxelIndex_0.x, voxelIndex_1.y, voxelIndex_1.z));
+//  float v_111 = 
+//    getVoxel(self, make_vec3i(voxelIndex_1.x, voxelIndex_1.y, voxelIndex_1.z));

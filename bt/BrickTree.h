@@ -236,32 +236,23 @@ namespace ospray {
 
       void loadTreeBrick(const FileName &brickFileBase)
       {
-        while (!tree.empty()) {
-          for (size_t i = 0; i < tree.size(); i++) {
-            //tree[i].loadTreeByBrick(brickFileBase, i);
-            // if(i == 3)
-            // {
-            //   bool isR = tree[i].valueBricksStatus[192412].isRequested;
-            //   std::cout << "cpp  " 
-            //             << tree[i].valueBricksStatus[192412].isRequested
-            //             << std::endl;
-            // }
-            bool needLoad = false;
-            needLoad      = tree[i].isTreeNeedLoad();
-            //PRINT(needLoad);
-            if (needLoad)
-            {
-              tree[i].loadTreeByBrick(brickFileBase, i);
-            }
-          }
-        }
         // while (!tree.empty()) {
         //   for (size_t i = 0; i < tree.size(); i++) {
-        //     std::vector<vec2i> vbReqList = tree[i].getRequestVBList();
-        //     if (!vbReqList.empty())
-        //       tree[i].loadTreeByBrick(brickFileBase, i, vbReqList);
+        //     bool needLoad = false;
+        //     needLoad      = tree[i].isTreeNeedLoad();
+        //     if (needLoad)
+        //     {
+        //       tree[i].loadTreeByBrick(brickFileBase, i);
+        //     }
         //   }
         // }
+        while (!tree.empty()) {
+          for (size_t i = 0; i < tree.size(); i++) {
+            std::vector<vec2i> vbReqList = tree[i].getRequestVBList();
+            if (!vbReqList.empty())
+              tree[i].loadTreeByBrick(brickFileBase, i, vbReqList);
+          }
+        }
       }
 
       void Initialize()
@@ -283,7 +274,7 @@ namespace ospray {
 #if !(STREAM_DATA)
           aTree.mapOspBin(brickFileBase, treeID);
 #endif
-          std::lock_guard<std::mutex> lock(amutex);
+          //std::lock_guard<std::mutex> lock(amutex);
           // tree.insert(std::make_pair(treeID, aTree));
           tree[treeID] = aTree;
         });

@@ -216,7 +216,6 @@ namespace ospray {
         throw std::runtime_error("could not open brick bin file " +
                                  std::string(blockFileName));
 
-      PING;
       std::vector<vec2i>::iterator it = vbReqList.begin();
       for (; it != vbReqList.end(); it++) {
         loadBricks(file, *it);
@@ -235,9 +234,7 @@ namespace ospray {
       if (!file)
         throw std::runtime_error("could not open brick bin file " +
                                  std::string(blockFileName));
-      for (size_t i = 0; i < numValueBricks; i++) {
-        //LoadBricks aBrick(VALUEBRICK, i);
-        //loadBricks(file,aBrick);         
+      for (size_t i = 0; i < numValueBricks; i++) {       
         if (!valueBricksStatus[i].isLoaded &&
             valueBricksStatus[i].isRequested) {
           LoadBricks aBrick(VALUEBRICK, i);
@@ -278,66 +275,24 @@ namespace ospray {
       ValueBrick *vb = NULL;
 
 #if STREAM_DATA
-      if (!valueBricksStatus[cBrickID].isRequested) {
-        // request this brick if it is not requested
-        valueBricksStatus[cBrickID].isRequested = 1;
-      } else if(!valueBricksStatus[cBrickID].isLoaded) {
-        // return average value if this brick is requested but not loaded
-        if (cBrickID == 0) { // root node, return average value of the tree
-          return this->avgValue;
-        } else {
-          // inner node, return the average value of this node which is 
-          // stored in the parent node
-          if (!valueBricksStatus[pBrickID].isLoaded)
-            return this->avgValue;
-          else {
-            vb = (typename BrickTree<N, T>::ValueBrick *)
-              (valueBrick + pBrickID);
-            return vb->value[pPos.z][pPos.y][pPos.x];
-          }
-        }
-      } else {
+
+      if(valueBricksStatus[cBrickID].isLoaded){
+        // current brick is loaded 
         vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + cBrickID);
         return vb->value[cPos.z][cPos.y][cPos.x];
+      } else if (valueBricksStatus[cBrickID].isRequested != 0 ){
+        // current brick has been requested but not yet loaded
+        // return the loaded parent brick or return the average value
+        if(valueBricksStatus[pBrickID].isLoaded != 0){
+          vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + pBrickID);
+          return vb->value[pPos.z][pPos.y][pPos.x];
+        } else{
+          return this->avgValue;
+        }
+      } else{
+        // request current brick if it is not requested
+        valueBricksStatus[cBrickID].isRequested = 1;
       }
-
-      // if (!valueBricksStatus[cBrickID].isLoaded) {
-      //   // request this brick if it is not requested
-      //   if (!valueBricksStatus[cBrickID].isRequested) {
-      //     valueBricksStatus[cBrickID].isRequested = 1;
-      //   }
-      //   // return average value if this brick is requested but not loaded
-      //   if (cBrickID == 0)  // root node, return average value of the tree
-      //     return this->avgValue;
-      //   else {
-      //     // inner node, return the average value of this node which is 
-      //     // stored
-      //     // in the parent node
-      //     if (!valueBricksStatus[pBrickID].isLoaded)
-      //       return this->avgValue;
-      //     else {
-      //       vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick +
-      //                                                     pBrickID);
-      //       return vb->value[pPos.z][pPos.y][pPos.x];
-      //     }
-      //   }
-      // } else {
-      //   vb = (typename BrickTree<N, T>::ValueBrick *)
-      //     (valueBrick + cBrickID);      
-      //   // blockID 3 cBrickID 265097 cPos 2 0 1 value 2.39878
-      //   // if (vb->value[cPos.z][cPos.y][cPos.x] > 1.f)
-      //   // if (blockID == 3 && cBrickID == 265097 && 
-      //   //     cPos.x == 2 && cPos.y == 0 && cPos.z == 1)
-      //   // std::cout << "blockID " << blockID << " "
-      //   //           << "cBrickID " << cBrickID << " "
-      //   //           << "cPos " 
-      //   //           << cPos.x << " " 
-      //   //           << cPos.y << " " 
-      //   //           << cPos.z << " "
-      //   //           << "value " << vb->value[cPos.z][cPos.y][cPos.x]
-      //   //           << std::endl;        
-      //   return vb->value[cPos.z][cPos.y][cPos.x];
-      // }
 
       return this->avgValue;
 
