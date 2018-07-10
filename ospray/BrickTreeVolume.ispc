@@ -71,6 +71,47 @@ static void BrickTreeVolume_stepRay(void *uniform _self,
   ray.t0 += step;
 }
 
+inline Address BrickTreeVolume_getValueBrickAddress(void *uniform _self,
+                                               const uniform int &blockID,
+                                               const varying vec3i &coord)
+{
+  /* Cast to the actual volume subtype. */
+  BrickTreeVolume *uniform self = (BrickTreeVolume * uniform) _self;
+  const uniform BrickTree * uniform bt = (BrickTree *)(self->forest.data + blockID);
+
+  const uniform int       N    = self->brickSize;
+  uniform int wsBrickW = self->blockWidth;
+
+  uniform FindStack stack[16];
+  uniform FindStack *uniform stackPtr = pushStack(&stack[0],0,-1,wsBrickW);
+
+  while (stackPtr > stack) {
+    --stackPtr;
+    if (stackPtr->active) {
+      const int brickID = stackPtr->cBrickID;
+      const int ibID   = bt->brickInfo[brickID].indexBrickID;
+      const uniform int brickW  = stackPtr->worldSpaceBrickW;
+      const uniform int cellW   = brickW / N; 
+
+      vec3i cpos = make_vec3i((coord.x % brickW) / cellW,
+                              (coord.y % brickW) / cellW,
+                              (coord.z % brickW) / cellW);
+      vec3i ppos = make_vec3i((coord.x % (brickW * N)) / brickW,
+                              (coord.x % (brickW * N)) / brickW,
+                              (coord.x % (brickW * N)) / brickW);
+
+      const int childBrickID = getChildBrickID(bt,ibID,cpos);
+      if (childBrickID == -1) {
+        Address address = {brickID, cpos, stackPtr->pBrickID, ppos};
+        return address;
+      } else {
+        wsBrickW = wsBrickW / N;
+        stackPtr = pushStack(stackPtr, childBrickID, brickID, wsBrickW);
+      }
+    }
+  }
+}
+
 inline Address BrickTreeVolume_getVoxelAddress(void *uniform _self,
                                                const uniform int &blockID,
                                                const varying vec3i &coord)
@@ -79,9 +120,7 @@ inline Address BrickTreeVolume_getVoxelAddress(void *uniform _self,
   BrickTreeVolume *uniform self = (BrickTreeVolume * uniform) _self;
   BrickTree * bt = (BrickTree *)(self->forest.data + blockID);
   const int       N    = self->brickSize;
-  const float rcp_N    = 1.f / (float)N;
 
-  Address address;
   // variables  
   int cBrickID = 0;
   int pBrickID = -1; // parent brick ID
@@ -101,21 +140,13 @@ inline Address BrickTreeVolume_getVoxelAddress(void *uniform _self,
     // query
     const int ibID = bt->brickInfo[cBrickID].indexBrickID;
     if (ibID == -1) {
-      address.cBrickID = cBrickID;
-      address.cpos     = cpos;
-      address.pBrickID = pBrickID;
-      address.ppos     = ppos;
-      // has no children
+      Address address = {cBrickID, cpos, pBrickID, ppos};
       return address;
     } else {
       // has children
       const int cbID = bt->indexBrick[ibID].childID[cpos.z][cpos.y][cpos.x];
       if (cbID == -1) {  // this children is not ready
-        address.cBrickID = cBrickID;
-        address.cpos     = cpos;
-        address.pBrickID = pBrickID;
-        address.ppos     = ppos;
-        // has no children
+        Address address = {cBrickID, cpos, pBrickID, ppos};
         return address;
       } else {  // this children has a children still
         pBrickID = cBrickID;
@@ -128,11 +159,7 @@ inline Address BrickTreeVolume_getVoxelAddress(void *uniform _self,
   cpos.x           = coord.x % brickW;
   cpos.y           = coord.y % brickW;
   cpos.z           = coord.z % brickW;
-  address.cBrickID = cBrickID;
-  address.cpos     = cpos;
-  address.pBrickID = pBrickID;
-  address.ppos     = ppos;
-  // has no children
+  Address address = {cBrickID, cpos, pBrickID, ppos};
   return address;
 }
 
@@ -168,8 +195,8 @@ static varying float getBrickValue(BrickTreeVolume *uniform self,
 }
 
 inline void BrickTreeVolume_getVoxel(void *uniform _self,
-    const varying vec3i &coord,
-    varying float &value)
+                                     const varying vec3i &coord,
+                                     varying float &value)
 {
   /* Cast to the actual volume subtype. */
   BrickTreeVolume *uniform self = (BrickTreeVolume * uniform) _self;
@@ -177,7 +204,8 @@ inline void BrickTreeVolume_getVoxel(void *uniform _self,
 
   foreach_unique(bID in blockID)
   {
-    Address address = BrickTreeVolume_getVoxelAddress(self, bID, coord);
+    //Address address = BrickTreeVolume_getVoxelAddress(self, bID, coord);
+    Address address = BrickTreeVolume_getValueBrickAddress(self, bID, coord);
     value           = getBrickValue(self, bID, address);
   }
 }

@@ -141,24 +141,15 @@ namespace ospray {
       BrickTree();
       ~BrickTree();
 
-      static inline int invalidID()
-      {
-        return -1;
-      }
+      static inline int invalidID(){ return -1;}
 
       std::string voxelType() const
       {
         return typeToString<T>();
       };
-      int brickSize() const
-      {
-        return N;
-      };
+      int brickSize() const{ return N;};
 
-      vec3i getRootGridDims() const
-      {
-        return rootGridDims;
-      }
+      vec3i getRootGridDims() const{ return rootGridDims;}
 
       /*! map this one from a binary dump that was created by the
        * bricktreebuilder/raw2bricks tool */
