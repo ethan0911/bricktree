@@ -200,12 +200,14 @@ inline void BrickTreeVolume_getVoxel(void *uniform _self,
 {
   /* Cast to the actual volume subtype. */
   BrickTreeVolume *uniform self = (BrickTreeVolume * uniform) _self;
-  const int blockID    = getBlockID(self, coord);
+
+  const vec3i samplePos = max(make_vec3i(0),min(self->validSize -1,coord));
+  const int blockID    = getBlockID(self, samplePos);
 
   foreach_unique(bID in blockID)
   {
     //Address address = BrickTreeVolume_getVoxelAddress(self, bID, coord);
-    Address address = BrickTreeVolume_getValueBrickAddress(self, bID, coord);
+    Address address = BrickTreeVolume_getValueBrickAddress(self, bID, samplePos);
     value           = getBrickValue(self, bID, address);
   }
 }

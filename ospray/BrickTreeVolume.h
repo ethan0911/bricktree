@@ -148,40 +148,38 @@ namespace ospray {
       /*! compute sample at given position */
       virtual float sample(const vec3f &pos) const override
       {
-        //return 0.2f;
+        // return 0.2f;
 
-        vec3f coord = pos; 
+        vec3f coord = pos;
 
         vec3i low    = (vec3i)coord;
         vec3f factor = coord - (vec3f)low;
 
         float v;
 
-        // int blockId = btv->getBlockID((vec3f)(low));
-        // auto& bt    = forest->tree[blockId];
-        // v           = bt.findValue(blockId, low, btv->blockWidth);
-
         float neighborValue[2][2][2];
-          
-          array3D::for_each(vec3i(2), [&](const vec3i &idx) {
-            int blockId = btv->getBlockID((vec3f)(low + idx));
-            auto& bt    = forest->tree[blockId];
-            neighborValue[idx.z][idx.y][idx.x] =
-                bt.findValue(blockId,low + idx, btv->blockWidth);
-          });
 
-          v = lerp3<float>(neighborValue[0][0][0],
-                           neighborValue[0][0][1],
-                           neighborValue[0][1][0],
-                           neighborValue[0][1][1],
-                           neighborValue[1][0][0],
-                           neighborValue[1][0][1],
-                           neighborValue[1][1][0],
-                           neighborValue[1][1][1],
-                           factor.x,
-                           factor.y,
-                           factor.z);
-                           
+        array3D::for_each(vec3i(2), [&](const vec3i &idx) {
+          int blockId = btv->getBlockID((vec3f)(low + idx));
+          auto &bt    = forest->tree[blockId];
+          const vec3i samplePos =
+              max(vec3i(0), min(btv->validSize - 1, low + idx));
+          neighborValue[idx.z][idx.y][idx.x] =
+              bt.findValue(blockId, samplePos, btv->blockWidth);
+        });
+
+        v = lerp3<float>(neighborValue[0][0][0],
+                         neighborValue[0][0][1],
+                         neighborValue[0][1][0],
+                         neighborValue[0][1][1],
+                         neighborValue[1][0][0],
+                         neighborValue[1][0][1],
+                         neighborValue[1][1][0],
+                         neighborValue[1][1][1],
+                         factor.x,
+                         factor.y,
+                         factor.z);
+
         return v;
       }
 
