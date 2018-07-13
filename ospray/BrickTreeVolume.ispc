@@ -47,18 +47,6 @@ extern "C" unmasked uniform float BrickTree_scalar_sample(void *uniform cppObjec
 extern "C" unmasked uniform vec3f BrickTree_scalar_computeGradient(void *uniform cppObject, uniform vec3f &samplePos);
 
 
-static varying int getBlockID(BrickTreeVolume *uniform self,
-                              const varying vec3i &coord)
-{
-  int x = coord.x / self->blockWidth;
-  int y = coord.y / self->blockWidth;
-  int z = coord.z / self->blockWidth;
-  x = (x >= self->gridSize.x) ? (self->gridSize.x -1) : x;
-  y = (y >= self->gridSize.y) ? (self->gridSize.y -1) : y;
-  z = (z >= self->gridSize.z) ? (self->gridSize.z -1) : z;
-  return x + y * self->gridSize.x + z * self->gridSize.y * self->gridSize.x;
-}
-
 // Find the next hit point in the volume for ray casting based renderers.
 static void BrickTreeVolume_stepRay(void *uniform _self, 
                                     varying Ray &ray,
@@ -71,46 +59,6 @@ static void BrickTreeVolume_stepRay(void *uniform _self,
   ray.t0 += step;
 }
 
-inline Address BrickTreeVolume_getValueBrickAddress(void *uniform _self,
-                                               const uniform int &blockID,
-                                               const varying vec3i &coord)
-{
-  /* Cast to the actual volume subtype. */
-  BrickTreeVolume *uniform self = (BrickTreeVolume * uniform) _self;
-  const uniform BrickTree * uniform bt = (BrickTree *)(self->forest.data + blockID);
-
-  const uniform int       N    = self->brickSize;
-  uniform int wsBrickW = self->blockWidth;
-
-  uniform FindStack stack[16];
-  uniform FindStack *uniform stackPtr = pushStack(&stack[0],0,-1,wsBrickW);
-
-  while (stackPtr > stack) {
-    --stackPtr;
-    if (stackPtr->active) {
-      const int brickID = stackPtr->cBrickID;
-      const int ibID   = bt->brickInfo[brickID].indexBrickID;
-      const uniform int brickW  = stackPtr->worldSpaceBrickW;
-      const uniform int cellW   = brickW / N; 
-
-      vec3i cpos = make_vec3i((coord.x % brickW) / cellW,
-                              (coord.y % brickW) / cellW,
-                              (coord.z % brickW) / cellW);
-      vec3i ppos = make_vec3i((coord.x % (brickW * N)) / brickW,
-                              (coord.x % (brickW * N)) / brickW,
-                              (coord.x % (brickW * N)) / brickW);
-
-      const int childBrickID = getChildBrickID(bt,ibID,cpos);
-      if (childBrickID == -1) {
-        Address address = {brickID, cpos, stackPtr->pBrickID, ppos};
-        return address;
-      } else {
-        wsBrickW = wsBrickW / N;
-        stackPtr = pushStack(stackPtr, childBrickID, brickID, wsBrickW);
-      }
-    }
-  }
-}
 
 inline Address BrickTreeVolume_getVoxelAddress(void *uniform _self,
                                                const uniform int &blockID,
@@ -163,6 +111,59 @@ inline Address BrickTreeVolume_getVoxelAddress(void *uniform _self,
   return address;
 }
 
+static varying int getBlockID(BrickTreeVolume *uniform self,
+                              const varying vec3i &coord)
+{
+  int x = coord.x / self->blockWidth;
+  int y = coord.y / self->blockWidth;
+  int z = coord.z / self->blockWidth;
+  x = (x >= self->gridSize.x) ? (self->gridSize.x -1) : x;
+  y = (y >= self->gridSize.y) ? (self->gridSize.y -1) : y;
+  z = (z >= self->gridSize.z) ? (self->gridSize.z -1) : z;
+  return x + y * self->gridSize.x + z * self->gridSize.y * self->gridSize.x;
+}
+
+inline Address BrickTreeVolume_getValueBrickAddress(void *uniform _self,
+                                               const uniform int &blockID,
+                                               const varying vec3i &coord)
+{
+  /* Cast to the actual volume subtype. */
+  BrickTreeVolume *uniform self = (BrickTreeVolume * uniform) _self;
+  const uniform BrickTree * uniform bt = (BrickTree *)(self->forest.data + blockID);
+
+  const uniform int       N    = self->brickSize;
+  uniform int wsBrickW = self->blockWidth;
+
+  uniform FindStack stack[16];
+  uniform FindStack *uniform stackPtr = pushStack(&stack[0],0,-1,wsBrickW);
+
+  while (stackPtr > stack) {
+    --stackPtr;
+    if (stackPtr->active) {
+      const int brickID = stackPtr->cBrickID;
+      const int ibID   = bt->brickInfo[brickID].indexBrickID;
+      const uniform int brickW  = stackPtr->worldSpaceBrickW;
+      const uniform int cellW   = brickW / N; 
+
+      vec3i cpos = make_vec3i((coord.x % brickW) / cellW,
+                              (coord.y % brickW) / cellW,
+                              (coord.z % brickW) / cellW);
+      vec3i ppos = make_vec3i((coord.x % (brickW * N)) / brickW,
+                              (coord.x % (brickW * N)) / brickW,
+                              (coord.x % (brickW * N)) / brickW);
+
+      const int childBrickID = getChildBrickID(bt,ibID,cpos);
+      cif (childBrickID == -1) {
+        uniform Address address = {brickID, cpos, stackPtr->pBrickID, ppos};
+        return address;
+      } else {
+        wsBrickW = wsBrickW / N;
+        stackPtr = pushStack(stackPtr, childBrickID, brickID, wsBrickW);
+      }
+    }
+  }
+}
+
 static varying float getBrickValue(BrickTreeVolume *uniform self,
                                    const uniform int blockID,
                                    const varying Address &address)
@@ -170,6 +171,8 @@ static varying float getBrickValue(BrickTreeVolume *uniform self,
   /* Cast to the actual volume subtype. */
   BrickTree *bt  = (BrickTree *)(self->forest.data + blockID);
   ValueBrick *vb = NULL;
+
+  //?? inefficient data access? gather ?
 
   if (bt->valueBricksStatus[address.cBrickID].isLoaded) {
     // here make sure each brick (in each gang) is loaded

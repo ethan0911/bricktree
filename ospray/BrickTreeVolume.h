@@ -162,8 +162,7 @@ namespace ospray {
         array3D::for_each(vec3i(2), [&](const vec3i &idx) {
           int blockId = btv->getBlockID((vec3f)(low + idx));
           auto &bt    = forest->tree[blockId];
-          const vec3i samplePos =
-              max(vec3i(0), min(btv->validSize - 1, low + idx));
+          const vec3i samplePos = max(vec3i(0), min(btv->validSize - 1, low + idx));
           neighborValue[idx.z][idx.y][idx.x] =
               bt.findValue(blockId, samplePos, btv->blockWidth);
         });
