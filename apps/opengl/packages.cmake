@@ -21,6 +21,16 @@ if (NOT TARGET glfw)
     INTERFACE_LINK_LIBRARIES "${GLFW_LIBRARIES}")
 endif ()
 #
+#--- GLAD
+#
+if (NOT TARGET glad)
+  add_library(glad external/glad/glad.c)
+  target_include_directories(glad PUBLIC
+    "$<BUILD_INTERFACE:"
+    "external/glad;"
+    ">")
+endif ()    
+#
 #--- ImGUI
 #
 if (NOT TARGET imgui)

@@ -1,3 +1,8 @@
+# define package name
+if (NOT APP_VIEWER_PREFIX)
+  set(APP_VIEWER_PREFIX ospray)
+endif ()
+
 # find packages
 include(packages.cmake)
 
@@ -20,34 +25,33 @@ if (TFN_MODULE)
 endif (TFN_MODULE)
 
 # build everything as a library
-add_library(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
-  viewer.cpp
-  src/engine.cpp
-  src/camera.cpp
-  src/scene/properties.cpp
-  src/common/trackball.cpp
+add_library(${APP_VIEWER_PREFIX}_app_viewer
   ${TFN_MODULE_SRC}
-  external/glad.c
-  external/imgui_glfw_impi.cpp)
-set_target_properties(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
+  external/imgui_glfw_impi.cpp
+  src/common/trackball.cpp
+  src/scene/properties.cpp
+  src/camera.cpp
+  src/engine.cpp
+  viewer.cpp)
+set_target_properties(${APP_VIEWER_PREFIX}_app_viewer
   PROPERTIES CXX_STANDARD 11)
-target_include_directories(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
-  PUBLIC
+target_include_directories(${APP_VIEWER_PREFIX}_app_viewer
+  PRIVATE
   "$<BUILD_INTERFACE:"
   "${TFN_MODULE_INCLUDE_DIR};"
   "${CMAKE_CURRENT_LIST_DIR}/src;"
   "${CMAKE_CURRENT_LIST_DIR}/external;"
   ">")
-target_link_libraries(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
-  glfw OpenGL)
-if (TARGET ospray_package)
-  target_link_libraries(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
+target_link_libraries(${APP_VIEWER_PREFIX}_app_viewer
+  glad glfw OpenGL)
+if (TARGET ospray_package) # if the viewer is built outside ospray source
+  target_link_libraries(${APP_VIEWER_PREFIX}_app_viewer
     imgui ospray_package)
-else ()
-  target_include_directories(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
+else () # if the package is built within an ospray module
+  target_include_directories(${APP_VIEWER_PREFIX}_app_viewer
     PUBLIC "$<BUILD_INTERFACE:"
     "${PROJECT_SOURCE_DIR}/apps/exampleViewer/common/imgui;>")
-  target_link_libraries(ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
+  target_link_libraries(${APP_VIEWER_PREFIX}_app_viewer
     ospray
     ospray_common
     ospray_imgui

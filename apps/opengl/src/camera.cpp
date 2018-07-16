@@ -92,7 +92,7 @@ void viewer::Camera::SetViewPort(const vec3f& vp, const vec3f& vu,
   prop.SetUp(this->up);
   prop.SetDir(this->focus - this->eye);
   prop.SetPos(this->eye);
-  prop.SetFovy(this->fovy);
+  prop.SetFovy(this->fovy/this->ball.ZoomRatio());
   this->ball.SetCoordinate(this->up, 
                            this->focus - this->eye,
                            this->eye);
@@ -120,6 +120,7 @@ void viewer::Camera::CameraUpdateView()
   prop.SetPos(pos);
   prop.SetDir(dir);
   prop.SetUp(up);
+  prop.SetFovy(this->fovy/this->ball.ZoomRatio());
 }
 void viewer::Camera::CameraUpdateProj(const size_t& width, 
                                       const size_t& height) 

@@ -17,7 +17,7 @@ OSPRAY_CREATE_APPLICATION(ospRaw2Bricks
 ## Benchmarker Widget
 ## ====================================================================== ##
 if (OSPRAY_MODULE_BRICKTREE_WIDGET)
-  set(OSPRAY_APP_VIEWER_PREFIX "_module_bricktree")
+  set(APP_VIEWER_PREFIX "ospray_module_bricktree")
   add_subdirectory(opengl)
   ospray_create_application(ospBrickWidget
     ospBrickTreeApp.cpp
@@ -30,7 +30,7 @@ if (OSPRAY_MODULE_BRICKTREE_WIDGET)
     ospray_imgui3d_sg
     ospray_module_ispc
     ospray_module_bricktree_core
-    ospray${OSPRAY_APP_VIEWER_PREFIX}_app_viewer
+    ${APP_VIEWER_PREFIX}_app_viewer
     ${HDF5_LIBRARIES})
   set_target_properties(ospBrickWidget
     PROPERTIES 

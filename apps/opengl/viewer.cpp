@@ -97,12 +97,12 @@ void WidgetDraw() {
   static bool show_app_renderer = false;
   static bool show_app_tfn = true;
   // debug
-  static bool show_app_fps = true;
-  static bool show_imgui_test_win = false;
+  static bool show_app_metrics = true;
+  static bool show_app_imgui_test_win = false;
   if (ImGui::BeginMainMenuBar()) {
     if (ImGui::BeginMenu("Parameters"))
     {
-      // ImGui::MenuItem("Camera", NULL, &show_app_camera);
+      ImGui::MenuItem("Camera", NULL, &show_app_camera);
       ImGui::MenuItem("Lights", NULL, &show_app_lights);
       ImGui::MenuItem("Renderer", NULL, &show_app_renderer);
       ImGui::MenuItem("Transfer Function", NULL, &show_app_tfn);
@@ -110,8 +110,8 @@ void WidgetDraw() {
     }
     if (ImGui::BeginMenu("Debug"))
     {
-      ImGui::MenuItem("FPS", NULL, &show_app_fps);
-      ImGui::MenuItem("Show ImGui Test Window", NULL, &show_imgui_test_win);
+      ImGui::MenuItem("Show Rendering Metrics", NULL, &show_app_metrics);
+      ImGui::MenuItem("Show ImGui Test Window", NULL, &show_app_imgui_test_win);
       ImGui::EndMenu();
     }
     ImGui::EndMainMenuBar();
@@ -123,19 +123,21 @@ void WidgetDraw() {
     ImGui::End();
   }
   if (show_app_lights) {
+    ImGui::SetNextWindowSizeConstraints(ImVec2(250,200),ImVec2(FLT_MAX,FLT_MAX));
     if (ImGui::Begin("Light Parameters", &show_app_lights, 0))
     { litProp.Draw(); }
     ImGui::End();
   }
   if (show_app_renderer) {
+    ImGui::SetNextWindowSizeConstraints(ImVec2(250,400),ImVec2(FLT_MAX,FLT_MAX));
     if (ImGui::Begin("Renderer Parameters", &show_app_renderer, 0))
     { renProp.Draw(); }
     ImGui::End();
   }
   if (show_app_tfn) tfnProp.Draw(&show_app_tfn);
 
-  // -- draw FPS
-  if (show_app_fps) {
+  // -- draw Metrics
+  if (show_app_metrics) {
     static const float DISTANCE = 10.0f;
     static int corner = 0;
     ImVec2 window_pos = ImVec2((corner & 1) ? 
@@ -162,8 +164,8 @@ void WidgetDraw() {
   }
 
   // -- ImGUI Example:  
-  if (show_imgui_test_win) {
-    ImGui::ShowTestWindow(&show_imgui_test_win);
+  if (show_app_imgui_test_win) {
+    ImGui::ShowTestWindow(&show_app_imgui_test_win);
   }
 
   ImGui::Render();
