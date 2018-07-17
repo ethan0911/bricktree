@@ -27,6 +27,9 @@ struct range1f {
     float lo, hi;
 };
 
+/*! enum to symbolically iterate the 8 corners of an voxel */
+enum { C000=0, C001,C010,C011,C100,C101,C110,C111 };
+
 /*! \brief ispc-side implementation of the bricktree object 
  *
  * note we don't actually do anything serious on the ispc side fo this
@@ -52,7 +55,7 @@ struct BrickTreeVolume {
     uniform BrickTreeForest forest;
 };
 
-inline const int getChildBrickID(const uniform BrickTree *uniform bt,
+inline const int getChildBrickID(const uniform BrickTree *varying bt,
                                  int indexBrickID,
                                  varying vec3i cpos)
 {
