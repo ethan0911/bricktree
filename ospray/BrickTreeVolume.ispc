@@ -233,24 +233,33 @@ inline void getBrickValues(BrickTreeVolume *uniform self,
 
   if (bt->valueBricksStatus[address.cBrickID].isLoaded) {
     // here make sure each brick (in each gang) is loaded
+#if 0
     vb = (ValueBrick *)(bt->valueBrick + address.cBrickID);
-
-    vec3i cpos = address.cpos;
+    const vec3i& cpos = address.cpos;
     vCorners[cornerIdx] = vb->value[cpos.z][cpos.y][cpos.x];
     cvFilled[cornerIdx] = 1;
-
-    // for (uniform int ii = cornerIdx; ii < 8; ii++) {
-    //   if (cvFilled[ii] == 1)
-    //     continue;
-
-    //   vec3i pos = make_vec3i((ii & 1) ? cpos.x : cpos.x + 1,
-    //                          (ii & 2) ? cpos.y : cpos.y + 1,
-    //                          (ii & 4) ? cpos.z : cpos.z + 1);
-    //   if (pos.x < bs & pos.y < bs & pos.z < bs) {
-    //     vCorners[ii] = vb->value[pos.z][pos.y][pos.x];
-    //     cvFilled[ii] = 1;
-    //   }
-    // }
+#else
+    // if all the values in the gang are filled, return
+    if (cvFilled[cornerIdx] == 1) { return; }
+    // some of the values are unset, we do query for all the gangs
+    // --> query myself
+    vb = (ValueBrick *)(bt->valueBrick + address.cBrickID);
+    const vec3i& cpos = address.cpos;
+    vCorners[cornerIdx] = vb->value[cpos.z][cpos.y][cpos.x];
+    cvFilled[cornerIdx] = 1;
+    // --> query neighbors
+    for (uniform int ii = cornerIdx + 1; ii < 8; ++ii) {
+      if (cvFilled[ii] == 1) {/* do nothing */}
+      else {
+        const vec3i pos = make_vec3i((ii & 1) ? cpos.x : cpos.x + 1,
+                                     (ii & 2) ? cpos.y : cpos.y + 1,
+                                     (ii & 4) ? cpos.z : cpos.z + 1);
+        const bool valid = (pos.x < bs & pos.y < bs & pos.z < bs);
+        vCorners[ii] = valid ? vb->value[pos.z][pos.y][pos.x] : 0.0;
+        cvFilled[ii] = valid ? 1 : 0;
+      }
+    }
+#endif
   } else if (bt->valueBricksStatus[address.cBrickID].isRequested != 0) {
     // here make sure each brick (in each gang) has been requested but
     // not yet loaded. we return average value if this brick is requested
