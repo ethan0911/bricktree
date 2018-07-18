@@ -39,7 +39,7 @@ struct Address
   varying int pBrickID;
   //! The offset of the voxel's parent brick in the enclosing brick.
   varying vec3i ppos;
-  //! The children cell size
+  //! current value brick cell width
   varying float size;
 };
 
@@ -230,8 +230,7 @@ inline void getBrickValues(BrickTreeVolume *uniform self,
                            const varying Address &address,
                            const uniform int cornerIdx,
                            varying float* vCorners,
-                           varying int8*  cvFilled,
-                           const varying float cellW)
+                           varying int8*  cvFilled)
 {
   /* Cast to the actual volume subtype. */
   BrickTree  *bt = (BrickTree *)(self->forest.data + blockID);
@@ -261,7 +260,6 @@ inline void getBrickValues(BrickTreeVolume *uniform self,
     //if (stp == 1.f) {} else print("%\n", stp);
 
     if (bs == address.size) {
-
       for (uniform int ii = cornerIdx + 1; ii < 8; ++ii) {
         if (cvFilled[ii] == 1) {/* do nothing */} else {        
           const vec3i pos = make_vec3i((ii & 1) ? cpos.x : cpos.x + 1,
@@ -342,29 +340,30 @@ static float BrickTreeVolume_sample(void *uniform _self, const vec3f &samplePos)
   //   vCorners[i] = 0.0;
   // }
 
-  float cellWidth;
 
   for (uniform int ii = 0; ii < 8; ++ii) {
     if (cvFilled[ii] == 1) {
       // do nothing
     } else {
+      // const vec3i vtxPos = make_vec3i((ii & 1) ? voxelIndex_0.x :
+      // voxelIndex_1.x,
+      //                                 (ii & 2) ? voxelIndex_0.y :
+      //                                 voxelIndex_1.y, (ii & 4) ?
+      //                                 voxelIndex_0.z : voxelIndex_1.z);
+      // BrickTreeVolume_getVoxels(self, vtxPos, ii, &vCorners[0],
+      // &cvFilled[0]);
 
-      // const vec3i vtxPos = make_vec3i((ii & 1) ? voxelIndex_0.x : voxelIndex_1.x,
-      //                                 (ii & 2) ? voxelIndex_0.y : voxelIndex_1.y,
-      //                                 (ii & 4) ? voxelIndex_0.z : voxelIndex_1.z);
-      // BrickTreeVolume_getVoxels(self, vtxPos, ii, &vCorners[0], &cvFilled[0]);
-
-      const vec3i vtxPos = max(min(make_vec3i((ii & 1) ? voxelIndex_0.x : voxelIndex_1.x,
-                                              (ii & 2) ? voxelIndex_0.y : voxelIndex_1.y,
-                                              (ii & 4) ? voxelIndex_0.z : voxelIndex_1.z),
-                                   self->validSize -1), make_vec3i(0));
+      const vec3i vtxPos =
+          max(min(make_vec3i((ii & 1) ? voxelIndex_0.x : voxelIndex_1.x,
+                             (ii & 2) ? voxelIndex_0.y : voxelIndex_1.y,
+                             (ii & 4) ? voxelIndex_0.z : voxelIndex_1.z),
+                  self->validSize - 1),
+              make_vec3i(0));
       const int blockID = getBlockID(self, vtxPos);
-      const Address address = BrickTreeVolume_getValueBrickAddress(self, blockID, vtxPos);
+      const Address address =
+          BrickTreeVolume_getValueBrickAddress(self, blockID, vtxPos);
 
-      if(ii == 0) cellWidth = address.size;
-
-      getBrickValues(self, blockID, address, ii, vCorners, cvFilled, cellWidth);
-
+      getBrickValues(self, blockID, address, ii, vCorners, cvFilled);
     }
   }
 
