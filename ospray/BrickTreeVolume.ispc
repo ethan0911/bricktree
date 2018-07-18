@@ -39,6 +39,8 @@ struct Address
   varying int pBrickID;
   //! The offset of the voxel's parent brick in the enclosing brick.
   varying vec3i ppos;
+  //! The children cell size
+  varying float size;
 };
 
 // Functions that defined in CPP files
@@ -59,12 +61,12 @@ static void BrickTreeVolume_stepRay(void *uniform _self,
   ray.t0 += step;
 }
 
-
+/*
 inline Address BrickTreeVolume_getVoxelAddress(void *uniform _self,
                                                const uniform int &blockID,
                                                const varying vec3i &coord)
 {
-  /* Cast to the actual volume subtype. */
+  // Cast to the actual volume subtype. 
   BrickTreeVolume *uniform self = (BrickTreeVolume * uniform) _self;
   BrickTree * bt = (BrickTree *)(self->forest.data + blockID);
   const int       N    = self->brickSize;
@@ -110,6 +112,7 @@ inline Address BrickTreeVolume_getVoxelAddress(void *uniform _self,
   Address address = {cBrickID, cpos, pBrickID, ppos};
   return address;
 }
+*/
 
 static varying int getBlockID(BrickTreeVolume *uniform self,
                               const varying vec3i &coord)
@@ -154,7 +157,7 @@ inline Address BrickTreeVolume_getValueBrickAddress(void *uniform _self,
 
       const int childBrickID = getChildBrickID(bt,ibID,cpos);
       cif (childBrickID == -1) {
-        uniform Address address = {brickID, cpos, stackPtr->pBrickID, ppos};
+        uniform Address address = {brickID, cpos, stackPtr->pBrickID, ppos, brickW};
         return address;
       } else {
         wsBrickW = wsBrickW / N;
@@ -164,11 +167,12 @@ inline Address BrickTreeVolume_getValueBrickAddress(void *uniform _self,
   }
 }
 
+/*
 static varying float getBrickValue(BrickTreeVolume *uniform self,
                                    const varying int blockID,
                                    const varying Address &address)
 {
-  /* Cast to the actual volume subtype. */
+  // Cast to the actual volume subtype.
   BrickTree *bt  = (BrickTree *)(self->forest.data + blockID);
   ValueBrick *vb = NULL;
 
@@ -196,12 +200,14 @@ static varying float getBrickValue(BrickTreeVolume *uniform self,
 
   return bt->avgValue;
 }
+*/
 
+/*
 inline void BrickTreeVolume_getVoxel(void *uniform _self,
                                      const varying vec3i &coord,
                                      varying float &value)
 {
-  /* Cast to the actual volume subtype. */
+  // Cast to the actual volume subtype.
   BrickTreeVolume *uniform self = (BrickTreeVolume * uniform) _self;
 
   const vec3i samplePos = max(make_vec3i(0),min(self->validSize -1,coord));
@@ -217,16 +223,18 @@ inline void BrickTreeVolume_getVoxel(void *uniform _self,
   //   value           = getBrickValue(self, bID, address);
   // }
 }
+*/
 
 inline void getBrickValues(BrickTreeVolume *uniform self,
                            const varying int blockID,
                            const varying Address &address,
-                           uniform int cornerIdx,
+                           const uniform int cornerIdx,
                            varying float* vCorners,
-                           varying int8* cvFilled)
+                           varying int8*  cvFilled,
+                           const varying float cellW)
 {
   /* Cast to the actual volume subtype. */
-  BrickTree *bt  = (BrickTree *)(self->forest.data + blockID);
+  BrickTree  *bt = (BrickTree *)(self->forest.data + blockID);
   ValueBrick *vb = NULL;
 
   const uniform int bs = self->brickSize;
@@ -239,26 +247,34 @@ inline void getBrickValues(BrickTreeVolume *uniform self,
     vCorners[cornerIdx] = vb->value[cpos.z][cpos.y][cpos.x];
     cvFilled[cornerIdx] = 1;
 #else
-    // if all the values in the gang are filled, return
-    if (cvFilled[cornerIdx] == 1) { return; }
-    // some of the values are unset, we do query for all the gangs
+
+    // we know that some of the values are unset, we do query for all the gangs
     // --> query myself
     vb = (ValueBrick *)(bt->valueBrick + address.cBrickID);
     const vec3i& cpos = address.cpos;
     vCorners[cornerIdx] = vb->value[cpos.z][cpos.y][cpos.x];
     cvFilled[cornerIdx] = 1;
+
     // --> query neighbors
-    for (uniform int ii = cornerIdx + 1; ii < 8; ++ii) {
-      if (cvFilled[ii] == 1) {/* do nothing */}
-      else {
-        const vec3i pos = make_vec3i((ii & 1) ? cpos.x : cpos.x + 1,
-                                     (ii & 2) ? cpos.y : cpos.y + 1,
-                                     (ii & 4) ? cpos.z : cpos.z + 1);
-        const bool valid = (pos.x < bs & pos.y < bs & pos.z < bs);
-        vCorners[ii] = valid ? vb->value[pos.z][pos.y][pos.x] : 0.0;
-        cvFilled[ii] = valid ? 1 : 0;
+
+    //const float stp = cellW == address.size;
+    //if (stp == 1.f) {} else print("%\n", stp);
+
+    if (bs == address.size) {
+
+      for (uniform int ii = cornerIdx + 1; ii < 8; ++ii) {
+        if (cvFilled[ii] == 1) {/* do nothing */} else {        
+          const vec3i pos = make_vec3i((ii & 1) ? cpos.x : cpos.x + 1,
+                                       (ii & 2) ? cpos.y : cpos.y + 1,
+                                       (ii & 4) ? cpos.z : cpos.z + 1);
+          const bool valid = (pos.x < (bs + 0.5) & pos.y < bs & pos.z < bs);
+          vCorners[ii] = valid ? vb->value[pos.z][pos.y][pos.x] : 0.0;
+          cvFilled[ii] = valid ? 1 : 0;
+        }
       }
+
     }
+
 #endif
   } else if (bt->valueBricksStatus[address.cBrickID].isRequested != 0) {
     // here make sure each brick (in each gang) has been requested but
@@ -273,28 +289,27 @@ inline void getBrickValues(BrickTreeVolume *uniform self,
     }
     vCorners[cornerIdx] = value;
     cvFilled[cornerIdx] = 1;
-
   } else {
     // request this brick if it is not requested
     bt->valueBricksStatus[address.cBrickID].isRequested = 1;
   }
 }
 
-
+/*
 inline void BrickTreeVolume_getVoxels(void *uniform _self,
-                                     const varying vec3i &coord,
-                                     uniform int cornerIdx,
-                                     varying float* vCorners,
-                                     varying int8* cvFilled)
+                                      const varying vec3i &coord,
+                                      uniform int cornerIdx,
+                                      varying float* vCorners,
+                                      varying int8*  cvFilled)
 {
-  /* Cast to the actual volume subtype. */
+  // Cast to the actual volume subtype.
   BrickTreeVolume *uniform self = (BrickTreeVolume * uniform) _self;
 
   const vec3i samplePos = max(make_vec3i(0),min(self->validSize -1,coord));
   const int blockID    = getBlockID(self, samplePos);
 
   Address address = BrickTreeVolume_getValueBrickAddress(self, blockID, samplePos);
-  getBrickValues(self, blockID, address,cornerIdx, vCorners,cvFilled);
+  getBrickValues(self, blockID, address, cornerIdx, vCorners,cvFilled);
 
   // foreach_unique(bID in blockID)
   // {
@@ -302,6 +317,7 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
   //   getBrickValues(self, bID, address,cornerIdx, vCorners,cvFilled);
   // }
 }
+*/
 
 static float BrickTreeVolume_sample(void *uniform _self, const vec3f &samplePos)
 {
@@ -314,28 +330,45 @@ static float BrickTreeVolume_sample(void *uniform _self, const vec3f &samplePos)
   // Lower and upper corners of the box straddling the voxels to be interpolated.
   const vec3i voxelIndex_0 = to_int(samplePos);
   const vec3i voxelIndex_1 = voxelIndex_0 + 1;
+
   // Fractional coordinates within the lower corner voxel used during interpolation.
   const vec3f fractionalLocalCoordinates = samplePos - to_float(voxelIndex_0);
 
-  int8  cvFilled[8];
-  float vCorners[8];
+  int8  cvFilled[8] = {0,0,0,0,0,0,0,0};
+  float vCorners[8] = {0,0,0,0,0,0,0,0};
 
-  for(uniform int i = 0; i < 8;i++){
-    cvFilled[i] = 0;
-    vCorners[i] = 0.0;
+  // for(uniform int i = 0; i < 8;i++){
+  //   cvFilled[i] = 0;
+  //   vCorners[i] = 0.0;
+  // }
+
+  float cellWidth;
+
+  for (uniform int ii = 0; ii < 8; ++ii) {
+    if (cvFilled[ii] == 1) {
+      // do nothing
+    } else {
+
+      // const vec3i vtxPos = make_vec3i((ii & 1) ? voxelIndex_0.x : voxelIndex_1.x,
+      //                                 (ii & 2) ? voxelIndex_0.y : voxelIndex_1.y,
+      //                                 (ii & 4) ? voxelIndex_0.z : voxelIndex_1.z);
+      // BrickTreeVolume_getVoxels(self, vtxPos, ii, &vCorners[0], &cvFilled[0]);
+
+      const vec3i vtxPos = max(min(make_vec3i((ii & 1) ? voxelIndex_0.x : voxelIndex_1.x,
+                                              (ii & 2) ? voxelIndex_0.y : voxelIndex_1.y,
+                                              (ii & 4) ? voxelIndex_0.z : voxelIndex_1.z),
+                                   self->validSize -1), make_vec3i(0));
+      const int blockID = getBlockID(self, vtxPos);
+      const Address address = BrickTreeVolume_getValueBrickAddress(self, blockID, vtxPos);
+
+      if(ii == 0) cellWidth = address.size;
+
+      getBrickValues(self, blockID, address, ii, vCorners, cvFilled, cellWidth);
+
+    }
   }
 
-  for (uniform int ii=0;ii<8;ii++) {
-    if (cvFilled[ii] == 1) continue;
-    // print("%\n", ii);
-    const vec3i vtxPos = make_vec3i((ii & 1) ? voxelIndex_0.x : voxelIndex_1.x,
-                                    (ii & 2) ? voxelIndex_0.y : voxelIndex_1.y,
-                                    (ii & 4) ? voxelIndex_0.z : voxelIndex_1.z);
-    
-    BrickTreeVolume_getVoxels(self, vtxPos, ii, &vCorners[0],&cvFilled[0]);
-  }
-
-    // Interpolate the voxel values.
+  // Interpolate the voxel values.
   const float v_00 = vCorners[C000] + fractionalLocalCoordinates.x * (vCorners[C001] - vCorners[C000]);
   const float v_01 = vCorners[C010] + fractionalLocalCoordinates.x * (vCorners[C011] - vCorners[C010]);
   const float v_10 = vCorners[C100] + fractionalLocalCoordinates.x * (vCorners[C101] - vCorners[C100]);
@@ -347,7 +380,6 @@ static float BrickTreeVolume_sample(void *uniform _self, const vec3f &samplePos)
   //PRINT(volumeSample);
 
   result = volumeSample;
-
 
   // // Lower and upper corners of the box straddling the voxels to be interpolated.
   // const vec3i voxelIndex_0 = to_int(samplePos);
