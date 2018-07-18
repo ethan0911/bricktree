@@ -256,21 +256,15 @@ inline void getBrickValues(BrickTreeVolume *uniform self,
 
     // --> query neighbors
 
-    //const float stp = cellW == address.size;
-    //if (stp == 1.f) {} else print("%\n", stp);
-
-    if (bs == address.size) {
-      for (uniform int ii = cornerIdx + 1; ii < 8; ++ii) {
-        if (cvFilled[ii] == 1) {/* do nothing */} else {        
-          const vec3i pos = make_vec3i((ii & 1) ? cpos.x : cpos.x + 1,
-                                       (ii & 2) ? cpos.y : cpos.y + 1,
-                                       (ii & 4) ? cpos.z : cpos.z + 1);
-          const bool valid = (pos.x < (bs + 0.5) & pos.y < bs & pos.z < bs);
-          vCorners[ii] = valid ? vb->value[pos.z][pos.y][pos.x] : 0.0;
-          cvFilled[ii] = valid ? 1 : 0;
-        }
+    for (uniform int ii = cornerIdx + 1; ii < 8; ++ii) {
+      if (cvFilled[ii] == 0) {      
+        const vec3i pos = make_vec3i((ii & 1) ? cpos.x : cpos.x + bs/address.size,
+                                    (ii & 2) ? cpos.y : cpos.y + bs/address.size,
+                                    (ii & 4) ? cpos.z : cpos.z + bs/address.size);
+        const bool valid = (pos.x < (bs + 0.5) & pos.y < bs & pos.z < bs);
+        vCorners[ii] = valid ? vb->value[pos.z][pos.y][pos.x] : 0.0;
+        cvFilled[ii] = valid ? 1 : 0;
       }
-
     }
 
 #endif
@@ -471,6 +465,7 @@ export void BrickTreeVolume_set(void *uniform _self,
     self->super.sample           = BrickTreeVolume_sample;
     self->cppObject              = cppObject;
     self->cppSampler             = cppSampler;
+    //self->super.adaptiveSampling = 1;
     self->validSize = validSize;
     self->gridSize = gridSize;
     self->brickSize = brickSize;

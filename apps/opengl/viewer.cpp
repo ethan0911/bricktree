@@ -149,7 +149,7 @@ void WidgetDraw() {
     ImVec2 window_pos_pivot = ImVec2((corner & 1) ? 1.0f : 0.0f, 
                                      (corner & 2) ? 1.0f : 0.0f);
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.3f));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.5f));
     if (ImGui::Begin("Metrics", &show_app_tfn, 
                      ImGuiWindowFlags_NoTitleBar|
                      ImGuiWindowFlags_NoResize|
