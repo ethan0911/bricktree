@@ -240,13 +240,6 @@ inline void getBrickValues(BrickTreeVolume *uniform self,
 
   if (bt->valueBricksStatus[address.cBrickID].isLoaded) {
     // here make sure each brick (in each gang) is loaded
-#if 0
-    vb = (ValueBrick *)(bt->valueBrick + address.cBrickID);
-    const vec3i& cpos = address.cpos;
-    vCorners[cornerIdx] = vb->value[cpos.z][cpos.y][cpos.x];
-    cvFilled[cornerIdx] = 1;
-#else
-
     // we know that some of the values are unset, we do query for all the gangs
     // --> query myself
     vb = (ValueBrick *)(bt->valueBrick + address.cBrickID);
@@ -255,19 +248,31 @@ inline void getBrickValues(BrickTreeVolume *uniform self,
     cvFilled[cornerIdx] = 1;
 
     // --> query neighbors
-
     for (uniform int ii = cornerIdx + 1; ii < 8; ++ii) {
-      if (cvFilled[ii] == 0) {      
-        const vec3i pos = make_vec3i((ii & 1) ? cpos.x : cpos.x + bs/address.size,
-                                    (ii & 2) ? cpos.y : cpos.y + bs/address.size,
-                                    (ii & 4) ? cpos.z : cpos.z + bs/address.size);
+      if (cvFilled[ii] == 1)
+        continue;
+      
+      // For neighbors, the epsilon offset in world space is 1, 
+      // which equals to the resolution of leaf node(value brick) in the world space. 
+      // for any node that is not leaf, their resolution in worls space is more than 1. 
+      // here, calculate the epsilon offset in current node's logical coorinate.  
+      int step = bs / address.size;
+
+      // in non-leaf value brick, fill the neighbor with myself
+      // in leaf value brick, if neighbor is in the same value brick, fill the new value
+      // Any other case, DO NOT fill the neighbor and fill the value by traversing the tree.  
+      if(step == 0){
+        vCorners[ii]     = vCorners[cornerIdx];
+        cvFilled[ii]     = 1;
+      }else{
+        const vec3i pos =make_vec3i((ii & 1) ? cpos.x : cpos.x + bs / address.size,
+                                    (ii & 2) ? cpos.y : cpos.y + bs / address.size,
+                                    (ii & 4) ? cpos.z : cpos.z + bs / address.size);
         const bool valid = (pos.x < (bs + 0.5) & pos.y < bs & pos.z < bs);
-        vCorners[ii] = valid ? vb->value[pos.z][pos.y][pos.x] : 0.0;
-        cvFilled[ii] = valid ? 1 : 0;
+        vCorners[ii]     = valid ? vb->value[pos.z][pos.y][pos.x] : 0.0;
+        cvFilled[ii]     = valid ? 1 : 0;
       }
     }
-
-#endif
   } else if (bt->valueBricksStatus[address.cBrickID].isRequested != 0) {
     // here make sure each brick (in each gang) has been requested but
     // not yet loaded. we return average value if this brick is requested
@@ -279,8 +284,10 @@ inline void getBrickValues(BrickTreeVolume *uniform self,
     } else {
       value = bt->avgValue;
     }
-    vCorners[cornerIdx] = value;
-    cvFilled[cornerIdx] = 1;
+    for (uniform int ii = cornerIdx; ii < 8; ++ii) {
+      vCorners[ii] = value;
+      cvFilled[ii] = 1;
+    }
   } else {
     // request this brick if it is not requested
     bt->valueBricksStatus[address.cBrickID].isRequested = 1;
