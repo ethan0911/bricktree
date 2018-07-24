@@ -67,7 +67,7 @@ static void BrickTreeVolume_stepRay(void *uniform _self,
 }
 
 
-static varying int getBlockID(BrickTreeVolume *uniform self,
+inline varying int getBlockID(BrickTreeVolume *uniform self,
                               const varying vec3i &coord)
 {
   int x = coord.x / self->blockWidth;
@@ -99,22 +99,26 @@ inline Address BrickTreeVolume_getValueBrickAddress(void *uniform _self,
       const int brickID = stackPtr->cBrickID;
       const int ibID   = bt->brickInfo[brickID].indexBrickID;
       const uniform int brickW  = stackPtr->worldSpaceBrickW;
-      const uniform int cellW   = brickW / N; 
+      const uniform int childBrickW   = brickW / N; 
 
-      vec3i cpos = make_vec3i((coord.x % brickW) / cellW,
-                              (coord.y % brickW) / cellW,
-                              (coord.z % brickW) / cellW);
+      vec3i cpos = make_vec3i((coord.x % brickW) / childBrickW,
+                              (coord.y % brickW) / childBrickW,
+                              (coord.z % brickW) / childBrickW);
       vec3i ppos = make_vec3i((coord.x % (brickW * N)) / brickW,
                               (coord.x % (brickW * N)) / brickW,
                               (coord.x % (brickW * N)) / brickW);
 
-      const int childBrickID = getChildBrickID(bt,ibID,cpos);
+      if (!bt->valueBricksStatus[brickID].isRequested) {
+        bt->valueBricksStatus[brickID].isRequested = 1;
+        bt->valueBricksStatus[brickID].loadWeight = (float)brickW / (float)wsBrickW;
+      }
+
+      const int childBrickID = getChildBrickID(bt, ibID, cpos);
       cif (childBrickID == -1) {
         uniform Address address = {brickID, cpos, stackPtr->pBrickID, ppos, brickW};
         return address;
       } else {
-        wsBrickW = wsBrickW / N;
-        stackPtr = pushStack(stackPtr, childBrickID, brickID, wsBrickW);
+        stackPtr = pushStack(stackPtr, childBrickID, brickID, childBrickW);
       }
     }
   }
@@ -170,11 +174,11 @@ inline void getBrickValues(BrickTreeVolume *uniform self,
         cvFilled[ii]     = valid ? 1 : 0;
       }
     }
-  } else if (bt->valueBricksStatus[address.cBrickID].isRequested != 0) {
+  } else /*if (bt->valueBricksStatus[address.cBrickID].isRequested)*/ {
     // here make sure each brick (in each gang) has been requested but not yet loaded. 
     // we return average value if this brick is requested but not loaded
     float value;
-    if (bt->valueBricksStatus[address.pBrickID].isLoaded != 0) {
+    if (bt->valueBricksStatus[address.pBrickID].isLoaded) {
       vb = (ValueBrick *)(bt->valueBrick + address.pBrickID);
       value = vb->value[address.ppos.z][address.ppos.y][address.ppos.x];
     } else {
@@ -184,10 +188,12 @@ inline void getBrickValues(BrickTreeVolume *uniform self,
       vCorners[ii] = value;
       cvFilled[ii] = 1;
     }
-  } else {
+  } 
+  /*else {
     // request this brick if it is not requested
     bt->valueBricksStatus[address.cBrickID].isRequested = 1;
   }
+  */
 }
 
 static float BrickTreeVolume_sample(void *uniform _self, const vec3f &samplePos)

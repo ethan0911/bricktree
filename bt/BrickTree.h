@@ -69,14 +69,15 @@ namespace ospray {
     struct BrickStatus
     {
       BrickStatus() 
-          : isRequested(0), isLoaded(0)
+          : isRequested(0), isLoaded(0), loadWeight(0.0)
       {
       }
-      BrickStatus(int request, int load)
-          : isRequested(request), isLoaded(load)
+      BrickStatus(int request, int load,float Weight)
+          : isRequested(request), isLoaded(load),loadWeight(Weight)
       {}
       int8_t isRequested;
       int8_t isLoaded;
+      float loadWeight;
     };
 
     template <int N, typename T = float>
@@ -169,46 +170,17 @@ namespace ospray {
                              const size_t parentBrickID,
                              const vec3i parentCellPos);
 
-      bool isTreeNeedLoad()
-      {
-        for (size_t i = 0; i < numValueBricks; i++) {
-          if (!valueBricksStatus[i].isLoaded &&
-              valueBricksStatus[i].isRequested) {
-            return true;
-          }
-        }
-        return false;
-      }
+      // bool isTreeNeedLoad()
+      // {
+      //   for (size_t i = 0; i < numValueBricks; i++) {
+      //     if (!valueBricksStatus[i].isLoaded &&
+      //         valueBricksStatus[i].isRequested) {
+      //       return true;
+      //     }
+      //   }
+      //   return false;
+      // }
 
-      // get the request value brick list 
-      //      (L = need to load, F = no need to load)
-      // L,L,F,F,F,L,L,L,F,L,F,F,L
-      // return (0,2),(5,3)...
-      std::vector<vec2i> getRequestVBList()
-      {
-        std::vector<vec2i> scheduledVB;
-        std::stack<int> sIdxStack;
-        for (int i = 0; i < (int)numValueBricks; i++) {
-          if (!valueBricksStatus[i].isLoaded &&
-              valueBricksStatus[i].isRequested) {
-            if (sIdxStack.empty()) {
-              sIdxStack.push(i);
-            }
-            if (i == (int)numValueBricks - 1) {
-              scheduledVB.emplace_back(
-                  vec2i(sIdxStack.top(), i - sIdxStack.top() + 1));
-              sIdxStack.pop();
-            }
-          } else {
-            if (!sIdxStack.empty()) {
-              scheduledVB.emplace_back(
-                  vec2i(sIdxStack.top(), i - sIdxStack.top()));
-              sIdxStack.pop();
-            }
-          }
-        }
-        return scheduledVB;
-      }
     };
 
     /* a entire *FOREST* of bricktrees */
@@ -225,6 +197,43 @@ namespace ospray {
 
       std::vector<BrickTree<N, T>> tree;
 
+      // void requestTreebrick(){
+
+      // }
+
+
+      // get the request value brick list 
+      //      (L = need to load, F = no need to load)
+      // L,L,F,F,F,L,L,L,F,L,F,F,L
+      // return (0,2),(5,3)...
+      std::vector<vec2i> getRequestVBList(BrickStatus* vbStatus, const size_t &vbNum)
+      {
+        std::vector<vec2i> scheduledVB;
+        std::stack<int> sIdxStack;
+        for (int i = 0; i < (int)vbNum; i++) {
+          if (!vbStatus[i].isLoaded &&
+              vbStatus[i].isRequested) {
+            //PRINT(valueBricksStatus[i].loadWeight);
+            if (sIdxStack.empty()) {
+              sIdxStack.push(i);
+            }
+            if (i == (int)vbNum - 1) {
+              scheduledVB.emplace_back(
+                  vec2i(sIdxStack.top(), i - sIdxStack.top() + 1));
+              sIdxStack.pop();
+            }
+          } else {
+            if (!sIdxStack.empty()) {
+              scheduledVB.emplace_back(
+                  vec2i(sIdxStack.top(), i - sIdxStack.top()));
+              sIdxStack.pop();
+            }
+          }
+        }
+        return scheduledVB;
+      }
+      
+
       void loadTreeBrick(const FileName &brickFileBase)
       {
         // while (!tree.empty()) {
@@ -239,7 +248,7 @@ namespace ospray {
         // }
         while (!tree.empty()) {
           for (size_t i = 0; i < tree.size(); i++) {
-            std::vector<vec2i> vbReqList = tree[i].getRequestVBList();
+            std::vector<vec2i> vbReqList = getRequestVBList(tree[i].valueBricksStatus,tree[i].numValueBricks);//tree[i].getRequestVBList();
             if (!vbReqList.empty())
               tree[i].loadTreeByBrick(brickFileBase, i, vbReqList);
           }
