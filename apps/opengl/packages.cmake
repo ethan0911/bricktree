@@ -24,7 +24,7 @@ endif ()
 #--- GLAD
 #
 if (NOT TARGET glad)
-  add_library(glad external/glad/glad.c)
+  add_library(glad SHARED external/glad/glad.c)
   target_include_directories(glad PUBLIC
     "$<BUILD_INTERFACE:"
     "external/glad;"
