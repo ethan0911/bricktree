@@ -25,7 +25,7 @@ if (TFN_MODULE)
 endif (TFN_MODULE)
 
 # build everything as a library
-add_library(${APP_VIEWER_PREFIX}_app_viewer
+add_library(${APP_VIEWER_PREFIX}_app_viewer SHARED
   ${TFN_MODULE_SRC}
   external/imgui_glfw_impi.cpp
   src/common/trackball.cpp
