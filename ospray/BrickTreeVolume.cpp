@@ -28,6 +28,7 @@
 #include "BrickTreeVolume_ispc.h"
 // stl
 #include <map>
+#include <math.h>
 #include <set>
 #include <stack>
 
@@ -43,6 +44,7 @@ namespace ospray {
         sampler(NULL),
         gridSize(-1),
         validSize(-1),
+        depth(0),
         brickSize(-1),
         fileName("<none>")
     {}
@@ -147,6 +149,8 @@ namespace ospray {
       this->validSize  = getParam3i("validSize",vec3i(-1));
       this->validFractionOfRootGrid = 
         vec3f(validSize) / vec3f(gridSize*blockWidth);
+      this->depth = (int)(log(blockWidth)/log(brickSize));
+      PRINT(depth);
       this->sampler = createSampler();
       ispc::BrickTreeVolume_set(getIE(), 
                                 (ispc::vec3i &)validSize,

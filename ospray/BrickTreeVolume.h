@@ -137,7 +137,7 @@ namespace ospray {
       {
         //PING;
         forest = std::make_shared<bt::BrickTreeForest<N, T>>(
-            btv->gridSize, btv->validSize, FileName(btv->fileName).dropExt());
+            btv->gridSize, btv->validSize,btv->depth, FileName(btv->fileName).dropExt());
 
         if(forest != NULL){
           btv->volBounds = forest->forestBounds;

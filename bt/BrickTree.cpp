@@ -205,6 +205,30 @@ namespace ospray {
     template <int N, typename T>
     void BrickTree<N, T>::loadTreeByBrick(const FileName &brickFileBase,
                                           size_t blockID,
+                                          std::vector<int> vbReqList)
+    {
+      char blockFileName[10000];
+      sprintf(blockFileName,
+              "%s-brick%06i.ospbin",
+              brickFileBase.str().c_str(),
+              (int)blockID);
+
+      FILE *file = fopen(blockFileName, "rb");
+      if (!file)
+        throw std::runtime_error("could not open brick bin file " +
+                                 std::string(blockFileName));
+
+      std::vector<int>::iterator it = vbReqList.begin();
+      for (; it != vbReqList.end(); it++) {
+        LoadBricks aBrick(VALUEBRICK, *it);
+        loadBricks(file, aBrick);
+      }
+      fclose(file);
+    }
+
+    template <int N, typename T>
+    void BrickTree<N, T>::loadTreeByBrick(const FileName &brickFileBase,
+                                          size_t blockID,
                                           std::vector<vec2i> vbReqList)
     {
       char blockFileName[10000];

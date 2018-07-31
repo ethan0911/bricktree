@@ -35,6 +35,7 @@
 #include <set>
 #include <mutex>
 #include <stack>
+#include <queue>
 #include <thread>
 #include <algorithm>
 
@@ -160,6 +161,9 @@ namespace ospray {
       void loadBricks(FILE *file, LoadBricks aBrick);
       void loadTreeByBrick(const FileName &brickFileBase,
                            size_t treeID,
+                           std::vector<int> vbList);
+      void loadTreeByBrick(const FileName &brickFileBase,
+                           size_t treeID,
                            std::vector<vec2i> vbReqList);
       void loadTreeByBrick(const FileName &brickFileBase, size_t treeID);
 
@@ -172,7 +176,7 @@ namespace ospray {
 
       // bool isTreeNeedLoad()
       // {
-      //   for (size_t i = 0; i < numValueBricks; i++) {
+      //   for (size_t i = 0; i < numValueBricks; i++) {vec2i
       //     if (!valueBricksStatus[i].isLoaded &&
       //         valueBricksStatus[i].isRequested) {
       //       return true;
@@ -189,6 +193,7 @@ namespace ospray {
     {
       const vec3i forestSize;
       const vec3i originalVolumeSize;
+      const int depth;
       const FileName &brickFileBase;
 
       std::thread loadBrickTreeThread[numThread];
@@ -196,10 +201,6 @@ namespace ospray {
       box3f forestBounds;
 
       std::vector<BrickTree<N, T>> tree;
-
-      // void requestTreebrick(){
-
-      // }
 
 
       // get the request value brick list 
@@ -232,7 +233,34 @@ namespace ospray {
         }
         return scheduledVB;
       }
-      
+
+
+      std::vector<vec2i> getReqVBs(BrickTree<N, T> &bt)
+      {
+        std::vector<vec2i> scheduledVB;
+        std::stack<int> sIdxStack;
+        for (int i = 0; i < (int)bt.numValueBricks; i++) {
+          if (!bt.valueBricksStatus[i].isLoaded &&
+              bt.valueBricksStatus[i].isRequested) {
+            if (sIdxStack.empty()) {
+              sIdxStack.push(i);
+            }
+            if (i == (int)bt.numValueBricks - 1) {
+              scheduledVB.emplace_back(
+                  vec2i(sIdxStack.top(), i - sIdxStack.top() + 1));
+              sIdxStack.pop();
+            }
+          } else {
+            if (!sIdxStack.empty()) {
+              scheduledVB.emplace_back(
+                  vec2i(sIdxStack.top(), i - sIdxStack.top()));
+              sIdxStack.pop();
+            }
+          }
+        }
+        return scheduledVB;
+      }
+
 
       void loadTreeBrick(const FileName &brickFileBase)
       {
@@ -246,13 +274,57 @@ namespace ospray {
         //     }
         //   }
         // }
+        
+        // while (!tree.empty()) {
+        //   std::vector<std::vector<int>> reqVBList;
+        //   reqVBList.resize(tree.size());
+
+        //   for (int i = 0; i < depth; i++) {
+        //     for (size_t j = 0; j < reqVBList.size(); j++) {
+        //       if (i == 0) {
+        //         reqVBList[j].emplace_back(0);
+        //       } else {
+        //         std::vector<int> childVBList;
+        //         for(size_t k= 0; k< reqVBList[j].size();k++){
+        //           const int vbID = reqVBList[j][k];
+        //           const int ibID = tree[j].brickInfo[vbID].indexBrickID;
+        //           auto &ib       = tree[j].indexBrick[ibID];
+
+        //           for (size_t m = 0; m < N; m++) {
+        //             for (size_t n = 0; n < N; n++) {
+        //               for (size_t p = 0; p < N; p++) {
+        //                 const int cVB = ib.childID[m][n][p];
+        //                 if (cVB != -1) {
+        //                   childVBList.emplace_back(cVB);
+        //                 }
+        //               }
+        //             }
+        //           }
+        //         }
+        //         reqVBList[j].clear();
+        //         reqVBList[j] = childVBList;
+        //       }
+        //       tree[j].loadTreeByBrick(brickFileBase, j, reqVBList[j]);
+        //     }
+        //   }
+        // }
+
         while (!tree.empty()) {
           for (size_t i = 0; i < tree.size(); i++) {
-            std::vector<vec2i> vbReqList = getRequestVBList(tree[i].valueBricksStatus,tree[i].numValueBricks);//tree[i].getRequestVBList();
+            std::vector<vec2i> vbReqList =getReqVBs(tree[i]);
             if (!vbReqList.empty())
               tree[i].loadTreeByBrick(brickFileBase, i, vbReqList);
           }
         }
+
+        // while (!tree.empty()) {
+        //   for (size_t i = 0; i < tree.size(); i++) {
+        //     std::vector<vec2i> vbReqList =
+        //     getRequestVBList(tree[i].valueBricksStatus,tree[i].numValueBricks);//tree[i].getRequestVBList();
+        //     if (!vbReqList.empty())
+        //       tree[i].loadTreeByBrick(brickFileBase, i, vbReqList);
+        //   }
+        // }
       }
 
       void Initialize()
@@ -295,9 +367,11 @@ namespace ospray {
 
       BrickTreeForest(const vec3i &forestSize,
                       const vec3i &originalVolumeSize,
+                      const int &depth,
                       const FileName &brickFileBase)
           : forestSize(forestSize),
             originalVolumeSize(originalVolumeSize),
+            depth(depth),
             brickFileBase(brickFileBase)
       {
         Initialize();
