@@ -322,8 +322,8 @@ namespace ospray {
 
 #else
 
-      vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + brickID);
-      return vb->value[cellPos.z][cellPos.y][cellPos.x];
+      vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + cBrickID);
+      return vb->value[cPos.z][cPos.y][cPos.x];
 
 #endif
     }
