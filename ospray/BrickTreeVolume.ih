@@ -52,6 +52,7 @@ struct BrickTreeVolume {
     uniform vec3i validSize;
     uniform int brickSize;
     uniform int blockWidth;
+    uniform int depth;
     uniform BrickTreeForest forest;
 };
 

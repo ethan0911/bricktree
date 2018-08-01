@@ -275,39 +275,39 @@ namespace ospray {
         //   }
         // }
         
-        // while (!tree.empty()) {
-        //   std::vector<std::vector<int>> reqVBList;
-        //   reqVBList.resize(tree.size());
+        while (!tree.empty()) {
+          std::vector<std::vector<int>> reqVBList;
+          reqVBList.resize(tree.size());
 
-        //   for (int i = 0; i < depth; i++) {
-        //     for (size_t j = 0; j < reqVBList.size(); j++) {
-        //       if (i == 0) {
-        //         reqVBList[j].emplace_back(0);
-        //       } else {
-        //         std::vector<int> childVBList;
-        //         for(size_t k= 0; k< reqVBList[j].size();k++){
-        //           const int vbID = reqVBList[j][k];
-        //           const int ibID = tree[j].brickInfo[vbID].indexBrickID;
-        //           auto &ib       = tree[j].indexBrick[ibID];
+          for (int i = 0; i < 1; i++) {
+            for (size_t j = 0; j < reqVBList.size(); j++) {
+              if (i == 0) {
+                reqVBList[j].emplace_back(0);
+              } else {
+                std::vector<int> childVBList;
+                for(size_t k= 0; k< reqVBList[j].size();k++){
+                  const int vbID = reqVBList[j][k];
+                  const int ibID = tree[j].brickInfo[vbID].indexBrickID;
+                  auto &ib       = tree[j].indexBrick[ibID];
 
-        //           for (size_t m = 0; m < N; m++) {
-        //             for (size_t n = 0; n < N; n++) {
-        //               for (size_t p = 0; p < N; p++) {
-        //                 const int cVB = ib.childID[m][n][p];
-        //                 if (cVB != -1) {
-        //                   childVBList.emplace_back(cVB);
-        //                 }
-        //               }
-        //             }
-        //           }
-        //         }
-        //         reqVBList[j].clear();
-        //         reqVBList[j] = childVBList;
-        //       }
-        //       tree[j].loadTreeByBrick(brickFileBase, j, reqVBList[j]);
-        //     }
-        //   }
-        // }
+                  for (size_t m = 0; m < N; m++) {
+                    for (size_t n = 0; n < N; n++) {
+                      for (size_t p = 0; p < N; p++) {
+                        const int cVB = ib.childID[m][n][p];
+                        if (cVB != -1) {
+                          childVBList.emplace_back(cVB);
+                        }
+                      }
+                    }
+                  }
+                }
+                reqVBList[j].clear();
+                reqVBList[j] = childVBList;
+              }
+              tree[j].loadTreeByBrick(brickFileBase, j, reqVBList[j]);
+            }
+          }
+        }
 
         while (!tree.empty()) {
           for (size_t i = 0; i < tree.size(); i++) {
