@@ -23,13 +23,6 @@
 
 #include "../bt/BrickTree.ih"
 
-struct range1f {
-    float lo, hi;
-};
-
-/*! enum to symbolically iterate the 8 corners of an voxel */
-enum { C000=0, C001,C010,C011,C100,C101,C110,C111 };
-
 /*! \brief ispc-side implementation of the bricktree object 
  *
  * note we don't actually do anything serious on the ispc side fo this
@@ -55,40 +48,3 @@ struct BrickTreeVolume {
     uniform int depth;
     uniform BrickTreeForest forest;
 };
-
-inline const int getChildBrickID(const uniform BrickTree *varying bt,
-                                 int indexBrickID,
-                                 varying vec3i cpos)
-{
-  if (indexBrickID == -1)
-    return -1;
-
-  const int cbID = bt->indexBrick[indexBrickID].childID[cpos.z][cpos.y][cpos.x];
-  return cbID;
-}
-
-
-struct FindStack
-{
-  varying bool active;
-  varying int32 cBrickID;
-  varying int32 pBrickID;
-  uniform int32 worldSpaceBrickW;
-};
-
-inline uniform FindStack *uniform pushStack(uniform FindStack *uniform stackPtr,
-                                            varying int cBrickID,
-                                            varying int pBrickID,
-                                            uniform int wsBrickW)
-{
-  unmasked
-  {
-    stackPtr->active   = false;
-    stackPtr->cBrickID  = cBrickID;
-    stackPtr->pBrickID = pBrickID;
-  }
-
-  stackPtr->active           = true;
-  stackPtr->worldSpaceBrickW = wsBrickW;
-  return stackPtr + 1;
-}
