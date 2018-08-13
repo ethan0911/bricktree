@@ -18,7 +18,6 @@ if (TFN_MODULE)
   set(TFN_MODULE_INCLUDE_DIR ${TFN_MODULE_ROOT}/src)
   set(TFN_MODULE_SRC 
     ${TFN_MODULE_ROOT}/src/TransferFunctionModule.cpp
-    ${TFN_MODULE_ROOT}/src/common/jsoncpp.cpp
     ${TFN_MODULE_ROOT}/src/widgets/TransferFunctionWidget.cpp)
 endif (TFN_MODULE)
 

@@ -25,7 +25,7 @@
 // ospcommon
 #include "ospcommon/FileName.h"
 // ispc exports
-#include "BrickTree_ispc.h"
+#include "BrickTreeVolume_ispc.h"
 // stl
 #include <map>
 #include <set>
