@@ -222,6 +222,10 @@ namespace ospray {
       for (; it != vbReqList.end(); it++) {
         LoadBricks aBrick(VALUEBRICK, *it);
         loadBricks(file, aBrick);
+        // printf("treeID:%d, vbid: %d, vbSize:%ld \n",
+        //     blockID,
+        //     *it,
+        //     numValueBricks);
       }
       fclose(file);
     }
