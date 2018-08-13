@@ -129,9 +129,7 @@ int main(int ac, const char **av)
               << "#osp:bench using hacked volume"
               << "\033[0m" 
               << std::endl;
-    const std::string hacked_volume_path = 
-      "/home/sci/feng/Desktop/ws/data/"
-      "magnetic-512-volume/magnetic-512-volume.raw";
+    const std::string hacked_volume_path = args.inputFiles[0];
     const std::string hacked_volume_type = "float";
     const size_t hacked_dtype_size = 4;
     const ospcommon::vec3i hacked_dims(512);
