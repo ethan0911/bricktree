@@ -253,77 +253,77 @@ namespace ospray {
         //   }
         // }
 
-        // while (!tree.empty()) {
-        //   std::vector<std::vector<int>> loadVBList;
-        //   loadVBList.resize(tree.size());
-
-        //   for (int d = 0; d < depth; d++) {
-        //     // for (size_t treeid = 0; treeid < tree.size(); treeid++) {
-        //     //   int vbID = 0;
-        //     //   if (d == 0) {
-        //     //     if(!tree[treeid].valueBricksStatus[vbID].isLoaded)
-        //     //       loadVBList[treeid].emplace_back(vbID);
-        //     //   } 
-        //     //   else {
-        //     //     std::vector<int> childVBList;
-        //     //     for (size_t i = 0; i < loadVBList[treeid].size(); i++) {
-        //     //       vbID           = loadVBList[treeid][i];
-        //     //       const int ibID = tree[treeid].brickInfo[vbID].indexBrickID;
-        //     //       if (ibID != -1) {
-        //     //         auto &ib = tree[treeid].indexBrick[ibID];
-        //     //         array3D::for_each(vec3i(N), [&](const vec3i &idx) {
-        //     //           const int cvbID = ib.childID[idx.x][idx.y][idx.z];
-        //     //           if (cvbID != -1 &&
-        //     //               !tree[treeid].valueBricksStatus[cvbID].isLoaded &&
-        //     //               tree[treeid].valueBricksStatus[cvbID].isRequested) {
-        //     //             childVBList.emplace_back(cvbID);
-        //     //           }
-        //     //         });
-        //     //       }
-        //     //     }
-        //     //     loadVBList[treeid].clear();
-        //     //     loadVBList[treeid] = childVBList;
-        //     //   }
-        //     //   tree[treeid].loadTreeByBrick(brickFileBase, treeid, loadVBList[treeid]);
-        //     // }
-        //     tasking::parallel_for(tree.size(), [&](size_t treeID) {
-        //       int vbID = 0;
-        //       if (d == 0) {
-        //         if (!tree[treeID].valueBricksStatus[vbID].isLoaded)
-        //           loadVBList[treeID].emplace_back(vbID);
-        //       } else {
-        //         std::vector<int> childVBList;
-        //         for (size_t i = 0; i < loadVBList[treeID].size(); i++) {
-        //           vbID           = loadVBList[treeID][i];
-        //           const int ibID = tree[treeID].brickInfo[vbID].indexBrickID;
-        //           if (ibID != -1) {
-        //             auto &ib = tree[treeID].indexBrick[ibID];
-        //             array3D::for_each(vec3i(N), [&](const vec3i &idx) {
-        //               const unsigned int cvbID =
-        //                   ib.childID[idx.x][idx.y][idx.z];
-        //               if (cvbID != -1 &&
-        //                   !tree[treeID].valueBricksStatus[cvbID].isLoaded) {
-        //                 childVBList.emplace_back(cvbID);
-        //               }
-        //             });
-        //           }
-        //         }
-        //         loadVBList[treeID].clear();
-        //         loadVBList[treeID] = childVBList;
-        //       }
-        //       tree[treeID].loadTreeByBrick(
-        //           brickFileBase, treeID, loadVBList[treeID]);
-        //     });
-        //   }
-        // }
-
         while (!tree.empty()) {
-          for (size_t i = 0; i < tree.size(); i++) {
-            std::vector<vec2i> vbReqList =getReqVBs(tree[i]);
-            if (!vbReqList.empty())
-              tree[i].loadTreeByBrick(brickFileBase, i, vbReqList);
+          std::vector<std::vector<int>> loadVBList;
+          loadVBList.resize(tree.size());
+
+          for (int d = 0; d < depth; d++) {
+            // for (size_t treeid = 0; treeid < tree.size(); treeid++) {
+            //   int vbID = 0;
+            //   if (d == 0) {
+            //     if(!tree[treeid].valueBricksStatus[vbID].isLoaded)
+            //       loadVBList[treeid].emplace_back(vbID);
+            //   } 
+            //   else {
+            //     std::vector<int> childVBList;
+            //     for (size_t i = 0; i < loadVBList[treeid].size(); i++) {
+            //       vbID           = loadVBList[treeid][i];
+            //       const int ibID = tree[treeid].brickInfo[vbID].indexBrickID;
+            //       if (ibID != -1) {
+            //         auto &ib = tree[treeid].indexBrick[ibID];
+            //         array3D::for_each(vec3i(N), [&](const vec3i &idx) {
+            //           const int cvbID = ib.childID[idx.x][idx.y][idx.z];
+            //           if (cvbID != -1 &&
+            //               !tree[treeid].valueBricksStatus[cvbID].isLoaded &&
+            //               tree[treeid].valueBricksStatus[cvbID].isRequested) {
+            //             childVBList.emplace_back(cvbID);
+            //           }
+            //         });
+            //       }
+            //     }
+            //     loadVBList[treeid].clear();
+            //     loadVBList[treeid] = childVBList;
+            //   }
+            //   tree[treeid].loadTreeByBrick(brickFileBase, treeid, loadVBList[treeid]);
+            // }
+            tasking::parallel_for(tree.size(), [&](size_t treeID) {
+              int vbID = 0;
+              if (d == 0) {
+                if (!tree[treeID].valueBricksStatus[vbID].isLoaded)
+                  loadVBList[treeID].emplace_back(vbID);
+              } else {
+                std::vector<int> childVBList;
+                for (size_t i = 0; i < loadVBList[treeID].size(); i++) {
+                  vbID           = loadVBList[treeID][i];
+                  const int ibID = tree[treeID].brickInfo[vbID].indexBrickID;
+                  if (ibID != -1) {
+                    auto &ib = tree[treeID].indexBrick[ibID];
+                    array3D::for_each(vec3i(N), [&](const vec3i &idx) {
+                      const unsigned int cvbID =
+                          ib.childID[idx.x][idx.y][idx.z];
+                      if (cvbID != -1 &&
+                          !tree[treeID].valueBricksStatus[cvbID].isLoaded) {
+                        childVBList.emplace_back(cvbID);
+                      }
+                    });
+                  }
+                }
+                loadVBList[treeID].clear();
+                loadVBList[treeID] = childVBList;
+              }
+              tree[treeID].loadTreeByBrick(
+                  brickFileBase, treeID, loadVBList[treeID]);
+            });
           }
         }
+
+        // while (!tree.empty()) {
+        //   for (size_t i = 0; i < tree.size(); i++) {
+        //     std::vector<vec2i> vbReqList =getReqVBs(tree[i]);
+        //     if (!vbReqList.empty())
+        //       tree[i].loadTreeByBrick(brickFileBase, i, vbReqList);
+        //   }
+        // }
       }
 
       void Initialize()
