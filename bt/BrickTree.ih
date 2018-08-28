@@ -65,11 +65,16 @@ struct BrickTree
   uniform float valueRange[2];
   uniform int validSize[3];
   uniform int rootGridDims[3];
+  uniform int depth;
 
   uniform ValueBrick *uniform valueBrick;
   uniform IndexBrick *uniform indexBrick;
   uniform BrickInfo *uniform brickInfo;
   uniform BrickStatus *uniform valueBricksStatus;
+
+  uniform unsigned int64 **uniform vbIdxByLevelBuffers;
+  uniform unsigned int64 *uniform vbIdxByLevelStride;
+
 };
 
 struct BrickTreeForest

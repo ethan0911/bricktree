@@ -42,16 +42,15 @@ struct range1f {
 /*! enum to symbolically iterate the 8 corners of an voxel */
 enum { C000=0, C001,C010,C011,C100,C101,C110,C111 };
 
-
 inline const int getChildBrickID(const uniform BrickTree *varying bt,
-int indexBrickID,
-    varying vec3i cpos)
+                                 int indexBrickID,
+                                 varying vec3i cpos)
 {
-if (indexBrickID == -1)
-return -1;
+  if (indexBrickID == -1)
+    return -1;
 
-const int cbID = bt->indexBrick[indexBrickID].childID[cpos.z][cpos.y][cpos.x];
-return cbID;
+  const int cbID = bt->indexBrick[indexBrickID].childID[cpos.z][cpos.y][cpos.x];
+  return cbID;
 }
 
 struct FindStack
@@ -63,20 +62,20 @@ struct FindStack
 };
 
 inline uniform FindStack *uniform pushStack(uniform FindStack *uniform stackPtr,
-    varying int cBrickID,
-    varying int pBrickID,
-    uniform int wsBrickW)
+                                            varying int cBrickID,
+                                            varying int pBrickID,
+                                            uniform int wsBrickW)
 {
-unmasked
-{
-stackPtr->active   = false;
-stackPtr->cBrickID  = cBrickID;
-stackPtr->pBrickID = pBrickID;
-}
+  unmasked
+  {
+    stackPtr->active = false;
+  }
 
-stackPtr->active           = true;
-stackPtr->worldSpaceBrickW = wsBrickW;
-return stackPtr + 1;
+  stackPtr->cBrickID         = cBrickID;
+  stackPtr->pBrickID         = pBrickID;
+  stackPtr->active           = true;
+  stackPtr->worldSpaceBrickW = wsBrickW;
+  return stackPtr + 1;
 }
 
 struct Address
@@ -173,14 +172,14 @@ inline varying int getBlockID(BrickTreeVolume *uniform self,
 //   }
 // }
 
-inline ValueBrick getValueBrick(BrickTreeVolume *uniform btv,
+inline ValueBrick& getValueBrick(BrickTreeVolume *uniform btv,
                                 const uniform BrickTree *uniform bt,
                                 const int brickID)
 {
   const uniform int N   = btv->brickSize;
-  uniform unsigned int capSize  = 1 << 31;
-  uniform unsigned int64 vbSize = N * N * N * bt->numValueBricks * 4;
-  uniform bool huge = (vbSize < capSize) ? false : true; 
+  const uniform unsigned int capSize  = 1 << 31;
+  const uniform unsigned int64 vbSize = N * N * N * bt->numValueBricks * 4;
+  const uniform bool huge = (vbSize < capSize) ? false : true; 
 
 #if 0
 
@@ -257,19 +256,12 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
       if (bt->valueBricksStatus[cBrickID].isLoaded) {
         const int childBrickID = getChildBrickID(bt, ibID, cpos);
         if(childBrickID == -1) {
-          // here make sure each brick (in each gang) is loaded
-          // we know that some of the values are unset, we do query for all the
-          // gangs
+          // here make sure each brick (in each gang) is loaded we know that
+          // some of the values are unset, we do query for all the gangs
+
           // --> query myself
-          // ValueBrick * vb = (ValueBrick *)(bt->valueBrick + cBrickID);
-          ValueBrick vb = getValueBrick(self, bt, cBrickID);
+          ValueBrick &vb      = getValueBrick(self, bt, cBrickID);
           vCorners[cornerIdx] = vb.value[cpos.z][cpos.y][cpos.x];
-
-          //if(bt->numValueBricks >= 15677021)
-          // if(blockID <= 84 && blockID >=82 )
-          //   vCorners[cornerIdx] =1.2f;
-
-          // cvFilled[cornerIdx] = true;
           cvFilled |= (1 << cornerIdx);
 
           // // --> query neighbors
@@ -281,16 +273,13 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
             // buggy? never go to else branch
             if (step <= 1) {
               vCorners[ii] = vCorners[cornerIdx];
-              //cvFilled[ii] = true;
               cvFilled |= (1 << ii);
             } else {
               const vec3i pos  = make_vec3i((ii & 1) ? cpos.x : cpos.x + 1,
                                            (ii & 2) ? cpos.y : cpos.y + 1,
                                            (ii & 4) ? cpos.z : cpos.z + 1);
               const bool valid = (pos.x < N & pos.y < N & pos.z < N);
-              //vCorners[ii]     = valid ? vb->value[pos.z][pos.y][pos.x] : 0.0;
               vCorners[ii]     = valid ? vb.value[pos.z][pos.y][pos.x] : 0.0;
-              //cvFilled[ii]     = valid;
               cvFilled |= ((valid ? 1 : 0) << ii);
             }
           }
@@ -300,20 +289,14 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
         }
       } else {
         float value;
-        if(cBrickID == 0){
+        if (cBrickID == 0) {
           value = bt->avgValue;
+        } else {
+          ValueBrick &vb = getValueBrick(self, bt, pBrickID);
+          value          = vb.value[ppos.z][ppos.y][ppos.x];
         }
-        else{
-           //ValueBrick * vb    = (ValueBrick *)(bt->valueBrick + pBrickID);
-           ValueBrick vb = getValueBrick(self, bt, pBrickID);
-           value = vb.value[ppos.z][ppos.y][ppos.x];
-      
-        }
-        // vCorners[cornerIdx] = value;
-        // cvFilled[cornerIdx] = 1;
         for (uniform int ii = cornerIdx; ii < 8; ++ii) {
           vCorners[ii] = value;
-          //cvFilled[ii] = true;
           cvFilled |= (1 << ii);
         }
       }
@@ -438,8 +421,8 @@ static float BrickTreeVolume_sample(void *uniform _self, const vec3f &samplePos)
       // getBrickValues(self, blockID, address, ii, vCorners, cvFilled);
     }
   }
-  if (numOfQueries > 1)
-    print("%\n", numOfQueries);
+  // if (numOfQueries > 1)
+  //   print("%\n", numOfQueries);
 
   // Interpolate the voxel values.
   const float v_00 = vCorners[C000] + fractionalLocalCoordinates.x * (vCorners[C001] - vCorners[C000]);

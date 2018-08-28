@@ -38,6 +38,7 @@
 #include <queue>
 #include <thread>
 #include <algorithm>
+#include <unordered_map>
 
 #define STREAM_DATA 1
 
@@ -134,11 +135,15 @@ namespace ospray {
       vec2f valueRange;   /*8*/
       vec3i validSize;    /*12*/
       vec3i rootGridDims; /*12*/
+      int32_t depth;
 
       ValueBrick *valueBrick         = nullptr; /*8*/
       IndexBrick *indexBrick         = nullptr; /*8*/
       BrickInfo *brickInfo           = nullptr; /*8*/
       BrickStatus *valueBricksStatus = nullptr; /*8*/
+
+      size_t **vbIdxByLevelBuffers = nullptr;
+      size_t *vbIdxByLevelStride = nullptr;
 
       BrickTree();
       ~BrickTree();
@@ -173,6 +178,30 @@ namespace ospray {
                              const vec3i cellPos,
                              const size_t parentBrickID,
                              const vec3i parentCellPos);
+
+
+
+      std::vector<size_t> getValueBrickIDsByLevel(int level){
+        std::vector<size_t> vbIDs;
+        if(level ==0){
+          vbIDs.emplace_back(0);
+        }else{
+          std::vector<size_t> pVBIDs = getValueBrickIDsByLevel(level -1);
+          for(size_t i = 0; i < pVBIDs.size(); i++){
+            const int ibID = brickInfo[pVBIDs[i]].indexBrickID;
+            if(ibID != invalidID()){
+              auto ib= indexBrick[ibID];
+              array3D::for_each(vec3i(N),[&](const vec3i &idx){
+                const int cvbID = ib.childID[idx.x][idx.y][idx.z];
+                if(cvbID != invalidID()){
+                  vbIDs.emplace_back(cvbID);
+                }
+              });
+            }
+          }
+        }
+        return vbIDs;
+      }
 
       bool isTreeNeedLoad()
       {
@@ -254,68 +283,58 @@ namespace ospray {
         // }
 
         while (!tree.empty()) {
-          std::vector<std::vector<int>> loadVBList;
-          loadVBList.resize(tree.size());
-
-          for (int d = 0; d < depth; d++) {
-            // for (size_t treeid = 0; treeid < tree.size(); treeid++) {
-            //   int vbID = 0;
-            //   if (d == 0) {
-            //     if(!tree[treeid].valueBricksStatus[vbID].isLoaded)
-            //       loadVBList[treeid].emplace_back(vbID);
-            //   } 
-            //   else {
-            //     std::vector<int> childVBList;
-            //     for (size_t i = 0; i < loadVBList[treeid].size(); i++) {
-            //       vbID           = loadVBList[treeid][i];
-            //       const int ibID = tree[treeid].brickInfo[vbID].indexBrickID;
-            //       if (ibID != -1) {
-            //         auto &ib = tree[treeid].indexBrick[ibID];
-            //         array3D::for_each(vec3i(N), [&](const vec3i &idx) {
-            //           const int cvbID = ib.childID[idx.x][idx.y][idx.z];
-            //           if (cvbID != -1 &&
-            //               !tree[treeid].valueBricksStatus[cvbID].isLoaded &&
-            //               tree[treeid].valueBricksStatus[cvbID].isRequested) {
-            //             childVBList.emplace_back(cvbID);
-            //           }
-            //         });
-            //       }
-            //     }
-            //     loadVBList[treeid].clear();
-            //     loadVBList[treeid] = childVBList;
-            //   }
-            //   tree[treeid].loadTreeByBrick(brickFileBase, treeid, loadVBList[treeid]);
-            // }
+          for (int i = 0; i < depth; i++) {
             tasking::parallel_for(tree.size(), [&](size_t treeID) {
-              int vbID = 0;
-              if (d == 0) {
-                if (!tree[treeID].valueBricksStatus[vbID].isLoaded)
-                  loadVBList[treeID].emplace_back(vbID);
-              } else {
-                std::vector<int> childVBList;
-                for (size_t i = 0; i < loadVBList[treeID].size(); i++) {
-                  vbID           = loadVBList[treeID][i];
-                  const int ibID = tree[treeID].brickInfo[vbID].indexBrickID;
-                  if (ibID != -1) {
-                    auto &ib = tree[treeID].indexBrick[ibID];
-                    array3D::for_each(vec3i(N), [&](const vec3i &idx) {
-                      const unsigned int cvbID =
-                          ib.childID[idx.x][idx.y][idx.z];
-                      if (cvbID != -1 &&
-                          !tree[treeID].valueBricksStatus[cvbID].isLoaded) {
-                        childVBList.emplace_back(cvbID);
-                      }
-                    });
-                  }
-                }
-                loadVBList[treeID].clear();
-                loadVBList[treeID] = childVBList;
+              size_t *curLevelVBs = tree[treeID].vbIdxByLevelBuffers[i];
+              size_t numVBs       = tree[treeID].vbIdxByLevelStride[i];
+              std::vector<int> reqVBs;
+              for (size_t j = 0; j < numVBs; j++) {
+                size_t vbIdx = curLevelVBs[j];
+                if (!tree[treeID].valueBricksStatus[vbIdx].isLoaded &&
+                    tree[treeID].valueBricksStatus[vbIdx].isRequested)
+                  reqVBs.emplace_back(vbIdx);
               }
-              tree[treeID].loadTreeByBrick(
-                  brickFileBase, treeID, loadVBList[treeID]);
+              tree[treeID].loadTreeByBrick(brickFileBase, treeID, reqVBs);
             });
           }
         }
+
+        // while (!tree.empty()) {
+        //   std::vector<std::vector<int>> loadVBList;
+        //   loadVBList.resize(tree.size());
+
+        //   for (int d = 0; d < depth; d++) {
+        //     tasking::parallel_for(tree.size(), [&](size_t treeID) {
+        //       int vbID = 0;
+        //       if (d == 0) {
+        //         if (!tree[treeID].valueBricksStatus[vbID].isLoaded &&
+        //             tree[treeID].valueBricksStatus[vbID].isRequested)
+        //           loadVBList[treeID].emplace_back(vbID);
+        //       } else {
+        //         std::vector<int> childVBList;
+        //         for (size_t i = 0; i < loadVBList[treeID].size(); i++) {
+        //           vbID           = loadVBList[treeID][i];
+        //           const int ibID = tree[treeID].brickInfo[vbID].indexBrickID;
+        //           if (ibID != -1) {
+        //             auto &ib = tree[treeID].indexBrick[ibID];
+        //             array3D::for_each(vec3i(N), [&](const vec3i &idx) {
+        //               const unsigned int cvbID =
+        //                   ib.childID[idx.x][idx.y][idx.z];
+        //               if (cvbID != -1 &&
+        //                   !tree[treeID].valueBricksStatus[cvbID].isLoaded) {
+        //                 childVBList.emplace_back(cvbID);
+        //               }
+        //             });
+        //           }
+        //         }
+        //         loadVBList[treeID].clear();
+        //         loadVBList[treeID] = childVBList;
+        //       }
+        //       tree[treeID].loadTreeByBrick(
+        //           brickFileBase, treeID, loadVBList[treeID]);
+        //     });
+        //   }
+        // }
 
         // while (!tree.empty()) {
         //   for (size_t i = 0; i < tree.size(); i++) {
@@ -328,8 +347,7 @@ namespace ospray {
 
       void Initialize()
       {
-        std::cout << "#osp: start to initialize bricktree forest!" 
-        << std::endl;
+        std::cout << "#osp: start to initialize bricktree forest!" << std::endl;
         int numTrees = forestSize.product();
         assert(numTrees > 0);
 

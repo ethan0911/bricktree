@@ -109,20 +109,18 @@ namespace ospray {
       if (!doc)
         throw std::runtime_error("could not read brick tree .osp file '" +
                                  std::string(blockFileName) + "'");
-      std::shared_ptr<xml::Node> osprayNode =
-        std::make_shared<xml::Node>(doc->child[0]);
+      std::shared_ptr<xml::Node> osprayNode = std::make_shared<xml::Node>(doc->child[0]);
       assert(osprayNode->name == "ospray");
 
-      std::shared_ptr<xml::Node> brickTreeNode =
-        std::make_shared<xml::Node>(osprayNode->child[0]);
+      std::shared_ptr<xml::Node> brickTreeNode = std::make_shared<xml::Node>(osprayNode->child[0]);
       assert(brickTreeNode->name == "BrickTree");
 
       avgValue = std::stof(brickTreeNode->getProp("averageValue"));
-      sscanf(brickTreeNode->getProp("valueRange").c_str(),
-             "%f %f",&valueRange.x,&valueRange.y);
+      sscanf(brickTreeNode->getProp("valueRange").c_str(),"%f %f",&valueRange.x,&valueRange.y);
       nBrickSize = std::stoi(brickTreeNode->getProp("brickSize"));
-      sscanf(brickTreeNode->getProp("validSize").c_str(),
-             "%i %i %i",&validSize.x,&validSize.y,&validSize.z);
+      sscanf(brickTreeNode->getProp("validSize").c_str(),"%i %i %i",&validSize.x,&validSize.y,&validSize.z);
+
+      depth = log(max(validSize.x,validSize.y,validSize.z))/log(nBrickSize);
 
       std::shared_ptr<xml::Node> indexBricksNode =
         std::make_shared<xml::Node>(brickTreeNode->child[0]);
@@ -144,34 +142,31 @@ namespace ospray {
       indexBrick = (IndexBrick *)malloc(sizeof(IndexBrick) * numIndexBricks);
       brickInfo  = (BrickInfo *)malloc(sizeof(BrickInfo) * numBrickInfos);
 
-      // ValueBrick *vb;
-      // for (int i = 0; i < numValueBricks; i++) {
-      //   vb = (typename BrickTree<N, T>::ValueBrick *)(valueBrick + i);
-      //   for (int x = 0; x < N; ++x)
-      //     for (int y = 0; y < N; ++y)
-      //       for (int z = 0; z < N; ++z)
-      //         vb->value[z][y][x] = 0.2f * blockID + 0.1f;
-      // }
+      valueBricksStatus = (BrickStatus*)malloc(sizeof(BrickStatus)*numValueBricks);
 
-      //valueBricksStatus = new BrickStatus[numValueBricks]();
-      valueBricksStatus = 
-        (BrickStatus*)malloc(sizeof(BrickStatus)*numValueBricks);
-
-      sprintf(blockFileName,
-              "%s-brick%06i.ospbin",
-              brickFileBase.str().c_str(),
-              (int)blockID);
+      sprintf(blockFileName,"%s-brick%06i.ospbin",brickFileBase.str().c_str(),(int)blockID);
 
       FILE *file = fopen(blockFileName, "rb");
       if (!file)
-        throw std::runtime_error("could not open brick bin file " +
-                                 std::string(blockFileName));
+        throw std::runtime_error("could not open brick bin file " + std::string(blockFileName));
       fseek(file, indexBricksOfs, SEEK_SET);
       fread(indexBrick, sizeof(IndexBrick), numIndexBricks, file);
       fseek(file, indexBrickOfOfs, SEEK_SET);
       fread(brickInfo, sizeof(BrickInfo), numBrickInfos, file);
 
       fclose(file);
+
+      //reorganize the valuebrick buffer by bricktree level
+      vbIdxByLevelBuffers = (size_t**)malloc(sizeof(size_t*) * depth);
+      vbIdxByLevelStride = (size_t*)malloc(sizeof(size_t) * depth);
+
+      for (int i = 0; i < depth; i++) {
+        std::vector<size_t> vbsByLevel = getValueBrickIDsByLevel(i);
+        vbIdxByLevelStride[i] = vbsByLevel.size();
+        *(vbIdxByLevelBuffers + i) = (size_t*)malloc(sizeof(size_t) * vbIdxByLevelStride[i]);
+        std::copy(vbsByLevel.begin(),vbsByLevel.end(), *(vbIdxByLevelBuffers + i));
+      }
+
     }
 
     template <int N, typename T>
