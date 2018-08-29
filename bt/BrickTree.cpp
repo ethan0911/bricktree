@@ -74,8 +74,17 @@ namespace ospray {
       if (!brickInfo)
         free(brickInfo);
       if (!valueBricksStatus)
-        //delete valueBricksStatus;
         free(valueBricksStatus);
+      if(!vbIdxByLevelStride)
+        free(vbIdxByLevelStride);
+      
+      for(int i = 0 ; i < depth ; i++){
+        if(!vbIdxByLevelBuffers[i])
+          free(vbIdxByLevelBuffers[i]);
+      }
+
+      if(!vbIdxByLevelBuffers)
+        free(vbIdxByLevelBuffers);
     }
 
     template <int N, typename T>
@@ -375,14 +384,13 @@ namespace ospray {
     }
 
     template <int N, typename T>
-    double BrickTree<N, T>::ValueBrick::computeWeightedAverage
-    (// coordinates of lower-left-front
-     // voxel, in resp level
-     const vec3i &brickCoord,
-     // size of bricks in current level
-     const int brickSize,
-     // maximum size in finest level
-     const vec3i &maxSize) const
+    double BrickTree<N, T>::ValueBrick::computeWeightedAverage( // coordinates of lower-left-front
+                                                                // voxel, in resp level
+                                                                const vec3i &brickCoord,
+                                                                // size of bricks in current level
+                                                                const int brickSize,
+                                                                // maximum size in finest level
+                                                                const vec3i &maxSize) const
     {
       int cellSize = brickSize / N;
 

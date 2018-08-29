@@ -179,21 +179,20 @@ namespace ospray {
                              const size_t parentBrickID,
                              const vec3i parentCellPos);
 
-
-
-      std::vector<size_t> getValueBrickIDsByLevel(int level){
+      std::vector<size_t> getValueBrickIDsByLevel(int level)
+      {
         std::vector<size_t> vbIDs;
-        if(level ==0){
+        if (level == 0) {
           vbIDs.emplace_back(0);
-        }else{
-          std::vector<size_t> pVBIDs = getValueBrickIDsByLevel(level -1);
-          for(size_t i = 0; i < pVBIDs.size(); i++){
+        } else {
+          std::vector<size_t> pVBIDs = getValueBrickIDsByLevel(level - 1);
+          for (size_t i = 0; i < pVBIDs.size(); i++) {
             const int ibID = brickInfo[pVBIDs[i]].indexBrickID;
-            if(ibID != invalidID()){
-              auto ib= indexBrick[ibID];
-              array3D::for_each(vec3i(N),[&](const vec3i &idx){
+            if (ibID != invalidID()) {
+              auto ib = indexBrick[ibID];
+              array3D::for_each(vec3i(N), [&](const vec3i &idx) {
                 const int cvbID = ib.childID[idx.x][idx.y][idx.z];
-                if(cvbID != invalidID()){
+                if (cvbID != invalidID()) {
                   vbIDs.emplace_back(cvbID);
                 }
               });
@@ -282,6 +281,8 @@ namespace ospray {
         //   }
         // }
 
+
+        //performance to be optimized
         while (!tree.empty()) {
           for (int i = 0; i < depth; i++) {
             tasking::parallel_for(tree.size(), [&](size_t treeID) {
