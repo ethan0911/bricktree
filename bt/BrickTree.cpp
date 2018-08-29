@@ -169,13 +169,6 @@ namespace ospray {
       vbIdxByLevelBuffers = (size_t**)malloc(sizeof(size_t*) * depth);
       vbIdxByLevelStride = (size_t*)malloc(sizeof(size_t) * depth);
 
-      for (int i = 0; i < depth; i++) {
-        std::vector<size_t> vbsByLevel = getValueBrickIDsByLevel(i);
-        vbIdxByLevelStride[i] = vbsByLevel.size();
-        *(vbIdxByLevelBuffers + i) = (size_t*)malloc(sizeof(size_t) * vbIdxByLevelStride[i]);
-        std::copy(vbsByLevel.begin(),vbsByLevel.end(), *(vbIdxByLevelBuffers + i));
-      }
-
     }
 
     template <int N, typename T>

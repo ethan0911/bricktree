@@ -22,6 +22,7 @@
 #include "common/safe_gather.ih"
 #include "ospray/geometry/Geometry.ih"
 #include "ospray/transferFunction/LinearTransferFunction.ih"
+#include "ospray/camera/PerspectiveCamera.ih"
 // this module
 #include "BrickTreeVolume.ih"
 // embree

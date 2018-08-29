@@ -179,6 +179,7 @@ namespace ospray {
                              const size_t parentBrickID,
                              const vec3i parentCellPos);
 
+
       std::vector<size_t> getValueBrickIDsByLevel(int level)
       {
         std::vector<size_t> vbIDs;
@@ -200,6 +201,16 @@ namespace ospray {
           }
         }
         return vbIDs;
+      }
+
+      void reorganizeValueBrickBufferByLevel(){
+
+        for (int i = 0; i < depth; i++) {
+          std::vector<size_t> vbsByLevel = getValueBrickIDsByLevel(i);
+          vbIdxByLevelStride[i] = vbsByLevel.size();
+          *(vbIdxByLevelBuffers + i) = (size_t*)malloc(sizeof(size_t) * vbIdxByLevelStride[i]);
+          std::copy(vbsByLevel.begin(),vbsByLevel.end(), *(vbIdxByLevelBuffers + i));
+        }
       }
 
       bool isTreeNeedLoad()
@@ -286,21 +297,21 @@ namespace ospray {
         while (!tree.empty()) {
           for (int i = 0; i < depth; i++) {
             tasking::parallel_for(tree.size(), [&](size_t treeID) {
-              size_t *curLevelVBs = tree[treeID].vbIdxByLevelBuffers[i];
-              size_t numVBs       = tree[treeID].vbIdxByLevelStride[i];
-              std::vector<int> reqVBs;
-              for (size_t j = 0; j < numVBs; j++) {
+                size_t *curLevelVBs = tree[treeID].vbIdxByLevelBuffers[i];
+                size_t numVBs       = tree[treeID].vbIdxByLevelStride[i];
+                std::vector<int> reqVBs;
+                for (size_t j = 0; j < numVBs; j++) {
                 size_t vbIdx = curLevelVBs[j];
                 if (!tree[treeID].valueBricksStatus[vbIdx].isLoaded &&
                     tree[treeID].valueBricksStatus[vbIdx].isRequested)
-                  reqVBs.emplace_back(vbIdx);
-              }
-              tree[treeID].loadTreeByBrick(brickFileBase, treeID, reqVBs);
-            });
+                reqVBs.emplace_back(vbIdx);
+                }
+                tree[treeID].loadTreeByBrick(brickFileBase, treeID, reqVBs);
+                });
           }
         }
 
-        // while (!tree.empty()) {
+        //while (!tree.empty()) {
         //   std::vector<std::vector<int>> loadVBList;
         //   loadVBList.resize(tree.size());
 
@@ -367,6 +378,10 @@ namespace ospray {
           //std::lock_guard<std::mutex> lock(amutex);
           // tree.insert(std::make_pair(treeID, aTree));
           tree[treeID] = aTree;
+        });
+
+        tasking::parallel_for(numTrees, [&](int treeID) {
+          tree[treeID].reorganizeValueBrickBufferByLevel();
         });
 
         printf("#osp: %d trees have initialized!\n", numTrees);
