@@ -85,7 +85,7 @@ namespace ospray{
     this->voxelType = typeForString(format.c_str());
   }
 
-  void BrickTree::createBtVolume(OSPTransferFunction& tfn)
+  void BrickTree::createBtVolume(OSPCamera& camera,OSPTransferFunction& tfn)
   {
     if(ospVolume) { ospVolume = nullptr; }
     ospVolume = ospNewVolume("BrickTreeVolume");
@@ -100,6 +100,7 @@ namespace ospray{
     ospSetString(ospVolume,"format", format.c_str());
     ospSet3i(ospVolume, "validSize", validSize.x, validSize.y, validSize.z);
     ospSetObject(ospVolume,"transferFunction",tfn);
+    ospSetObject(ospVolume,"camera",camera);
     ospCommit(ospVolume);
   }
 }

@@ -39,6 +39,7 @@
 #include <thread>
 #include <algorithm>
 #include <unordered_map>
+#include <math.h>
 
 #define STREAM_DATA 1
 

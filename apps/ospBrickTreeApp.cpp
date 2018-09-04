@@ -78,6 +78,17 @@ int main(int ac, const char **av)
     throw std::runtime_error("failed to initialize BrickTree module");
   }
 
+
+    // setup camera
+  OSPCamera camera = ospNewCamera("perspective");
+  vec3f vd         = args.vi - args.vp;
+  ospSetVec3f(camera, "pos", (const osp::vec3f &)args.vp);
+  ospSetVec3f(camera, "dir", (const osp::vec3f &)vd);
+  ospSetVec3f(camera, "up", (const osp::vec3f &)args.vu);
+  ospSet1f(camera, "aspect", args.imgSize.x / (float)args.imgSize.y);
+  ospSet1f(camera, "fovy", 60.f);
+  ospCommit(camera);
+
   //-----------------------------------------------------
   // Create ospray objects
   //-----------------------------------------------------
@@ -119,7 +130,7 @@ int main(int ac, const char **av)
       std::make_shared<ospray::BrickTree>();
     bricktreeVolume->adaptiveSampling = args.use_adaptive_sampling;
     bricktreeVolume->setFromXML(args.inputFiles[0]);
-    bricktreeVolume->createBtVolume(transferFcn);
+    bricktreeVolume->createBtVolume(camera,transferFcn);
     ospAddVolume(world,bricktreeVolume->ospVolume);
     ospray::bt::BrickTreeVolume *btVolume = 
       (ospray::bt::BrickTreeVolume *)bricktreeVolume->ospVolume;  
@@ -158,15 +169,6 @@ int main(int ac, const char **av)
     ospAddVolume(world, hacked_vol);
   }
 
-  // setup camera
-  OSPCamera camera = ospNewCamera("perspective");
-  vec3f vd         = args.vi - args.vp;
-  ospSetVec3f(camera, "pos", (const osp::vec3f &)args.vp);
-  ospSetVec3f(camera, "dir", (const osp::vec3f &)vd);
-  ospSetVec3f(camera, "up", (const osp::vec3f &)args.vu);
-  ospSet1f(camera, "aspect", args.imgSize.x / (float)args.imgSize.y);
-  ospSet1f(camera, "fovy", 60.f);
-  ospCommit(camera);
 
   // setup lighting
   OSPLight d_light = ospNewLight(renderer, "DirectionalLight");

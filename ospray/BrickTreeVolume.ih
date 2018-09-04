@@ -18,33 +18,175 @@
 
 #include "ospray/common/Model.ih"
 // ospray
+#include "ospray/math/box.ih"
 #include "ospray/math/AffineSpace.ih"
 #include "ospray/geometry/Geometry.ih"
+#include "ospray/camera/PerspectiveCamera.ih"
 
 #include "../bt/BrickTree.ih"
 
-/*! \brief ispc-side implementation of the bricktree object 
+struct CameraInfo
+{
+  PerspectiveCamera *uniform camera;
+  uniform vec3f *uniform pCameraDir;
+  uniform vec3f *uniform pCameraPos;
+  uniform float *uniform pFovy;
+};
+
+/*! \brief ispc-side implementation of the bricktree object
  *
  * note we don't actually do anything serious on the ispc side fo this
  * object, yet, but the rest of ospray requires some ispc side object
  * to exist for any of its actors; so this 'dummy' exists mainly to be
  * able to plug it into ospray - it will actually call back to the
- * scalar c++ implementation for each sample 
-*/
-struct BrickTreeVolume {
-    //! inherited from superclass
-    Volume    super;
-  
-    //! pointer to the c++-side object (since we do everything scalar for now)
-    void     *cppObject;
-  
-    //! pointer to a c++-side sampler object (maintained on cpp side
-    void     *cppSampler; 
+ * scalar c++ implementation for each sample
+ */
+struct BrickTreeVolume
+{
+  //! inherited from superclass
+  Volume super;
 
-    uniform vec3i gridSize;
-    uniform vec3i validSize;
-    uniform int brickSize;
-    uniform int blockWidth;
-    uniform int depth;
-    uniform BrickTreeForest forest;
+  //! pointer to the c++-side object (since we do everything scalar for now)
+  void *cppObject;
+
+  //! pointer to a c++-side sampler object (maintained on cpp side
+  void *cppSampler;
+
+  uniform vec3i gridSize;
+  uniform vec3i validSize;
+  uniform int brickSize;
+  uniform int blockWidth;
+  uniform int depth;
+
+  uniform BrickTreeForest forest;
+  uniform CameraInfo cameraInfo;
 };
+
+inline float dot(const vec2f a, const vec2f b) { return a.x*b.x+a.y*b.y; }
+inline varying float length(const varying vec2f a) { return sqrtf(dot(a,a)); }
+
+inline vec2f transformWorldToScreen(void *uniform _self,
+                                    const varying vec3f &coordInWorld)
+{
+  BrickTreeVolume *uniform self = (BrickTreeVolume * uniform) _self;
+
+  PerspectiveCamera *uniform camera = self->cameraInfo.camera;
+  vec3f dir                         = *self->cameraInfo.pCameraDir;
+  float fovy                        = *self->cameraInfo.pFovy;
+
+  const vec3f r     = normalize(coordInWorld - camera->org);
+  const float denom = dot(r, dir);
+  if (denom == 0.0)
+    return make_vec2f(-1.0, -1.0);
+
+  vec2f imgPlaneSize;
+  imgPlaneSize.y = 2.f * tan(deg2rad(0.5 * fovy));
+  imgPlaneSize.x = imgPlaneSize.y * camera->aspect;
+
+  const vec3f screenDir = r / denom - camera->dir_00;
+  const vec2f sp = make_vec2f(dot(screenDir, normalize(camera->dir_du)) / imgPlaneSize.x,
+                              dot(screenDir, normalize(camera->dir_dv)) / imgPlaneSize.y);
+
+  return sp;
+}
+
+// refer to: http://jcgt.org/published/0002/02/05/paper.pdf
+inline void getBoundsForAxis(void *uniform _self,
+                             const uniform vec3f &axis,
+                             const varying vec3f &center,
+                             const varying float &radius,
+                             varying vec3f &outL,
+                             varying vec3f &outU)
+{
+  BrickTreeVolume *uniform self     = (BrickTreeVolume * uniform) _self;
+  PerspectiveCamera *uniform camera = self->cameraInfo.camera;
+
+  float nearZ = camera->super.nearClip;
+  vec3f C     = center - camera->org;  // tranform C into camera space;
+
+  const vec2f c = make_vec2f(dot(axis, C), C.z);
+  vec2f bounds[2];
+
+  const float tSquare     = dot(c, c) - radius * radius;
+  const bool cameraInside = (tSquare <= 0);
+
+  vec2f v = make_vec2f(cameraInside ? 0.0f : sqrtf(tSquare) / length(c),
+                             cameraInside ? 0.0f : radius / length(c));
+
+  const bool clipSphere = (c.y + radius >= nearZ);
+  float k               = sqrtf(radius * radius - (nearZ - c.y) * (nearZ - c.y));
+
+  for (int i = 0; i < 2; ++i) {
+    if (!cameraInside)
+      bounds[i] = make_vec2f(c.x * v.x + c.y * v.y, c.y * v.x - c.x * v.y);
+
+    const bool clipBound = cameraInside || (bounds[i].y > nearZ);
+
+    if (clipSphere && clipBound)
+      bounds[i] = make_vec2f(c.x + k, nearZ);
+
+    v.y = -v.y;
+    k   = -k;
+  }
+  outL   = bounds[1].x * axis;
+  outL.z = bounds[1].y;
+  outL   = outL + camera->org;
+  outU   = bounds[0].x * axis;
+  outU.z = bounds[0].y;
+  outU   = outU + camera->org;
+}
+
+inline box2f getProjectBBox(void *uniform _self,
+                            const varying vec3f &center,
+                            const varying float &radius)
+{
+  BrickTreeVolume *uniform self     = (BrickTreeVolume * uniform) _self;
+  PerspectiveCamera *uniform camera = self->cameraInfo.camera;
+
+  vec3f xL, xU, yL, yU;
+  getBoundsForAxis(_self, normalize(camera->dir_du), center, radius, xL, xU);
+  getBoundsForAxis(_self, normalize(camera->dir_dv), center, radius, yL, yU);
+
+  vec2f xLS, xUS, yLS, yUS;
+  xLS = transformWorldToScreen(_self, xL);
+  xUS = transformWorldToScreen(_self, xU);
+  yLS = transformWorldToScreen(_self, yL);
+  yUS = transformWorldToScreen(_self, yU);
+
+  box2f bbox;
+  bbox.lower = make_vec2f(min(xLS.x,xUS.x), min(yLS.y,yUS.y));
+  bbox.upper = make_vec2f(max(xLS.x,xUS.x), max(yLS.y,yUS.y));
+}
+
+
+// sphere project to screen space
+// http://www.iquilezles.org/www/articles/sphereproj/sphereproj.htm
+// https://www.shadertoy.com/view/XdBGzd
+
+inline float projectedSphereArea(void *uniform _self,
+                                 const varying vec3f &center,
+                                 const varying float &radius)
+{
+  BrickTreeVolume *uniform self     = (BrickTreeVolume * uniform) _self;
+  PerspectiveCamera *uniform camera = self->cameraInfo.camera;
+  vec3f dir                         = *self->cameraInfo.pCameraDir;
+  vec3f pos                         = *self->cameraInfo.pCameraPos;
+  float fovy                        = *self->cameraInfo.pFovy;
+
+  float n = 2.0 * tan(deg2rad(30.0)) / tan(deg2rad(0.5 * fovy));
+
+  vec3f W = normalize(dir);
+  vec3f U = normalize(camera->dir_du);
+  vec3f V = normalize(camera->dir_dv);
+
+  vec3f o = make_vec3f(U.x * center.x + U.y * center.y + U.z * center.z - dot(U,pos),
+                       V.x * center.x + V.y * center.y + V.z * center.z - dot(V,pos),
+                       W.x * center.x + W.y * center.y + W.z * center.z - dot(W,pos));
+
+  float r2 = radius * radius;
+  float z2 = o.z * o.z;
+  float l2 = dot(o, o);
+
+  float area = -PI * n * n * r2 * sqrtf(abs((l2 - r2) / (r2 - z2))) / (r2 - z2);
+  return area;
+}

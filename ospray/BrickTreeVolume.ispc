@@ -22,7 +22,7 @@
 #include "common/safe_gather.ih"
 #include "ospray/geometry/Geometry.ih"
 #include "ospray/transferFunction/LinearTransferFunction.ih"
-#include "ospray/camera/PerspectiveCamera.ih"
+
 // this module
 #include "BrickTreeVolume.ih"
 // embree
@@ -182,12 +182,6 @@ inline ValueBrick& getValueBrick(BrickTreeVolume *uniform btv,
   const uniform unsigned int64 vbSize = N * N * N * bt->numValueBricks * 4;
   const uniform bool huge = (vbSize < capSize) ? false : true; 
 
-#if 0
-
-  ValueBrick vb = gather_ValueBrick(huge, bt->valueBrick, brickID);
-
-#else
-
   ValueBrick vb;
   if (huge) {
     const uniform uint8 *uniform const base = (const uniform uint8 *uniform const)bt->valueBrick;
@@ -208,8 +202,6 @@ inline ValueBrick& getValueBrick(BrickTreeVolume *uniform btv,
   }else{
     vb = *(bt->valueBrick + brickID);
   }
-
-#endif
 
   return vb;
 }
@@ -247,6 +239,19 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
                               (coord.y % (brickW * N)) / brickW,
                               (coord.z % (brickW * N)) / brickW);
 
+      box3i cBrickBBox;
+      bool isRoot      = (brickW == self->blockWidth);
+      cBrickBBox.lower = (coord / brickW) * brickW;
+      cBrickBBox.upper =
+          cBrickBBox.lower + make_vec3i(isRoot ? bt->validSize[0] : brickW,
+                                        isRoot ? bt->validSize[1] : brickW,
+                                        isRoot ? bt->validSize[2] : brickW);
+
+      vec3f center = 0.5 * (to_float(cBrickBBox.lower) + to_float(cBrickBBox.upper));
+      float radius           = 0.5 * brickW;
+      float area = projectedSphereArea(_self, center, radius);
+      area *= (768 * 768 * 0.25);
+
       // if current brick is not requested, request it
       if (!bt->valueBricksStatus[cBrickID].isRequested) {
         bt->valueBricksStatus[cBrickID].isRequested = 1;
@@ -256,7 +261,7 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
       // if current brick is not loaded, return parent node value
       if (bt->valueBricksStatus[cBrickID].isLoaded) {
         const int childBrickID = getChildBrickID(bt, ibID, cpos);
-        if(childBrickID == -1) {
+        if(childBrickID == -1 || area <= 2) {
           // here make sure each brick (in each gang) is loaded we know that
           // some of the values are unset, we do query for all the gangs
 
@@ -276,6 +281,7 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
               vCorners[ii] = vCorners[cornerIdx];
               cvFilled |= (1 << ii);
             } else {
+              PRINT(step);
               const vec3i pos  = make_vec3i((ii & 1) ? cpos.x : cpos.x + 1,
                                            (ii & 2) ? cpos.y : cpos.y + 1,
                                            (ii & 4) ? cpos.z : cpos.z + 1);
@@ -381,6 +387,7 @@ static float BrickTreeVolume_sample(void *uniform _self, const vec3f &samplePos)
   BrickTreeVolume *uniform self = (BrickTreeVolume * uniform) _self;
   float result;
 
+
 #if VECTORIZE
 
   // Lower and upper corners of the box straddling the voxels to be interpolated.
@@ -406,6 +413,7 @@ static float BrickTreeVolume_sample(void *uniform _self, const vec3f &samplePos)
                              (i & 4) ? voxelIndex_0.z : voxelIndex_1.z),
                   self->validSize - 1),
               make_vec3i(0));
+      
       const int blockID = getBlockID(self, vtxPos);
 
       foreach_unique(bID in blockID)
@@ -422,8 +430,10 @@ static float BrickTreeVolume_sample(void *uniform _self, const vec3f &samplePos)
       // getBrickValues(self, blockID, address, ii, vCorners, cvFilled);
     }
   }
-  // if (numOfQueries > 1)
-  //   print("%\n", numOfQueries);
+  if (numOfQueries > 1)
+    print("%\n", numOfQueries);
+
+
 
   // Interpolate the voxel values.
   const float v_00 = vCorners[C000] + fractionalLocalCoordinates.x * (vCorners[C001] - vCorners[C000]);
@@ -532,6 +542,9 @@ export void BrickTreeVolume_set(void *uniform _self,
     self->gridSize = gridSize;
     self->brickSize = brickSize;
     self->blockWidth = blockWidth;
+
+    //print("dir:(%,%,%)\n", self->camera->super.dir);
+   
     // print("#osp:bt: bounds (%\t%\t%\t)\n"
     //       "                (%\t%\t%\t)\n",
     //       self->super.boundingBox.lower.x,
@@ -553,6 +566,18 @@ export void BrickTreeVolume_set_BricktreeForest(void *uniform _self,
     self->forest.size = size;
 }
 
+export void BrickTreeVolume_set_CameraInfo(void *uniform _self,
+                                           void *uniform camera,
+                                           void *uniform pCameraDir,
+                                           void *uniform pCameraPos,
+                                           void *uniform pFovy)                                         
+{
+  BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
+  self->cameraInfo.camera     = (PerspectiveCamera *uniform)camera;
+  self->cameraInfo.pCameraDir = (uniform vec3f *uniform)pCameraDir;
+  self->cameraInfo.pCameraPos = (uniform vec3f *uniform)pCameraPos;
+  self->cameraInfo.pFovy = (uniform float *uniform)pFovy;
+}
 
 #if SAMPLE_EACH_POINT
 inline Address BrickTreeVolume_getVoxelAddress(void *uniform _self,

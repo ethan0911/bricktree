@@ -22,6 +22,7 @@
 #include "ospray/common/Data.h"
 #include "ospray/common/Model.h"
 #include "ospray/transferFunction/TransferFunction.h"
+#include "ospray/camera/PerspectiveCamera.h"
 // ospcommon
 #include "ospcommon/FileName.h"
 // ispc exports
@@ -131,6 +132,8 @@ namespace ospray {
       this->fileName   = getParamString("fileName", "");
       this->format     = getParamString("format", "<not specified>");
       this->validSize  = getParam3i("validSize",vec3i(-1));
+      PerspectiveCamera* camera = (PerspectiveCamera*)getParamObject("camera", nullptr);
+      PRINT(camera->pos);
       this->validFractionOfRootGrid = 
         vec3f(validSize) / vec3f(gridSize*blockWidth);
       this->depth = (int)(log(blockWidth)/log(brickSize));
@@ -143,6 +146,17 @@ namespace ospray {
                                 blockWidth,
                                 this,
                                 sampler);
+
+      ispc::BrickTreeVolume_set_CameraInfo(getIE(),
+                                            camera->getIE(),
+                                            (ispc::vec3f *)&camera->dir,
+                                            (ispc::vec3f *)&camera->pos,
+                                            &camera->fovy);
+
+      if(brickSize == 2){
+        auto & forest = dynamic_cast<BrickTreeForestSampler<float, 2> *>(sampler)->forest->tree;
+        ispc::BrickTreeVolume_set_BricktreeForest(getIE(), forest.data(), forest.size());
+      }
 
       if(brickSize == 4){
         auto & forest = dynamic_cast<BrickTreeForestSampler<float, 4> *>(sampler)->forest->tree;

@@ -19,7 +19,7 @@ namespace ospray{
     box3f getBounds();
     void setFromXML(const std::string &fileName);
     void loadOSP(const ospcommon::xml::Node &node);
-    void createBtVolume(OSPTransferFunction& tfn);
+    void createBtVolume(OSPCamera& camera,OSPTransferFunction& tfn);
 
       //! handle to the ospray volume object
     OSPVolume   ospVolume;
