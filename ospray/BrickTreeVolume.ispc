@@ -173,7 +173,7 @@ inline varying int getBlockID(BrickTreeVolume *uniform self,
 //   }
 // }
 
-inline ValueBrick& getValueBrick(BrickTreeVolume *uniform btv,
+inline uniform ValueBrick* getValueBrick(BrickTreeVolume *uniform btv,
                                 const uniform BrickTree *uniform bt,
                                 const int brickID)
 {
@@ -182,7 +182,7 @@ inline ValueBrick& getValueBrick(BrickTreeVolume *uniform btv,
   const uniform unsigned int64 vbSize = N * N * N * bt->numValueBricks * 4;
   const uniform bool huge = (vbSize < capSize) ? false : true; 
 
-  ValueBrick vb;
+  uniform ValueBrick* vb;
   if (huge) {
     const uniform uint8 *uniform const base = (const uniform uint8 *uniform const)bt->valueBrick;
     const uniform int stride                = sizeof(uniform ValueBrick);
@@ -197,10 +197,10 @@ inline ValueBrick& getValueBrick(BrickTreeVolume *uniform btv,
       const uniform uint8 *uniform base_start = base + scaledStartIndex;
       const uniform ValueBrick *varying data =
         (const uniform ValueBrick *varying)(base_start + segmentOffset * stride);
-      vb = *data;
+      vb = (uniform ValueBrick*)data;
     }
   }else{
-    vb = *(bt->valueBrick + brickID);
+    vb = (uniform ValueBrick*)(bt->valueBrick + brickID);
   }
 
   return vb;
@@ -266,8 +266,8 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
           // some of the values are unset, we do query for all the gangs
 
           // --> query myself
-          ValueBrick &vb      = getValueBrick(self, bt, cBrickID);
-          vCorners[cornerIdx] = vb.value[cpos.z][cpos.y][cpos.x];
+          uniform ValueBrick* vb      = getValueBrick(self, bt, cBrickID);
+          vCorners[cornerIdx] = vb->value[cpos.z][cpos.y][cpos.x];
           cvFilled |= (1 << cornerIdx);
 
           // // --> query neighbors
@@ -286,7 +286,7 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
                                            (ii & 2) ? cpos.y : cpos.y + 1,
                                            (ii & 4) ? cpos.z : cpos.z + 1);
               const bool valid = (pos.x < N & pos.y < N & pos.z < N);
-              vCorners[ii]     = valid ? vb.value[pos.z][pos.y][pos.x] : 0.0;
+              vCorners[ii]     = valid ? vb->value[pos.z][pos.y][pos.x] : 0.0;
               cvFilled |= ((valid ? 1 : 0) << ii);
             }
           }
@@ -299,8 +299,8 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
         if (cBrickID == 0) {
           value = bt->avgValue;
         } else {
-          ValueBrick &vb = getValueBrick(self, bt, pBrickID);
-          value          = vb.value[ppos.z][ppos.y][ppos.x];
+          uniform ValueBrick* vb = getValueBrick(self, bt, pBrickID);
+          value          = vb->value[ppos.z][ppos.y][ppos.x];
         }
         for (uniform int ii = cornerIdx; ii < 8; ++ii) {
           vCorners[ii] = value;
