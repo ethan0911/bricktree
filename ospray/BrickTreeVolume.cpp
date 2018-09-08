@@ -41,14 +41,15 @@ namespace ospray {
     using std::flush;
     using std::ostream;
     BrickTreeVolume::BrickTreeVolume()
-      : Volume(),
-        sampler(NULL),
-        gridSize(-1),
-        validSize(-1),
-        depth(0),
-        brickSize(-1),
-        fileName("<none>")
-    {}
+        : Volume(),
+          sampler(NULL),
+          gridSize(-1),
+          validSize(-1),
+          depth(0),
+          brickSize(-1),
+          fileName("<none>")
+    {
+    }
 
     int BrickTreeVolume::setRegion(const void *source,
                                    const vec3i &index,

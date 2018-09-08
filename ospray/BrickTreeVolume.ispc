@@ -94,7 +94,8 @@ struct Address
 };
 
 inline void BrickTreeVolume_getVoxel(void *uniform _self,
-                                     const varying vec3i &coord,
+                            
+         const varying vec3i &coord,
                                      varying float &value);
 
 // Functions that defined in CPP files
@@ -186,10 +187,10 @@ inline uniform ValueBrick* getValueBrick(BrickTreeVolume *uniform btv,
   if (huge) {
     const uniform uint8 *uniform const base = (const uniform uint8 *uniform const)bt->valueBrick;
     const uniform int stride                = sizeof(uniform ValueBrick);
- 
     const uniform int segmentLength = 1 << 21;
     varying int segmentID     = brickID / segmentLength;
     varying int segmentOffset = brickID % segmentLength;
+
     foreach_unique(uniformSegID in segmentID)
     {
       const uniform uint64 scaledStartIndex = (uint64)(uniformSegID * segmentLength) * stride;
@@ -281,7 +282,6 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
               vCorners[ii] = vCorners[cornerIdx];
               cvFilled |= (1 << ii);
             } else {
-              PRINT(step);
               const vec3i pos  = make_vec3i((ii & 1) ? cpos.x : cpos.x + 1,
                                            (ii & 2) ? cpos.y : cpos.y + 1,
                                            (ii & 4) ? cpos.z : cpos.z + 1);
@@ -305,11 +305,13 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
         for (uniform int ii = cornerIdx; ii < 8; ++ii) {
           vCorners[ii] = value;
           cvFilled |= (1 << ii);
+          
         }
       }
     }
   }
 }
+
 
 //inline void getBrickValues(BrickTreeVolume *uniform self,
 //                           const varying int blockID,
@@ -430,8 +432,8 @@ static float BrickTreeVolume_sample(void *uniform _self, const vec3f &samplePos)
       // getBrickValues(self, blockID, address, ii, vCorners, cvFilled);
     }
   }
-  if (numOfQueries > 1)
-    print("%\n", numOfQueries);
+  //if (numOfQueries > 1)
+  //  print("%\n", numOfQueries);
 
 
 

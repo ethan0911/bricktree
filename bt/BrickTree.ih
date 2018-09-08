@@ -21,15 +21,17 @@
 #include "ospray/math/AffineSpace.ih"
 #include "ospray/geometry/Geometry.ih"
 
-#define _bt_T float
-#define _bt_N 4
+#define _BT_T float
+#define _BT_N 4
+
+
 struct ValueBrick
 {
-  _bt_T value[_bt_N][_bt_N][_bt_N];
+  _BT_T value[_BT_N][_BT_N][_BT_N];
 };
 struct IndexBrick
 {
-  int childID[_bt_N][_bt_N][_bt_N];
+  int childID[_BT_N][_BT_N][_BT_N];
 };
 struct BrickInfo
 {

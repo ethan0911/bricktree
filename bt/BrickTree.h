@@ -52,7 +52,7 @@ namespace ospray {
     const char *typeToString();
 
     static std::mutex brickLoadMtx;
-    static const size_t numThread = 1;
+    static const size_t numThread = 5;
 
     enum BRICKTYPE
     {
@@ -236,6 +236,8 @@ namespace ospray {
       const vec3i originalVolumeSize;
       const int depth;
       const FileName &brickFileBase;
+      
+      vec2f valueRange;
 
       std::thread loadBrickTreeThread[numThread];
 
@@ -373,12 +375,13 @@ namespace ospray {
                                   treeID / (forestSize.x * forestSize.y));
           BrickTree<N, T> aTree;
           aTree.mapOSP(brickFileBase, treeID, treeCoord);
+
 #if !(STREAM_DATA)
           aTree.mapOspBin(brickFileBase, treeID);
 #endif
-          //std::lock_guard<std::mutex> lock(amutex);
-          // tree.insert(std::make_pair(treeID, aTree));
           tree[treeID] = aTree;
+          valueRange.x = min(valueRange.x, aTree.valueRange.x);
+          valueRange.y = max(valueRange.y, aTree.valueRange.y);
         });
 
         tasking::parallel_for(numTrees, [&](int treeID) {
@@ -406,9 +409,12 @@ namespace ospray {
           : forestSize(forestSize),
             originalVolumeSize(originalVolumeSize),
             depth(depth),
-            brickFileBase(brickFileBase)
+            brickFileBase(brickFileBase),
+            valueRange(vec2f(std::numeric_limits<float>::infinity(),
+                             -std::numeric_limits<float>::infinity()))
       {
         Initialize();
+        PRINT(valueRange);
 #if STREAM_DATA
         loadBrickTreeForest();
 #endif

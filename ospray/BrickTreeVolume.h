@@ -122,6 +122,7 @@ namespace ospray {
 
       std::string format;
       OSPDataType voxelType;
+
       // actual volume bounds for distributed parallel rendering
       box3f volBounds;
     };
