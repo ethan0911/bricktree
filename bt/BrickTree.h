@@ -64,7 +64,11 @@ namespace ospray {
     struct LoadBricks
     {
       LoadBricks(BRICKTYPE btype, size_t offset)
-          : bricktype(btype), brickID(offset){};
+	:
+	bricktype(btype),
+	brickID(offset)
+      {
+      }
       BRICKTYPE bricktype;
       size_t brickID;  // N th of a specific brick
     };
@@ -72,15 +76,22 @@ namespace ospray {
     struct BrickStatus
     {
       BrickStatus() 
-          : isRequested(0), isLoaded(0), loadWeight(0.0)
+	:
+	isRequested(0), 
+	isLoaded(0), 
+	loadWeight(0.0)
       {
       }
       BrickStatus(int request, int load,float Weight)
-          : isRequested(request), isLoaded(load),loadWeight(Weight)
-      {}
+	:
+	isRequested(request), 
+	isLoaded(load),
+	loadWeight(Weight)
+      {
+      }
       int8_t isRequested;
       int8_t isLoaded;
-      float loadWeight;
+      float  loadWeight;
     };
 
     template <int N, typename T = float>
@@ -90,15 +101,13 @@ namespace ospray {
       struct ValueBrick
       {
         void clear();
-        // Range<float> getValueRange() const;
-        double computeWeightedAverage(  // coordinates of lower-left-front
-                                        // voxel, in resp level
-            const vec3i &brickCoord,
-            // size of bricks in current level
-            const int brickSize,
-            // maximum size in finest level
-            const vec3i &maxSize) const;
-
+        double computeWeightedAverage(// coordinates of lower-left-front
+				      // voxel, in resp level
+				      const vec3i &brickCoord,
+				      // size of bricks in current level
+				      const int brickSize,
+				      // maximum size in finest level
+				      const vec3i &maxSize) const;
         T value[N][N][N];
       };
 
