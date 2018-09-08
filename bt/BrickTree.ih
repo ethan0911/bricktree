@@ -29,10 +29,12 @@ struct ValueBrick
 {
   _BT_T value[_BT_N][_BT_N][_BT_N];
 };
+
 struct IndexBrick
 {
   int childID[_BT_N][_BT_N][_BT_N];
 };
+
 struct BrickInfo
 {
   int indexBrickID;
@@ -43,7 +45,9 @@ struct BrickStatus
   int8 isRequested;
   int8 isLoaded;
   float loadWeight;
+  float valueRange[2];   /*8*/
 };
+
 /*! \brief ispc-side implementation of the bricktree object
  *
  * note we don't actually do anything serious on the ispc side fo this

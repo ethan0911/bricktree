@@ -262,7 +262,23 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
       // if current brick is not loaded, return parent node value
       if (bt->valueBricksStatus[cBrickID].isLoaded) {
         const int childBrickID = getChildBrickID(bt, ibID, cpos);
-        if (childBrickID == -1 || area <= 2) {
+	
+	// check cell value range and maximum opacity
+	int skip = 0;
+	vec2f cellRange = 
+	  make_vec2f(bt->valueBricksStatus[cBrickID].valueRange[0], 
+		     bt->valueBricksStatus[cBrickID].valueRange[1]);
+	//print ("% % \n", cellRange.x, cellRange.y);
+	if (!isnan(cellRange.x)) {
+	  // Get the maximum opacity in the volumetric value range.
+	  float maximumOpacity = self->super.transferFunction->
+	    getMaxOpacityInRange(self->super.transferFunction, cellRange);
+	  skip = maximumOpacity > 0.0f ? 0 : 1;
+	  //print ("%\n", maximumOpacity);
+	  //if (skip == 1) print ("%\n", skip);
+	}
+
+        if (childBrickID == -1 || area <= 2 || skip == 1) {
           // here make sure each brick (in each gang) is loaded we know that
           // some of the values are unset, we do query for all the gangs
 

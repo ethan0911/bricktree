@@ -81,19 +81,23 @@ struct BrickStatus
     :
     isRequested(0),
     isLoaded(0),
-    loadWeight(0.0)
+    loadWeight(0.0),
+    valueRange(vec2f(std::numeric_limits<float>::infinity(),
+		     -std::numeric_limits<float>::infinity()))
   {
   }
-  BrickStatus(int request, int load, float Weight)
+  BrickStatus(int request, int load, float Weight, vec2f range)
     :
     isRequested(request),
     isLoaded(load),
-    loadWeight(Weight)
+    loadWeight(Weight),
+    valueRange(range)
   {
   }
   int8_t isRequested;
   int8_t isLoaded;
   float loadWeight;
+  vec2f valueRange;   /*8*/
 };
 
 template<int N, typename T>
