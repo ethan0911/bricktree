@@ -262,7 +262,7 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
       // if current brick is not loaded, return parent node value
       if (bt->valueBricksStatus[cBrickID].isLoaded) {
         const int childBrickID = getChildBrickID(bt, ibID, cpos);
-        if(childBrickID == -1 || area <= 2) {
+        if (childBrickID == -1 || area <= 2) {
           // here make sure each brick (in each gang) is loaded we know that
           // some of the values are unset, we do query for all the gangs
 
@@ -271,7 +271,7 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
           vCorners[cornerIdx] = vb->value[cpos.z][cpos.y][cpos.x];
           cvFilled |= (1 << cornerIdx);
 
-          // // --> query neighbors
+          // --> query neighbors
           for (uniform int ii = cornerIdx + 1; ii < 8; ++ii) {
             if ((cvFilled >> ii) & 1)
               continue;
