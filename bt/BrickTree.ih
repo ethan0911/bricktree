@@ -36,6 +36,7 @@ struct IndexBrick
   int childID[_BT_N][_BT_N][_BT_N];
 };
 
+
 struct BrickInfo
 {
   int indexBrickID;
@@ -50,12 +51,6 @@ struct BrickStatus
 };
 
 /*! \brief ispc-side implementation of the bricktree object
- *
- * note we don't actually do anything serious on the ispc side fo this
- * object, yet, but the rest of ospray requires some ispc side object
- * to exist for any of its actors; so this 'dummy' exists mainly to be
- * able to plug it into ospray - it will actually call back to the
- * scalar c++ implementation for each sample
  */
 struct BrickTree
 {

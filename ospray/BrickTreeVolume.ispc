@@ -14,6 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+// common
+#include "../common/config.h"
+
 // ospray
 #include "ospray/math/vec.ih"
 #include "ospray/math/AffineSpace.ih"
@@ -28,13 +31,8 @@
 // embree
 #include "rtcore.isph"
 
-#define STREAM_DATA 1
-#define VECTORIZE 1
-#define SAMPLE_EACH_POINT 0
-
 __define_gather_stride(ValueBrick);
 __define_gather(ValueBrick);
-
 
 struct range1f {
   float lo, hi;
@@ -93,11 +91,6 @@ struct Address
   varying float size;
 };
 
-inline void BrickTreeVolume_getVoxel(void *uniform _self,
-                            
-         const varying vec3i &coord,
-                                     varying float &value);
-
 // Functions that defined in CPP files
 extern "C" unmasked uniform float BrickTree_scalar_sample(void *uniform cppObject, uniform vec3f &samplePos);
 // TODO gradient shading is not working
@@ -105,13 +98,13 @@ extern "C" unmasked uniform vec3f BrickTree_scalar_computeGradient(void *uniform
 
 
 // Find the next hit point in the volume for ray casting based renderers.
-static void BrickTreeVolume_stepRay(void *uniform _self, 
+inline void BrickTreeVolume_stepRay(void *uniform _self,
                                     varying Ray &ray,
                                     const varying float samplingRate)
 {
   BrickTreeVolume *uniform self = (BrickTreeVolume *uniform) _self;
-  // TODO: clean this up, properly implemnt an integrator with
-  // variable step size...
+  // TODO: clean this up, properly implement an integrator with
+  // variable step size ...
   const float step = self->super.samplingStep / samplingRate; 
   ray.t0 += step;
 }
@@ -200,7 +193,7 @@ inline uniform ValueBrick* getValueBrick(BrickTreeVolume *uniform btv,
         (const uniform ValueBrick *varying)(base_start + segmentOffset * stride);
       vb = (uniform ValueBrick*)data;
     }
-  }else{
+  } else {
     vb = (uniform ValueBrick*)(bt->valueBrick + brickID);
   }
 
@@ -262,21 +255,18 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
       // if current brick is not loaded, return parent node value
       if (bt->valueBricksStatus[cBrickID].isLoaded) {
         const int childBrickID = getChildBrickID(bt, ibID, cpos);
-	
-	// check cell value range and maximum opacity
-	int skip = 0;
-	vec2f cellRange = 
-	  make_vec2f(bt->valueBricksStatus[cBrickID].valueRange[0], 
-		     bt->valueBricksStatus[cBrickID].valueRange[1]);
-	//print ("% % \n", cellRange.x, cellRange.y);
-	if (!isnan(cellRange.x)) {
-	  // Get the maximum opacity in the volumetric value range.
-	  float maximumOpacity = self->super.transferFunction->
-	    getMaxOpacityInRange(self->super.transferFunction, cellRange);
-	  skip = maximumOpacity > 0.0f ? 0 : 1;
-	  //print ("%\n", maximumOpacity);
-	  //if (skip == 1) print ("%\n", skip);
-	}
+        
+        // check cell value range and maximum opacity
+        int skip = 0;
+        vec2f cellRange = 
+          make_vec2f(bt->valueBricksStatus[cBrickID].valueRange[0], 
+                     bt->valueBricksStatus[cBrickID].valueRange[1]);
+        if (!isnan(cellRange.x)) {
+          // Get the maximum opacity in the volumetric value range.
+          float maximumOpacity = self->super.transferFunction->
+            getMaxOpacityInRange(self->super.transferFunction, cellRange);
+          skip = maximumOpacity > 0.0f ? 0 : 1;
+        }
 
         if (childBrickID == -1 || area <= 2 /*|| skip == 1*/) {
           // here make sure each brick (in each gang) is loaded we know that
@@ -448,10 +438,6 @@ static float BrickTreeVolume_sample(void *uniform _self, const vec3f &samplePos)
       // getBrickValues(self, blockID, address, ii, vCorners, cvFilled);
     }
   }
-  //if (numOfQueries > 1)
-  //  print("%\n", numOfQueries);
-
-
 
   // Interpolate the voxel values.
   const float v_00 = vCorners[C000] + fractionalLocalCoordinates.x * (vCorners[C001] - vCorners[C000]);
@@ -509,7 +495,6 @@ static float BrickTreeVolume_sample(void *uniform _self, const vec3f &samplePos)
         BrickTree_scalar_sample(self->cppSampler, uSamplePos[lane]);
   }
   result = uReturnValue[programIndex];
-
 #endif
 
   return result;
@@ -560,17 +545,6 @@ export void BrickTreeVolume_set(void *uniform _self,
     self->gridSize = gridSize;
     self->brickSize = brickSize;
     self->blockWidth = blockWidth;
-
-    //print("dir:(%,%,%)\n", self->camera->super.dir);
-   
-    // print("#osp:bt: bounds (%\t%\t%\t)\n"
-    //       "                (%\t%\t%\t)\n",
-    //       self->super.boundingBox.lower.x,
-    //       self->super.boundingBox.lower.y,
-    //       self->super.boundingBox.lower.z,
-    //       self->super.boundingBox.upper.x,
-    //       self->super.boundingBox.upper.y,
-    //       self->super.boundingBox.upper.z);
 }
 
 export void BrickTreeVolume_set_BricktreeForest(void *uniform _self,
@@ -706,7 +680,6 @@ inline void BrickTreeVolume_getVoxel(void *uniform _self,
   //   value           = getBrickValue(self, bID, address);
   // }
 }
-
 #endif
 
 

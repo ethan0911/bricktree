@@ -16,16 +16,26 @@
 
 #pragma once
 
+// common
+#include "common/config.h"
+#include "common/helper.h"
 // ospray
 #include "ospcommon/array3D/Array3D.h"
 #include "ospcommon/box.h"
 // ospcommon
 #include "ospcommon/FileName.h"
+#if __clang__
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wundef"
+#  pragma GCC diagnostic ignored "-Wduplicate-enum"
+#  pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
+#endif
 #include "ospcommon/tasking/parallel_for.h"
+#if __clang__
+#  pragma GCC diagnostic pop
+#endif
 // MPI
 #include "mpiCommon/MPICommon.h"
-// common
-#include "common/helper.h"
 // std
 #include <iostream>
 #include <vector>
@@ -40,8 +50,6 @@
 #include <algorithm>
 #include <unordered_map>
 #include <math.h>
-
-#define STREAM_DATA 1
 
 namespace ospray {
 namespace bt
