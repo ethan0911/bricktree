@@ -28,6 +28,7 @@
 struct ValueBrick
 {
   _BT_T value[_BT_N][_BT_N][_BT_N];
+  _BT_T vRange[2];
 };
 
 struct IndexBrick

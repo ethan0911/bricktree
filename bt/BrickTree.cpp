@@ -197,6 +197,10 @@ namespace ospray {
 
       fread(brickInfo, sizeof(BrickInfo), numBrickInfos, file);
       fclose(file);
+
+      for(size_t i = 0; i< numValueBricks;i++){
+        valueBricksStatus[i].isLoaded = true;
+      }
     }
 
     template <int N, typename T>

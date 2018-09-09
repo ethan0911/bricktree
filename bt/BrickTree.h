@@ -116,6 +116,7 @@ struct BrickTree
       // maximum size in finest level
       const vec3i &maxSize) const;
     T value[N][N][N];
+    T vRange[2];
   };
 
   /*! gives the _value_ brick ID of NxNxN children. if a

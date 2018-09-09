@@ -278,7 +278,7 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
 	  //if (skip == 1) print ("%\n", skip);
 	}
 
-        if (childBrickID == -1 || area <= 2 || skip == 1) {
+        if (childBrickID == -1 || area <= 2 /*|| skip == 1*/) {
           // here make sure each brick (in each gang) is loaded we know that
           // some of the values are unset, we do query for all the gangs
 
