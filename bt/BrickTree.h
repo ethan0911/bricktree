@@ -89,17 +89,17 @@ struct BrickStatus
     :
     isRequested(0),
     isLoaded(0),
-    loadWeight(0.0),
-    valueRange(vec2f(std::numeric_limits<float>::infinity(),
-		     -std::numeric_limits<float>::infinity()))
+    loadWeight(0.0)//,
+    // valueRange(vec2f(std::numeric_limits<float>::infinity(),
+    // 		     -std::numeric_limits<float>::infinity()))
   {
   }
-  BrickStatus(int request, int load, float Weight, vec2f range)
+  BrickStatus(int request, int load, float Weight/*, vec2f range*/)
     :
     isRequested(request),
     isLoaded(load),
-    loadWeight(Weight),
-    valueRange(range)
+    loadWeight(Weight)//,
+    //valueRange(range)
   {
   }
   int8_t isRequested;
