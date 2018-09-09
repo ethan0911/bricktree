@@ -24,13 +24,16 @@
 #include "ospcommon/box.h"
 // ospcommon
 #include "ospcommon/FileName.h"
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wundef"
-#pragma GCC diagnostic ignored "-Wduplicate-enum"
-#pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
-
+#if __clang__
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wundef"
+#  pragma GCC diagnostic ignored "-Wduplicate-enum"
+#  pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
+#endif
 #include "ospcommon/tasking/parallel_for.h"
-#pragma GCC diagnostic pop
+#if __clang__
+#  pragma GCC diagnostic pop
+#endif
 // MPI
 #include "mpiCommon/MPICommon.h"
 // std
