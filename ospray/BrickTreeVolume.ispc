@@ -255,25 +255,25 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
       // if current brick is not loaded, return parent node value
       if (bt->valueBricksStatus[cBrickID].isLoaded) {
         const int childBrickID = getChildBrickID(bt, ibID, cpos);
-        
+
+	// get value brick
+	uniform ValueBrick* vb = getValueBrick(self, bt, cBrickID);
+	
         // check cell value range and maximum opacity
-        int skip = 0;
-        vec2f cellRange = 
-          make_vec2f(bt->valueBricksStatus[cBrickID].valueRange[0], 
-                     bt->valueBricksStatus[cBrickID].valueRange[1]);
+        int is_transparent = 0;
+        vec2f cellRange = make_vec2f(vb->vRange[0], vb->vRange[1]);
         if (!isnan(cellRange.x)) {
           // Get the maximum opacity in the volumetric value range.
           float maximumOpacity = self->super.transferFunction->
             getMaxOpacityInRange(self->super.transferFunction, cellRange);
-          skip = maximumOpacity > 0.0f ? 0 : 1;
+          is_transparent = maximumOpacity > 0.0f ? 0 : 1;
         }
 
-        if (childBrickID == -1 || area <= 2 /*|| skip == 1*/) {
+        if (childBrickID == -1 || area <= 2 || is_transparent == 1) {
           // here make sure each brick (in each gang) is loaded we know that
           // some of the values are unset, we do query for all the gangs
 
           // --> query myself
-          uniform ValueBrick* vb      = getValueBrick(self, bt, cBrickID);
           vCorners[cornerIdx] = vb->value[cpos.z][cpos.y][cpos.x];
           cvFilled |= (1 << cornerIdx);
 

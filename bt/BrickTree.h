@@ -105,7 +105,7 @@ struct BrickStatus
   int8_t isRequested;
   int8_t isLoaded;
   float loadWeight;
-  vec2f valueRange;   /*8*/
+  //vec2f valueRange;   /*8*/
 };
 
 template<int N, typename T>
