@@ -40,6 +40,8 @@ namespace ospray {
 
       /*! public interface to writing values into the tree */
       virtual void set(const vec3i &coord, int level, float v) ;
+      
+      virtual void setRange(const vec3i &coord, int level, T lower, T upper) ;
 
       /*! find or create value brick that contains given cell. if that
         brick (or any of its parents, indices referring to it, etc)

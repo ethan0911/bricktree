@@ -128,6 +128,20 @@ namespace ospray {
       db->value[coord.z % N][coord.y % N][coord.x % N] = v;
     }
 
+    template<int N, typename T>
+    void BrickTreeBuilder<N,T>::setRange(const vec3i &coord, int level, T lower, T upper) 
+    {
+#ifdef PARALLEL_MULTI_TREE_BUILD
+      std::lock_guard<std::mutex> lock(mutex);
+#endif
+      maxLevel = max(maxLevel,level);
+      assert(reduce_max(coord) < brickSizeOf<N>(level));
+      typename BrickTree<N,T>::ValueBrick *db = this->findValueBrick(coord, level);
+      assert(db);
+      db->vRange[0] = lower;
+      db->vRange[1] = upper;
+    }
+
     template struct BrickTreeBuilder<2,uint8_t>;
     template struct BrickTreeBuilder<4,uint8_t>;
     template struct BrickTreeBuilder<8,uint8_t>;
