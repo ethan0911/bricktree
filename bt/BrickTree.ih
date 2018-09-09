@@ -47,7 +47,7 @@ struct BrickStatus
   int8 isRequested;
   int8 isLoaded;
   float loadWeight;
-  float valueRange[2];   /*8*/
+  //float valueRange[2];   /*8*/
 };
 
 /*! \brief ispc-side implementation of the bricktree object

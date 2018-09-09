@@ -283,10 +283,10 @@ namespace ospray {
       for (int i = 0; i < vbListInfo.y; i++) {
         valueBricksStatus[vbListInfo.x + i].isLoaded = true;
 	// Untested ...
-	auto rg = std::minmax_element((T*)(valueBrick + vbListInfo.x + i),
-				      (T*)(valueBrick + vbListInfo.x + i + 1));
-	valueBricksStatus[vbListInfo.x + i].valueRange.x = *(rg.first);
-	valueBricksStatus[vbListInfo.x + i].valueRange.y = *(rg.second);
+        //auto rg = std::minmax_element((T*)(valueBrick+vbListInfo.x+i),
+        //                              (T*)(valueBrick+vbListInfo.x+i+1));
+        //valueBricksStatus[vbListInfo.x + i].valueRange.x = *(rg.first);
+        //valueBricksStatus[vbListInfo.x + i].valueRange.y = *(rg.second);
       }
     }
 
@@ -298,10 +298,10 @@ namespace ospray {
       fread((ValueBrick *)(valueBrick + aBrick.brickID),
 	    sizeof(ValueBrick), 1, file);
       valueBricksStatus[aBrick.brickID].isLoaded = true;
-      auto rg = std::minmax_element((T*)(valueBrick + aBrick.brickID),
-				    (T*)(valueBrick + aBrick.brickID + 1));
-      valueBricksStatus[aBrick.brickID].valueRange.x = *(rg.first);
-      valueBricksStatus[aBrick.brickID].valueRange.y = *(rg.second);
+      //auto rg = std::minmax_element((T*)(valueBrick + aBrick.brickID),
+      //	  		      (T*)(valueBrick + aBrick.brickID + 1));
+      //valueBricksStatus[aBrick.brickID].valueRange.x = *(rg.first);
+      //valueBricksStatus[aBrick.brickID].valueRange.y = *(rg.second);
     }
 
     template <int N, typename T>
