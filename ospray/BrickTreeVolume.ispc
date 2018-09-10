@@ -172,7 +172,7 @@ inline uniform ValueBrick* getValueBrick(BrickTreeVolume *uniform btv,
                                 const int brickID)
 {
   const uniform int N   = btv->brickSize;
-  const uniform unsigned int capSize  = 1 << 31;
+  const uniform unsigned int capSize  = 1 << 29;
   const uniform unsigned int64 vbSize = N * N * N * bt->numValueBricks * 4;
   const uniform bool huge = (vbSize < capSize) ? false : true; 
 
@@ -256,8 +256,8 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
       if (bt->valueBricksStatus[cBrickID].isLoaded) {
         const int childBrickID = getChildBrickID(bt, ibID, cpos);
 
-	// get value brick
-	uniform ValueBrick* vb = getValueBrick(self, bt, cBrickID);
+	      // get value brick
+	      uniform ValueBrick* vb = getValueBrick(self, bt, cBrickID);
 	
         // check cell value range and maximum opacity
         int is_transparent = 0;
