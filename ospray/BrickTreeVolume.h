@@ -117,6 +117,8 @@ namespace ospray {
       //! block with is acutally a brick tree width
       //! calculated by N^D x N^D x N^D
       int blockWidth;
+
+      float renderThreshold;
       
       std::string fileName;
 

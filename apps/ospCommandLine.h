@@ -106,6 +106,7 @@ namespace ospray {
     vec2i numFrames{1 /* skipped */, 100 /* measure */};
     bool use_hacked_vol{false};
     bool use_adaptive_sampling{false};
+    float renderThreshold{0.0f};
   };
 
   inline void CommandLine::Parse(int ac, const char **av)
@@ -151,7 +152,10 @@ namespace ospray {
         }
       } else if (str == "-hacked-volume") {
         use_hacked_vol = true;
-      } else if (str[0] == '-') {
+      } else if (str =="-rt"){
+        ospray::Parse<1>(ac, av, i, renderThreshold);
+      }
+      else if (str[0] == '-') {
         throw std::runtime_error("unknown argument: " + str);
       } else {
         inputFiles.push_back(av[i]);

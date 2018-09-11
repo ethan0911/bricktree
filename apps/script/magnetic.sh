@@ -6,10 +6,10 @@ BRICKTREEFILE=$2
 COMMAND=$(basename "${OSPRAY_BIN}")
 #echo $COMMAND
 OUTPUTNAME=$(dirname "$BRICKTREEFILE")
-echo $OUTPUTNAME
-echo $(basename "$OUTPUTNAME")
+#echo $OUTPUTNAME
+#echo $(basename "$OUTPUTNAME")
 
-echo "${@:3}"
+#echo "${@:3}"
 
 if [ $COMMAND == 'ospBrickWidget' ]
 then
