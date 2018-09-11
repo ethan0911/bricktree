@@ -57,6 +57,7 @@ struct BrickTreeVolume
   uniform int brickSize;
   uniform int blockWidth;
   uniform int depth;
+  uniform float renderThreshold;
 
   uniform BrickTreeForest forest;
   uniform CameraInfo cameraInfo;

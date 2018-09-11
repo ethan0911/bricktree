@@ -134,17 +134,19 @@ namespace ospray {
       this->format     = getParamString("format", "<not specified>");
       this->validSize  = getParam3i("validSize",vec3i(-1));
       PerspectiveCamera* camera = (PerspectiveCamera*)getParamObject("camera", nullptr);
-      PRINT(camera->pos);
       this->validFractionOfRootGrid = 
         vec3f(validSize) / vec3f(gridSize*blockWidth);
       this->depth = (int)(log(blockWidth)/log(brickSize));
-      PRINT(depth);
+      this->renderThreshold = getParam1f("renderThreshold", 0.0f);
+      PRINT(this->renderThreshold);
+
       this->sampler = createSampler();
       ispc::BrickTreeVolume_set(getIE(),
                                 (ispc::vec3i &)validSize,
                                 (ispc::vec3i &)gridSize,
                                 brickSize,
                                 blockWidth,
+                                renderThreshold,
                                 this,
                                 sampler);
 

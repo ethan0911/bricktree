@@ -216,6 +216,8 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
   uniform FindStack stack[16];
   uniform FindStack *uniform stackPtr = pushStack(&stack[0],0,-1,wsBrickW);
 
+  //uniform float thres = 0.0;
+
   while (stackPtr > stack) {
     --stackPtr;
     if (stackPtr->active) {
@@ -269,7 +271,9 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
           is_transparent = maximumOpacity > 0.0f ? 0 : 1;
         }
 
-        if (childBrickID == -1 || area <= 2 || is_transparent == 1) {
+        float range = cellRange.y - cellRange.x;
+
+        if (childBrickID == -1 || area <= 2 || is_transparent == 1 || range <= self->renderThreshold) {
           // here make sure each brick (in each gang) is loaded we know that
           // some of the values are unset, we do query for all the gangs
 
@@ -527,6 +531,7 @@ export void BrickTreeVolume_set(void *uniform _self,
                                 const uniform vec3i &gridSize,
                                 const uniform int &brickSize,
                                 const uniform int &blockWidth,
+                                const uniform float &renderThreshold,
                                 /*! pointer to the c++ side object */
                                 void *uniform cppObject,
                                 void *uniform cppSampler)
@@ -545,6 +550,7 @@ export void BrickTreeVolume_set(void *uniform _self,
     self->gridSize = gridSize;
     self->brickSize = brickSize;
     self->blockWidth = blockWidth;
+    self->renderThreshold = renderThreshold;
 }
 
 export void BrickTreeVolume_set_BricktreeForest(void *uniform _self,

@@ -130,7 +130,7 @@ int main(int ac, const char **av)
       std::make_shared<ospray::BrickTree>();
     bricktreeVolume->adaptiveSampling = args.use_adaptive_sampling;
     bricktreeVolume->setFromXML(args.inputFiles[0]);
-    bricktreeVolume->createBtVolume(camera,transferFcn);
+    bricktreeVolume->createBtVolume(camera,transferFcn,args.renderThreshold);
     ospAddVolume(world,bricktreeVolume->ospVolume);
     ospray::bt::BrickTreeVolume *btVolume = 
       (ospray::bt::BrickTreeVolume *)bricktreeVolume->ospVolume;  
