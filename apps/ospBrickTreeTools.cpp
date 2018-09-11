@@ -92,6 +92,7 @@ namespace ospray{
     if(!ospVolume)
       throw std::runtime_error("Could not create ospray BrickTreeVolume");
     // -------------------------------------------------------
+    std::cout << "validSize " << validSize << std::endl;
     ospSet1i(ospVolume,"adaptiveSampling", adaptiveSampling);
     ospSet1i(ospVolume,"blockWidth", blockWidth);
     ospSet1i(ospVolume,"brickSize", brickSize);
