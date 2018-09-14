@@ -271,7 +271,7 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
           is_transparent = maximumOpacity > 0.0f ? 0 : 1;
         }
 
-        float range = cellRange.y - cellRange.x;
+        float range = abs(cellRange.y - cellRange.x);
 
         if (childBrickID == -1 || area <= 2 || is_transparent == 1 || range <= self->renderThreshold) {
           // here make sure each brick (in each gang) is loaded we know that
@@ -509,6 +509,28 @@ static vec3f BrickTreeVolume_computeGradient(void *uniform _self,
                                              const vec3f &samplePos)
 {
   BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
+
+#if VECTORIZE
+  // Gradient step in each dimension (world coordinates).
+  const uniform vec3f gradientStep = make_vec3f(1.0f);
+  // The gradient will be computed using central differences.
+  varying vec3f gradient;
+    // Sample at gradient location.
+  float sample = self->super.sample(self, samplePos);
+
+  // Gradient magnitude in the X direction.
+  gradient.x = self->super.sample(self, samplePos + make_vec3f(gradientStep.x, 0.0f, 0.0f)) - sample;
+
+  // Gradient magnitude in the Y direction.
+  gradient.y = self->super.sample(self, samplePos + make_vec3f(0.0f, gradientStep.y, 0.0f)) - sample;
+
+  // Gradient magnitude in the Z direction.
+  gradient.z = self->super.sample(self, samplePos + make_vec3f(0.0f, 0.0f, gradientStep.z)) - sample;
+
+  // This approximation may yield image artifacts.
+  return(gradient / gradientStep);
+
+#else
   uniform vec3f uSamplePos[programCount];
   uniform vec3f uReturnValue[programCount];
   uSamplePos[programIndex] = samplePos;
@@ -517,6 +539,8 @@ static vec3f BrickTreeVolume_computeGradient(void *uniform _self,
       BrickTree_scalar_computeGradient(self->cppSampler,uSamplePos[lane]);
   }
   return uReturnValue[programIndex];
+#endif
+  
 }
 
 export void *uniform BrickTreeVolume_create(void *uniform cppEquivalent) 
