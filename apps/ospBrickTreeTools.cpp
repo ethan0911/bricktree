@@ -93,7 +93,7 @@ namespace ospray{
       throw std::runtime_error("Could not create ospray BrickTreeVolume");
     // -------------------------------------------------------
     ospSet1i(ospVolume,"adaptiveSampling", adaptiveSampling);
-    ospSet1i(ospVolume, "gradientShadingEnabled", 1);
+    ospSet1i(ospVolume, "gradientShadingEnabled", 0);
     ospSet1i(ospVolume,"blockWidth", blockWidth);
     ospSet1i(ospVolume,"brickSize", brickSize);
     ospSet3i(ospVolume,"gridSize", gridSize.x, gridSize.y, gridSize.z);

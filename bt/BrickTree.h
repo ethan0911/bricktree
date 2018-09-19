@@ -50,6 +50,7 @@
 #include <algorithm>
 #include <unordered_map>
 #include <math.h>
+#include <common/helper.h>
 
 namespace ospray {
 namespace bt
@@ -396,7 +397,7 @@ struct BrickTreeForest
 
   void Initialize()
   {
-    std::cout << "#osp: start to initialize bricktree forest!" << std::endl;
+    ospray::time_point t1 = ospray::Time();
     int numTrees = forestSize.product();
     assert(numTrees > 0);
 
@@ -424,7 +425,7 @@ struct BrickTreeForest
       tree[treeID].reorganizeValueBrickBufferByLevel();
     });
 
-    printf("#osp: %d trees have initialized!\n", numTrees);
+    printf("#osp: %d trees have initialized! Timespan:%lf\n", numTrees, ospray::Time(t1));
   }
 
   void loadBrickTreeForest()

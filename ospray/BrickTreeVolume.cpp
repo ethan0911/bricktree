@@ -138,7 +138,6 @@ namespace ospray {
         vec3f(validSize) / vec3f(gridSize*blockWidth);
       this->depth = (int)(log(blockWidth)/log(brickSize));
       this->renderThreshold = getParam1f("renderThreshold", 0.0f);
-      PRINT(this->renderThreshold);
 
       this->sampler = createSampler();
       ispc::BrickTreeVolume_set(getIE(),
