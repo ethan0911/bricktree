@@ -27,5 +27,8 @@
 #define STREAM_DATA 1
 #define VECTORIZE 1
 #define SAMPLE_EACH_POINT 0
+#define EMPTY_SPACE_SKIP 1
+
+#define INVALID_BRICKID -1
 
 #endif //OSPRAY_CONFIG_H

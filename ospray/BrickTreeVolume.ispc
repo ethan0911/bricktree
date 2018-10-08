@@ -45,8 +45,8 @@ inline const int getChildBrickID(const uniform BrickTree *varying bt,
                                  int indexBrickID,
                                  varying vec3i cpos)
 {
-  if (indexBrickID == -1)
-    return -1;
+  if (indexBrickID == INVALID_BRICKID)
+    return INVALID_BRICKID;
 
   const int cbID = bt->indexBrick[indexBrickID].childID[cpos.z][cpos.y][cpos.x];
   return cbID;
@@ -205,6 +205,39 @@ inline uniform ValueBrick* getValueBrick(BrickTreeVolume *uniform btv,
   return vb;
 }
 
+// inline uniform ValueBrick* getValueBrick(BrickTreeVolume *uniform btv,
+//                                 const uniform BrickTree *varying bt,
+//                                 const int brickID)
+// {
+//   const uniform int N   = btv->brickSize;
+//   const uniform unsigned int capSize  = 1 << 29;
+//   const unsigned int64 vbSize = N * N * N * bt->numValueBricks * 4;
+//   const bool huge = (vbSize < capSize) ? false : true; 
+
+//   uniform ValueBrick* vb;
+//   if (huge) {
+//     const uniform uint8 *varying const base = (const uniform uint8 *varying const)bt->valueBrick;
+//     const uniform int stride                = sizeof(uniform ValueBrick);
+//     const uniform int segmentLength = 1 << 21;
+//     varying int segmentID     = brickID / segmentLength;
+//     varying int segmentOffset = brickID % segmentLength;
+
+//     foreach_unique(uniformSegID in segmentID)
+//     {
+//       const uniform uint64 scaledStartIndex = (uint64)(uniformSegID * segmentLength) * stride;
+//       /* properly shifted base address (shifted by 64-bits) */
+//       const uniform uint8 *varying base_start = base + scaledStartIndex;
+//       const uniform ValueBrick *varying data =
+//         (const uniform ValueBrick *varying)(base_start + segmentOffset * stride);
+//       vb = (uniform ValueBrick*)data;
+//     }
+//   } else {
+//     vb = (uniform ValueBrick*)(bt->valueBrick + brickID);
+//   }
+
+//   return vb;
+// }
+
 inline void BrickTreeVolume_getVoxels(void *uniform _self,
                                       const uniform int  blockID,
                                       const varying vec3i  coord,
@@ -278,13 +311,16 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
 
         float range = abs(cellRange.y - cellRange.x);
 
-        if (childBrickID == -1 || area <= 1 || is_transparent == 1 || range <= self->renderThreshold) {
+        if (childBrickID == INVALID_BRICKID || area <= 1 || is_transparent == 1 || range <= self->renderThreshold) {
           // here make sure each brick (in each gang) is loaded we know that
           // some of the values are unset, we do query for all the gangs
 
           // --> query myself
           vCorners[cornerIdx] = vb->value[cpos.z][cpos.y][cpos.x];
           cvFilled |= (1 << cornerIdx);
+
+          // if(blockID <=4)
+          //   vCorners[cornerIdx] = 100.0;
 
           // --> query neighbors
           for (uniform int ii = cornerIdx + 1; ii < 8; ++ii) {
@@ -293,8 +329,11 @@ inline void BrickTreeVolume_getVoxels(void *uniform _self,
 
             int step = N / brickW;
             // buggy? never go to else branch
-            if (step < 1) {
-              vCorners[ii] = vCorners[cornerIdx];
+            if (step <= 1) {
+              // if(blockID < 80)
+              //   vCorners[ii] = 1.3;//vCorners[cornerIdx];
+              // else
+                vCorners[ii] = vCorners[cornerIdx];
               cvFilled |= (1 << ii);
             } else {
               const vec3i pos  = make_vec3i((ii & 1) ? cpos.x : cpos.x + 1,
@@ -338,27 +377,31 @@ void GridAccelerator_stepRay(void *uniform _self,
   float step = stepBase;
   // Tentatively advance the ray.
   ray.t0 += step;
-  ray.time = step;
+  //return;
 
-#if 1
+#if EMPTY_SPACE_SKIP
   const vec3f ray_rdir = rcp(ray.dir);
   // sign of direction determines near/far index
   const vec3i nextCellIndex = make_vec3i(1 - (intbits(ray.dir.x) >> 31),
                                          1 - (intbits(ray.dir.y) >> 31),
                                          1 - (intbits(ray.dir.z) >> 31));
-  float skipWidth = (float)N;
-  vec3i coord = to_int(ray.org + ray.t0 * ray.dir);
+  int skipWidth             = N;
+  vec3i coord               = to_int(ray.org + ray.t0 * ray.dir);
+
   const int blockID = getBlockID(self, coord);
-  const uniform BrickTree *uniform bt;
+  const uniform BrickTree *uniform bt; 
+
   foreach_unique(bID in blockID)
   {
     bt = (BrickTree *)(self->forest.data + bID);
   }
-
+  
   uniform FindStack stack[16];
   uniform FindStack *uniform stackPtr = pushStack(&stack[0], 0, -1, self->blockWidth);
 
-  vec3i cpos  = make_vec3i(0);
+  vec3i cpos = make_vec3i(0);
+
+  int is_transparent = 0;
 
   while (stackPtr > stack) {
     --stackPtr;
@@ -368,43 +411,64 @@ void GridAccelerator_stepRay(void *uniform _self,
       const uniform int brickW      = stackPtr->worldSpaceBrickW;
       const uniform int childBrickW = brickW / N;
 
-      const int childBrickID = getChildBrickID(bt, ibID, cpos);
-
       vec3i cpos = make_vec3i((coord.x % brickW) / childBrickW,
                               (coord.y % brickW) / childBrickW,
                               (coord.z % brickW) / childBrickW);
 
-      uniform ValueBrick *vb = getValueBrick(self, bt, cBrickID);
+      const int childBrickID = getChildBrickID(bt, ibID, cpos);
 
-      int is_transparent = 0;
-      vec2f cellRange    = make_vec2f(vb->vRange[0], vb->vRange[1]);
-      if (!isnan(cellRange.x)) {
-        // Get the maximum opacity in the volumetric value range.
-        float maximumOpacity =
-            self->super.transferFunction->getMaxOpacityInRange(
-                self->super.transferFunction, cellRange);
-        is_transparent = maximumOpacity > 0.0f ? 0 : 1;
-      }
+      // get value brick
+      if (bt->valueBricksStatus[cBrickID].isLoaded) {
+        uniform ValueBrick *vb = getValueBrick(self, bt, cBrickID);
 
-      if (childBrickID == -1 || is_transparent == 1) {
-        skipWidth = brickW;
-        break;
-      } else {
-        stackPtr = pushStack(stackPtr, childBrickID, cBrickID, childBrickW);
+
+        vec2f cellRange    = make_vec2f(vb->vRange[0], vb->vRange[1]);
+        if (!isnan(cellRange.x)) {
+          // Get the maximum opacity in the volumetric value range.
+          float maximumOpacity =
+              self->super.transferFunction->getMaxOpacityInRange(
+                  self->super.transferFunction, cellRange);
+          is_transparent = maximumOpacity > 0.0f ? 0 : 1;
+        }
+
+        // if (childBrickID == INVALID_BRICKID || is_transparent == 1) {
+        //   skipWidth = brickW;
+        //   break;
+        // } else {
+        //   stackPtr = pushStack(stackPtr, childBrickID, cBrickID, childBrickW);
+        // }
+
+        if (is_transparent == 1) {
+          skipWidth == brickW;
+          break;
+        }
+
+        if(childBrickID != INVALID_BRICKID ){
+          stackPtr = pushStack(stackPtr, childBrickID, cBrickID, childBrickW);
+        }
       }
     }
   }
 
-  vec3f farBound = to_float(coord + nextCellIndex * skipWidth);
-  // Identify the distance along the ray to the exit points on the cell.
-  const vec3f maximum  = ray_rdir * (farBound - ray.org);
-  const float exitDist = min(min(ray.t, maximum.x), min(maximum.y, maximum.z));
+  //int minValidSize = min(min(bt->validSize[0], bt->validSize[1]), bt->validSize[2]);
+  // if(skipWidth > minValidSize)
+  //   return;
 
-  // Advance the ray so the next hit point will be outside the empty
-  // cell.
-  const float dist = ceil(abs(exitDist - ray.t0) / step) * step;
-  ray.t0 += dist;
-  ray.time = dist;
+  if (is_transparent == 1) {
+    vec3i coordIdx = (coord / skipWidth) * skipWidth;
+    vec3i validSize = make_vec3i(bt->validSize[0], bt->validSize[1], bt->validSize[2]);
+    vec3f farBound = to_float(coordIdx + nextCellIndex * make_vec3i(skipWidth));
+    // Identify the distance along the ray to the exit points on the cell.
+    const vec3f maximum = ray_rdir * (farBound - ray.org);
+    const float exitDist =
+        min(min(ray.t, maximum.x), min(maximum.y, maximum.z));
+
+    // Advance the ray so the next hit point will be outside the empty cell.
+    float dist = ceil(abs(exitDist - ray.t0) / step) * step;
+
+    ray.t0 += dist;
+  }
+
 #endif
 }
 
@@ -578,7 +642,7 @@ static float BrickTreeVolume_sample(void *uniform _self, const vec3f &samplePos)
   uniform vec3f uSamplePos[programCount];
   uniform float uReturnValue[programCount];
   uSamplePos[programIndex] = samplePos;
-  foreach_active(lane)
+  foreach_active(lane)self->blockWidth
   {
     uReturnValue[lane] =
         BrickTree_scalar_sample(self->cppSampler, uSamplePos[lane]);
@@ -666,18 +730,23 @@ export void BrickTreeVolume_set_BricktreeForest(void *uniform _self,
                                                 void *uniform _forest,
                                                 uniform unsigned int size)
 {
-    BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
-    assert(self); 
-    uniform BrickTree *uniform forest = (uniform BrickTree *uniform)_forest;
-    self->forest.data = forest;
-    self->forest.size = size;
+  BrickTreeVolume *uniform self = (BrickTreeVolume * uniform) _self;
+  assert(self);
+  uniform BrickTree *uniform forest = (uniform BrickTree * uniform) _forest;
+  self->forest.data                 = forest;
+  self->forest.size                 = size;
+
+
+  // const uniform BrickTree *uniform bt = (BrickTree *)(self->forest.data + 79);
+
+  // print("ISPC: y: % \n", bt->validSize[1]);
 }
 
 export void BrickTreeVolume_set_CameraInfo(void *uniform _self,
                                            void *uniform camera,
                                            void *uniform pCameraDir,
                                            void *uniform pCameraPos,
-                                           void *uniform pFovy)                                         
+                                           void *uniform pFovy)
 {
   BrickTreeVolume *uniform self = (BrickTreeVolume *uniform)_self;
   self->cameraInfo.camera     = (PerspectiveCamera *uniform)camera;
