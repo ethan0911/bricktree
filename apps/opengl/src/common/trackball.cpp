@@ -83,7 +83,7 @@ void viewer::Trackball::Reset()
 void viewer::Trackball::Reset(const affine3f &m) { matrix_new = m; }
 void viewer::Trackball::UpdateMatrix()
 {
-  matrix_final = matrix_new;
+  matrix_final = matrix_new * affine3f::scale(vec3f(zoom_new));
 }
 
 /**
