@@ -85,14 +85,16 @@ namespace ospray{
     this->voxelType = typeForString(format.c_str());
   }
 
-  void BrickTree::createBtVolume(OSPTransferFunction& tfn)
+  void BrickTree::createBtVolume(OSPCamera& camera,OSPTransferFunction& tfn, float& renderThres)
   {
     if(ospVolume) { ospVolume = nullptr; }
     ospVolume = ospNewVolume("BrickTreeVolume");
     if(!ospVolume)
       throw std::runtime_error("Could not create ospray BrickTreeVolume");
     // -------------------------------------------------------
+    std::cout << "validSize " << validSize << std::endl;
     ospSet1i(ospVolume,"adaptiveSampling", adaptiveSampling);
+    ospSet1i(ospVolume, "gradientShadingEnabled", 0);
     ospSet1i(ospVolume,"blockWidth", blockWidth);
     ospSet1i(ospVolume,"brickSize", brickSize);
     ospSet3i(ospVolume,"gridSize", gridSize.x, gridSize.y, gridSize.z);
@@ -100,6 +102,8 @@ namespace ospray{
     ospSetString(ospVolume,"format", format.c_str());
     ospSet3i(ospVolume, "validSize", validSize.x, validSize.y, validSize.z);
     ospSetObject(ospVolume,"transferFunction",tfn);
+    ospSetObject(ospVolume,"camera",camera);
+    ospSet1f(ospVolume,"renderThreshold", renderThres);
     ospCommit(ospVolume);
   }
 }

@@ -18,7 +18,7 @@ Each cell in a brick corresponds to a region of voxels in the logical
 structured volume space that the bricktree corresponds. For leaf
 bricks each cell typically corresponds to exactly on logical
 structured voluem cell; for inner nodes typically refer to NxNxN input
-cells on the first inner bricktree level, to N^2xN^2xN^2 cells on the
+cells on the first inner bricktree level, to N^2 x N^2 x N^2 cells on the
 second-mode inner level, etc. 
 
 For leaf bricks, the value stored in the brick's voxels should be the

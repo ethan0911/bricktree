@@ -157,6 +157,9 @@ namespace ospray {
               db.value[iz][iy][ix] = input->get(N*begin+vec3i(ix,iy,iz));
               range.extend(db.value[iz][iy][ix]);
             }
+
+        db.vRange[0] = (T)range.lower;
+        db.vRange[1] = (T)range.upper;
       }
       else {
         // -------------------------------------------------------
@@ -173,6 +176,8 @@ namespace ospray {
                                     ));
               db.value[iz][iy][ix] = (T)avg;
             }
+        db.vRange[0] = (T)range.lower;
+        db.vRange[1] = (T)range.upper;
       }
       // now, compute average of this node - we need this even if the node gets killed...
       avg = db.computeWeightedAverage(begin,levelWidth,input->size());
@@ -191,6 +196,7 @@ namespace ospray {
                 this->set(cellID, level, db.value[iz][iy][ix]);
               }
             }
+        this->setRange(N * begin,level, db.vRange[0], db.vRange[1]);
       }
 
       return range;

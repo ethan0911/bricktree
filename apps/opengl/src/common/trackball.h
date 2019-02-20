@@ -26,10 +26,10 @@ namespace viewer {
     ospcommon::affine3f matrix_new   {ospcommon::OneTy()};
     ospcommon::affine3f matrix_old   {ospcommon::OneTy()};
     ospcommon::affine3f matrix_final {ospcommon::OneTy()};
-    ospcommon::vec3f position_new;
-    ospcommon::vec3f position_old;
-    float zoom_new = 1.f;
-    float zoom_old = 1.f;
+    ospcommon::vec3f position_new {ospcommon::OneTy()};
+    ospcommon::vec3f position_old {ospcommon::OneTy()};
+    float zoom_new {1.f};
+    float zoom_old {1.f};
   public:
     /** constractors */
     void SetRadius(const float r);
@@ -58,6 +58,7 @@ namespace viewer {
      * @return current trackball matrix
      */
     const ospcommon::affine3f& Matrix() const;
+    const float& ZoomRatio() const;
     void Reset();
     void Reset(const ospcommon::affine3f &m);
 

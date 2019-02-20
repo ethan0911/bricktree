@@ -1,0 +1,88 @@
+// ======================================================================== //
+// Copyright 2009-2015 Intel Corporation                                    //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
+#pragma once
+
+#include "ospray/common/Model.ih"
+// ospray
+#include "ospray/math/AffineSpace.ih"
+#include "ospray/geometry/Geometry.ih"
+
+#define _BT_T float
+#define _BT_N 4
+
+
+struct ValueBrick
+{
+  _BT_T value[_BT_N][_BT_N][_BT_N];
+  _BT_T vRange[2];
+};
+
+struct IndexBrick
+{
+  int childID[_BT_N][_BT_N][_BT_N];
+};
+
+
+struct BrickInfo
+{
+  int indexBrickID;
+};
+
+struct BrickStatus
+{
+  int8 isRequested;
+  int8 isLoaded;
+  float loadWeight;
+  //float valueRange[2];   /*8*/
+};
+
+/*! \brief ispc-side implementation of the bricktree object
+ */
+struct BrickTree
+{
+  uniform unsigned int64 numValueBricks;
+  uniform unsigned int64 numIndexBricks;
+  uniform unsigned int64 numBrickInfos;
+
+  uniform unsigned int64 indexBricksOfs;
+  uniform unsigned int64 valueBricksOfs;
+  uniform unsigned int64 indexBrickOfOfs;
+
+  uniform float avgValue;
+  uniform int nBrickSize;
+  uniform float valueRange[2];
+  uniform int validSize[3];
+  uniform int rootGridDims[3];
+  uniform int depth;
+
+  uniform ValueBrick *uniform valueBrick;
+  uniform IndexBrick *uniform indexBrick;
+  uniform BrickInfo *uniform brickInfo;
+  uniform BrickStatus *uniform valueBricksStatus;
+
+  uniform unsigned int64 **uniform vbIdxByLevelBuffers;
+  uniform unsigned int64 *uniform vbIdxByLevelStride;
+
+};
+
+struct BrickTreeForest
+{
+  uniform BrickTree *uniform data;
+  uniform unsigned int size;
+};
+#undef _bt_T
+#undef _bt_N

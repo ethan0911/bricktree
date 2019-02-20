@@ -58,7 +58,7 @@ void viewer::Trackball::Drag(const float x, const float y)
 }
 void viewer::Trackball::Zoom(const float x, const float y) 
 {
-  zoom_new += (y - zoom_old);
+  zoom_new = std::max(1e-6f, zoom_new + (y - zoom_old));
   zoom_old = y;
   UpdateMatrix();
 }
@@ -70,6 +70,10 @@ void viewer::Trackball::Zoom(const float x, const float y)
 const affine3f& viewer::Trackball::Matrix() const 
 { 
   return matrix_final;
+}
+const float& viewer::Trackball::ZoomRatio() const
+{
+  return zoom_new;
 }
 void viewer::Trackball::Reset() 
 {

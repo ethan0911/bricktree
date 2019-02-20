@@ -24,6 +24,28 @@ void viewer::CameraProp::Init(OSPCamera camera,
 }
 void viewer::CameraProp::Draw()
 {
+  std::stringstream ss;
+  ss << std::fixed << std::setprecision(3);
+  ss << "camera information" << std::endl;
+  if (type == Perspective) {
+    ss << "  type perspective" << std::endl;
+  } else {
+    ss << "  type orthographic" << std::endl;
+  }  
+  ss << "  fovy " << std::min(180.f, fovy.ref()) << std::endl
+     << "  pos  ["
+     << std::setw(8) << pos.ref().x << ", "
+     << std::setw(8) << pos.ref().y << ", "
+     << std::setw(8) << pos.ref().z << "]" << std::endl
+     << "  dir  ["
+     << std::setw(8) << dir.ref().x << ", "
+     << std::setw(8) << dir.ref().y << ", "
+     << std::setw(8) << dir.ref().z << "]" << std::endl
+     << "  up   ["
+     << std::setw(8) << up.ref().x << ", "
+     << std::setw(8) << up.ref().y << ", "
+     << std::setw(8) << up.ref().z << "]" << std::endl;
+  ImGui::Text("%s", ss.str().c_str());
 }
 bool viewer::CameraProp::Commit()
 {
@@ -46,7 +68,7 @@ bool viewer::CameraProp::Commit()
   }
   if (type == Perspective) {
     if (fovy.update()) {
-      ospSet1f(self, "fovy", fovy.ref());
+      ospSet1f(self, "fovy", std::min(fovy.ref(), 180.f));
       update = true;
     }
   }
@@ -55,6 +77,10 @@ bool viewer::CameraProp::Commit()
       ospSet1f(self, "height", height.ref());
       update = true;
     }
+  }
+  if (nearClip.update()) {
+    ospSet1f(self, "nearClip", nearClip.ref());
+    update = true;
   }
   if (update)
     ospCommit(self);
@@ -94,7 +120,7 @@ void viewer::LightProp::Draw()
     C = imgui_C;
   }
   ImGui::SameLine();
-  ImGui::Text((type + "-" + name).c_str());
+  ImGui::Text("%s - %s", type.c_str(), name.c_str());
   if (ImGui::SliderFloat(("intensity##" + name).c_str(), &imgui_I, 
                          0.f, 100000.f, "%.3f", 5.0f)) {
     I = imgui_I;    
@@ -190,7 +216,7 @@ void viewer::RendererProp::Draw()
     aoSamples = imgui_aoSamples;
   }
   if (ImGui::SliderFloat("aoDistance", &imgui_aoDistance, 
-                         0.f, 1e20, "%.3f", 5.0f)) {
+                         0.f, 1e20, "%.3e", 5.0f)) {
     aoDistance = imgui_aoDistance;
   }
   if (ImGui::Checkbox("aoTransparencyEnabled", 
@@ -289,10 +315,10 @@ void viewer::TransferFunctionProp::Print()
     std::cout << "};" << std::endl << std::endl;
   }
 }
-void viewer::TransferFunctionProp::Draw()
+void viewer::TransferFunctionProp::Draw(bool* p_open)
 {
   if (self != nullptr) {
-    if (widget->drawUI()) { widget->render(128); };
+    if (widget->drawUI(p_open)) { widget->render(128); };
   }
 }
 bool viewer::TransferFunctionProp::Commit()

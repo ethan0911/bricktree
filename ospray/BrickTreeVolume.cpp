@@ -22,12 +22,14 @@
 #include "ospray/common/Data.h"
 #include "ospray/common/Model.h"
 #include "ospray/transferFunction/TransferFunction.h"
+#include "ospray/camera/PerspectiveCamera.h"
 // ospcommon
 #include "ospcommon/FileName.h"
 // ispc exports
 #include "BrickTreeVolume_ispc.h"
 // stl
 #include <map>
+#include <math.h>
 #include <set>
 #include <stack>
 
@@ -39,13 +41,15 @@ namespace ospray {
     using std::flush;
     using std::ostream;
     BrickTreeVolume::BrickTreeVolume()
-      : Volume(),
-        sampler(NULL),
-        gridSize(-1),
-        validSize(-1),
-        brickSize(-1),
-        fileName("<none>")
-    {}
+        : Volume(),
+          sampler(NULL),
+          gridSize(-1),
+          validSize(-1),
+          depth(0),
+          brickSize(-1),
+          fileName("<none>")
+    {
+    }
 
     int BrickTreeVolume::setRegion(const void *source,
                                    const vec3i &index,
@@ -113,6 +117,7 @@ namespace ospray {
                                format +"'");
     }
 
+
     //! Allocate storage and populate the volume.
     void BrickTreeVolume::commit()
     {
@@ -128,12 +133,60 @@ namespace ospray {
       this->fileName   = getParamString("fileName", "");
       this->format     = getParamString("format", "<not specified>");
       this->validSize  = getParam3i("validSize",vec3i(-1));
+      PerspectiveCamera* camera = (PerspectiveCamera*)getParamObject("camera", nullptr);
       this->validFractionOfRootGrid = 
         vec3f(validSize) / vec3f(gridSize*blockWidth);
+      this->depth = (int)(log(blockWidth)/log(brickSize));
+      this->renderThreshold = getParam1f("renderThreshold", 0.0f);
+
       this->sampler = createSampler();
-      ispc::BrickTreeVolume_set(getIE(), 
+      ispc::BrickTreeVolume_set(getIE(),
                                 (ispc::vec3i &)validSize,
-                                this, sampler);
+                                (ispc::vec3i &)gridSize,
+                                brickSize,
+                                blockWidth,
+                                renderThreshold,
+                                this,
+                                sampler);
+
+      ispc::BrickTreeVolume_set_CameraInfo(getIE(),
+                                            camera->getIE(),
+                                            (ispc::vec3f *)&camera->dir,
+                                            (ispc::vec3f *)&camera->pos,
+                                            &camera->fovy);
+
+      if(brickSize == 2){
+        auto & forest = dynamic_cast<BrickTreeForestSampler<float, 2> *>(sampler)->forest->tree;
+        ispc::BrickTreeVolume_set_BricktreeForest(getIE(), forest.data(), forest.size());
+      }
+
+      if(brickSize == 4){
+        auto & forest = dynamic_cast<BrickTreeForestSampler<float, 4> *>(sampler)->forest->tree;
+        ispc::BrickTreeVolume_set_BricktreeForest(getIE(), forest.data(), forest.size());
+      }
+
+      if(brickSize == 8){
+        auto &forest = dynamic_cast<BrickTreeForestSampler<float, 8> *>(sampler)->forest->tree;
+        ispc::BrickTreeVolume_set_BricktreeForest(getIE(), forest.data(), forest.size());
+      }
+
+      // std::cout << "[cpp]  sizeof(BrickTree) " 
+      //           << sizeof(BrickTree<4,float>) << std::endl;      
+      // auto& forest = dynamic_cast<BrickTreeForestSampler<float,4>*>
+      //   (sampler)->forest->tree;
+      // for (int i = 0; i < forest.size(); ++i) {
+      //   PRINT(forest[i].brickInfo);
+      //   std::cout << "cpp  " << forest[i].brickInfo[0].indexBrickID 
+      //             << std::endl;
+      // }
+      // for (int x = 0; x < 4; ++x) 
+      // for (int y = 0; y < 4; ++y) 
+      // for (int z = 0; z < 4; ++z) 
+      // printf("cpp  %f\n", forest[2].valueBrick[1000].value[x][y][z]);
+      // ispc::BrickTreeVolume_set_BricktreeForest(getIE(),
+      //                                           forest.data(),
+      //                                           forest.size());
+      
       if(!finished)
       {
         finish();

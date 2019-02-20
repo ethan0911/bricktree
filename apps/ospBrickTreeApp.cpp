@@ -78,6 +78,17 @@ int main(int ac, const char **av)
     throw std::runtime_error("failed to initialize BrickTree module");
   }
 
+
+    // setup camera
+  OSPCamera camera = ospNewCamera("perspective");
+  vec3f vd         = args.vi - args.vp;
+  ospSetVec3f(camera, "pos", (const osp::vec3f &)args.vp);
+  ospSetVec3f(camera, "dir", (const osp::vec3f &)vd);
+  ospSetVec3f(camera, "up", (const osp::vec3f &)args.vu);
+  ospSet1f(camera, "aspect", args.imgSize.x / (float)args.imgSize.y);
+  ospSet1f(camera, "fovy", 60.f);
+  ospCommit(camera);
+
   //-----------------------------------------------------
   // Create ospray objects
   //-----------------------------------------------------
@@ -119,7 +130,7 @@ int main(int ac, const char **av)
       std::make_shared<ospray::BrickTree>();
     bricktreeVolume->adaptiveSampling = args.use_adaptive_sampling;
     bricktreeVolume->setFromXML(args.inputFiles[0]);
-    bricktreeVolume->createBtVolume(transferFcn);
+    bricktreeVolume->createBtVolume(camera,transferFcn,args.renderThreshold);
     ospAddVolume(world,bricktreeVolume->ospVolume);
     ospray::bt::BrickTreeVolume *btVolume = 
       (ospray::bt::BrickTreeVolume *)bricktreeVolume->ospVolume;  
@@ -129,24 +140,27 @@ int main(int ac, const char **av)
               << "#osp:bench using hacked volume"
               << "\033[0m" 
               << std::endl;
-    const std::string hacked_volume_path = 
-      "/home/sci/feng/Desktop/ws/data/"
-      "magnetic-512-volume/magnetic-512-volume.raw";
-    const std::string hacked_volume_type = "float";
-    const size_t hacked_dtype_size = 4;
-    const ospcommon::vec3i hacked_dims(512);
+    //const std::string hacked_volume_path = "/home/sci/feng/data/dns/dns_double.raw";
+    const std::string hacked_volume_path = "/usr/sci/www/klacansky/cdn/open-scivis-datasets/richtmyer_meshkov/richtmyer_meshkov_2048x2048x1920_uint8.raw";
+
+    const std::string hacked_volume_type = "uchar";
+    const size_t hacked_dtype_size = 1;
+    //const ospcommon::vec3i hacked_dims(10240, 7680,1536);
+    const ospcommon::vec3i hacked_dims(2048, 2048,1920);
+
+    PRINT("start to load the data!");
+    ospray::time_point t1 = ospray::Time();
     FILE *f = fopen(hacked_volume_path.c_str(), "rb");
-    std::vector<char> volume_data(hacked_dims.x * 
-                                  hacked_dims.y * 
-                                  hacked_dims.z * 
-                                  hacked_dtype_size, 0);
-    size_t voxelsRead = 
-      fread(volume_data.data(), hacked_dtype_size, 
-            hacked_dims.x * hacked_dims.y * hacked_dims.z, f);
-    if (voxelsRead != hacked_dims.x * hacked_dims.y * hacked_dims.z) {
+    size_t voxelsNum = (size_t)hacked_dims.x * (size_t)hacked_dims.y * (size_t)hacked_dims.z;
+    std::vector<char> volume_data(voxelsNum * hacked_dtype_size, 0);
+    size_t voxelsRead = fread(volume_data.data(), hacked_dtype_size, voxelsNum, f);
+    if (voxelsRead != voxelsNum) {
       throw std::runtime_error("Failed to read all voxles");
     }
     fclose(f);
+    double timespan = ospray::Time(t1);
+    printf("done load the data! Time: %lf \n",timespan);
+
     OSPVolume hacked_vol = ospNewVolume("block_bricked_volume");  
     ospSet2f(hacked_vol, "voxelRange", 0, 1.5);  
     ospSetString(hacked_vol, "voxelType", hacked_volume_type.c_str());
@@ -160,15 +174,6 @@ int main(int ac, const char **av)
     ospAddVolume(world, hacked_vol);
   }
 
-  // setup camera
-  OSPCamera camera = ospNewCamera("perspective");
-  vec3f vd         = args.vi - args.vp;
-  ospSetVec3f(camera, "pos", (const osp::vec3f &)args.vp);
-  ospSetVec3f(camera, "dir", (const osp::vec3f &)vd);
-  ospSetVec3f(camera, "up", (const osp::vec3f &)args.vu);
-  ospSet1f(camera, "aspect", args.imgSize.x / (float)args.imgSize.y);
-  ospSet1f(camera, "fovy", 60.f);
-  ospCommit(camera);
 
   // setup lighting
   OSPLight d_light = ospNewLight(renderer, "DirectionalLight");

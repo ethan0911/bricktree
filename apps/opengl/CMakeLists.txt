@@ -1,7 +1,10 @@
-ospray_disable_compiler_warnings()
+# define package name
+if (NOT APP_VIEWER_PREFIX)
+  set(APP_VIEWER_PREFIX ospray)
+endif ()
 
-# find openGL
-find_package(OpenGL REQUIRED)
+# find packages
+include(packages.cmake)
 
 # transfer function widget
 set(TFN_MODULE_DEFAULT_ROOT 
@@ -21,29 +24,36 @@ if (TFN_MODULE)
     ${TFN_MODULE_ROOT}/src/widgets/TransferFunctionWidget.cpp)
 endif (TFN_MODULE)
 
-# set correct include path
-include_directories(src external
-  ${PROJECT_SOURCE_DIR}/apps/exampleViewer/common/imgui
-  ${TFN_MODULE_INCLUDE_DIR}
-  ${OPENGL_INCLUDE_DIR})
-
 # build everything as a library
-ospray_create_library(ospray_bt_app_viewer
-  viewer.cpp
-  src/engine.cpp
-  src/camera.cpp
-  src/scene/properties.cpp
-  src/common/trackball.cpp
+add_library(${APP_VIEWER_PREFIX}_app_viewer SHARED
   ${TFN_MODULE_SRC}
-  external/glad.c
   external/imgui_glfw_impi.cpp
-  LINK
-  ospray
-  ospray_common
-  ospray_imgui
-  ospray_imgui3d_sg
-  ${OPENGL_LIBRARIES})
-
-# setup properties
-set_target_properties(ospray_bt_app_viewer
-  PROPERTIES CXX_STANDARD 14)
+  src/common/trackball.cpp
+  src/scene/properties.cpp
+  src/camera.cpp
+  src/engine.cpp
+  viewer.cpp)
+set_target_properties(${APP_VIEWER_PREFIX}_app_viewer
+  PROPERTIES CXX_STANDARD 11)
+target_include_directories(${APP_VIEWER_PREFIX}_app_viewer
+  PRIVATE
+  "$<BUILD_INTERFACE:"
+  "${TFN_MODULE_INCLUDE_DIR};"
+  "${CMAKE_CURRENT_LIST_DIR}/src;"
+  "${CMAKE_CURRENT_LIST_DIR}/external;"
+  ">")
+target_link_libraries(${APP_VIEWER_PREFIX}_app_viewer
+  glad glfw OpenGL)
+if (TARGET ospray_package) # if the viewer is built outside ospray source
+  target_link_libraries(${APP_VIEWER_PREFIX}_app_viewer
+    imgui ospray_package)
+else () # if the package is built within an ospray module
+  target_include_directories(${APP_VIEWER_PREFIX}_app_viewer
+    PUBLIC "$<BUILD_INTERFACE:"
+    "${PROJECT_SOURCE_DIR}/apps/exampleViewer/common/imgui;>")
+  target_link_libraries(${APP_VIEWER_PREFIX}_app_viewer
+    ospray
+    ospray_common
+    ospray_imgui
+    ospray_imgui3d_sg)
+endif ()

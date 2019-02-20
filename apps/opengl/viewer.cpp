@@ -89,16 +89,85 @@ void WidgetStop() {
 }
 void WidgetDraw() {
   ImGui_Impi_NewFrame();
-  tfnProp.Draw();
-  ImGui::Begin("Rendering Properties");
-  {
-    camProp.Draw();
-    ImGui::Separator();
-    renProp.Draw();
-    ImGui::Separator();
-    litProp.Draw();    
+
+  // -- Main Menu
+  // parameters
+  static bool show_app_camera = false;
+  static bool show_app_lights = false;
+  static bool show_app_renderer = false;
+  static bool show_app_tfn = true;
+  // debug
+  static bool show_app_metrics = true;
+  static bool show_app_imgui_test_win = false;
+  if (ImGui::BeginMainMenuBar()) {
+    if (ImGui::BeginMenu("Parameters"))
+    {
+      ImGui::MenuItem("Camera", NULL, &show_app_camera);
+      ImGui::MenuItem("Lights", NULL, &show_app_lights);
+      ImGui::MenuItem("Renderer", NULL, &show_app_renderer);
+      ImGui::MenuItem("Transfer Function", NULL, &show_app_tfn);
+      ImGui::EndMenu();                 
+    }
+    if (ImGui::BeginMenu("Debug"))
+    {
+      ImGui::MenuItem("Show Rendering Metrics", NULL, &show_app_metrics);
+      ImGui::MenuItem("Show ImGui Test Window", NULL, &show_app_imgui_test_win);
+      ImGui::EndMenu();
+    }
+    ImGui::EndMainMenuBar();
   }
-  ImGui::End();
+
+  if (show_app_camera) {
+    if (ImGui::Begin("Camera Parameters", &show_app_camera, 0))
+    { camProp.Draw(); }
+    ImGui::End();
+  }
+  if (show_app_lights) {
+    ImGui::SetNextWindowSizeConstraints(ImVec2(250,200),ImVec2(FLT_MAX,FLT_MAX));
+    if (ImGui::Begin("Light Parameters", &show_app_lights, 0))
+    { litProp.Draw(); }
+    ImGui::End();
+  }
+  if (show_app_renderer) {
+    ImGui::SetNextWindowSizeConstraints(ImVec2(250,400),ImVec2(FLT_MAX,FLT_MAX));
+    if (ImGui::Begin("Renderer Parameters", &show_app_renderer, 0))
+    { renProp.Draw(); }
+    ImGui::End();
+  }
+  if (show_app_tfn) tfnProp.Draw(&show_app_tfn);
+
+  // -- draw Metrics
+  if (show_app_metrics) {
+    static const float DISTANCE = 10.0f;
+    static int corner = 0;
+    ImVec2 window_pos = ImVec2((corner & 1) ? 
+                               ImGui::GetIO().DisplaySize.x - DISTANCE : 
+                               DISTANCE, 
+                               (corner & 2) ? 
+                               ImGui::GetIO().DisplaySize.y - DISTANCE :
+                               DISTANCE + 18.f);
+    ImVec2 window_pos_pivot = ImVec2((corner & 1) ? 1.0f : 0.0f, 
+                                     (corner & 2) ? 1.0f : 0.0f);
+    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.2f));
+    if (ImGui::Begin("Metrics", &show_app_tfn, 
+                     ImGuiWindowFlags_NoTitleBar|
+                     ImGuiWindowFlags_NoResize|
+                     ImGuiWindowFlags_AlwaysAutoResize|
+                     ImGuiWindowFlags_NoMove|
+                     ImGuiWindowFlags_NoSavedSettings))
+    {
+      ImGui::TextColored(ImVec4(0.0f, 0.0f, 1.0f, 1.0f),"FPS: %s", std::to_string(engine.GetFPS()).c_str());
+    }
+    ImGui::End();
+    ImGui::PopStyleColor();
+  }
+
+  // -- ImGUI Example:  
+  if (show_app_imgui_test_win) {
+    ImGui::ShowTestWindow(&show_app_imgui_test_win);
+  }
+
   ImGui::Render();
 }
 
@@ -122,13 +191,16 @@ namespace viewer {
   {
     sphere.Init();
     litProp.Append("ambient", "scivis");
-    litProp[0].SetIntensity(0.555f);
+    litProp[0].SetIntensity(0.025f);
+    litProp[0].SetColor(vec3f(-0.75f,0.70f,-0.75f));
     litProp.Append("distant", "scivis");
-    litProp[0].SetIntensity(1.300f);
-    litProp[0].SetColor(vec3f(-0.58f,0.68f,-0.75f));
+    litProp[1].SetIntensity(2.500f);
+    litProp[1].SetColor(vec3f(1.00f,1.00f,1.00f));
+    litProp[1].SetDirection(vec3f(-1.00f,-1.00f,0.65f));
     litProp.Append("distant", "scivis");
-    litProp[0].SetIntensity(0.085f);
-    litProp[0].SetColor(vec3f(-0.75f,0.68f,-0.75f));
+    litProp[2].SetIntensity(2.500f);
+    litProp[2].SetColor(vec3f(1.00f,1.00f,1.00f));
+    litProp[2].SetDirection(vec3f(1.00f,0.65f,0.65f));
     litProp.Finalize();
     ospSetData(ospRen, "lights", *litProp);
     ospCommit(ospRen);
@@ -163,16 +235,13 @@ namespace viewer {
 // ======================================================================== //
 static GLuint texID;
 static GLuint fboID;
-void error_callback(int error, const char *description)
+void error_callback(int error, const char* description)
 {
   fprintf(stderr, "Error: %s\n", description);
 }
-void char_callback(GLFWwindow *window, unsigned int c)
+void char_callback(GLFWwindow* window, unsigned int key)
 {
-  ImGuiIO &io = ImGui::GetIO();
-  if (c > 0 && c < 0x10000) {
-    io.AddInputCharacter((unsigned short)c);
-  }
+  ImGui_Impi_CharCallback(window, key);
 }
 void key_onhold_callback(GLFWwindow *window)
 {
@@ -198,14 +267,14 @@ void key_onhold_callback(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
       camera.CameraMovePX(0.5f * camera.CameraFocalLength());
     } else {
-      camera.CameraMovePX(0.0001f * camera.CameraFocalLength());
+      camera.CameraMovePX(0.00001f * camera.CameraFocalLength());
     }
   } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
     /* D: right */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
       camera.CameraMovePX(-0.5f * camera.CameraFocalLength());
     } else {
-      camera.CameraMovePX(-0.0001f * camera.CameraFocalLength());
+      camera.CameraMovePX(-0.00001f * camera.CameraFocalLength());
     }
   } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
     /* S: down */
@@ -223,7 +292,7 @@ void key_onhold_callback(GLFWwindow *window)
     }
   }
 }
-void key_onpress_callback(GLFWwindow *window, int key, 
+void key_callback(GLFWwindow *window, int key, 
                           int scancode, int action, int mods)
 {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
@@ -256,9 +325,20 @@ void key_onpress_callback(GLFWwindow *window, int key,
     ImGui_Impi_KeyCallback(window, key, scancode, action, mods);
   }
 }
+void mouse_button_callback(GLFWwindow* window, int button, 
+                                  int action, int mods)
+{
+  ImGui_Impi_MouseButtonCallback(window, button, action, mods);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+  ImGui_Impi_ScrollCallback(window, xoffset, yoffset);
+}
 void cursor_position_callback(GLFWwindow *window, double xpos, double ypos)
 {
-  if (!ImGui::GetIO().WantCaptureMouse) {
+  if (!ImGui::GetIO().WantCaptureMouse) 
+  {
     int left_state  = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
     int right_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
     if (left_state == GLFW_PRESS) {
@@ -331,8 +411,8 @@ void RenderWindow(GLFWwindow *window)
     glfwPollEvents();
   }
   // ShutDown
-  WidgetStop();
   engine.Stop();
+  WidgetStop();
   glfwDestroyWindow(window);
   glfwTerminate();
 }
@@ -360,10 +440,12 @@ GLFWwindow *CreateWindow()
     exit(EXIT_FAILURE);
   }
   // Callback
-  glfwSetKeyCallback(window, key_onpress_callback);
   glfwSetWindowSizeCallback(window, window_size_callback);
-  glfwSetCursorPosCallback(window, cursor_position_callback);
   glfwSetCharCallback(window, char_callback);
+  glfwSetKeyCallback(window, key_callback);
+  glfwSetMouseButtonCallback(window, mouse_button_callback);
+  glfwSetScrollCallback(window, scroll_callback);
+  glfwSetCursorPosCallback(window, cursor_position_callback);
   // Ready
   glfwMakeContextCurrent(window);
   gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);

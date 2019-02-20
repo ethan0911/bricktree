@@ -40,6 +40,7 @@ namespace viewer {
   // ====================================================================== //
   struct Prop { 
     Prop() {}
+    virtual ~Prop() {}
     virtual void Draw() = 0; 
     virtual bool Commit() = 0; 
   };
@@ -50,7 +51,7 @@ namespace viewer {
   class CameraProp : public Prop
   {
   private:
-    OSPCamera self{nullptr};
+    OSPCamera self {nullptr};
   public:
     enum Type { Perspective, Orthographic, Panoramic } type;
   public:
@@ -87,7 +88,7 @@ namespace viewer {
   class LightProp : public Prop 
   {
   private:
-    OSPLight self = nullptr;
+    OSPLight self {nullptr};
     std::string type, renderer, name;
   public:
     Setter(I, Intensity, float, 0.25f); 
@@ -131,7 +132,7 @@ namespace viewer {
   class RendererProp : public Prop
   {
   private:
-    OSPRenderer self{nullptr};
+    OSPRenderer self {nullptr};
     CameraProp& camera;
     LightListProp& lights;
   public:
@@ -169,7 +170,7 @@ namespace viewer {
   class TransferFunctionProp : public Prop
   {
   private:
-    OSPTransferFunction self{nullptr};
+    OSPTransferFunction self {nullptr};
     bool doUpdate{false}; // no initial update
     std::shared_ptr<tfn::tfn_widget::TransferFunctionWidget> widget;
     std::mutex lock;
@@ -189,7 +190,8 @@ namespace viewer {
       valueRange_default[1] = b;
     }
     void Init();
-    void Draw();
+    void Draw(bool* p_open = NULL);
+    void Draw() { Draw(NULL); };
     bool Commit();
     void Print();
   };
