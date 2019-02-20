@@ -319,6 +319,9 @@ struct BrickTreeForest
 
   void loadTreeBrick(const FileName &brickFileBase)
   {
+#if 0
+    //Stream by bricktree.
+
     // while (!tree.empty()) {
     //   for (size_t i = 0; i < tree.size(); i++) {
     //     bool needLoad = false;
@@ -329,8 +332,20 @@ struct BrickTreeForest
     //     }
     //   }
     // }
+#elif 0
 
-    //performance to be optimized
+    //Stream by valuebrick.
+    while (!tree.empty()) {
+      for (size_t i = 0; i < tree.size(); i++) {
+        std::vector<vec2i> vbReqList =getReqVBs(tree[i]);
+        if (!vbReqList.empty())
+          tree[i].loadTreeByBrick(brickFileBase, i, vbReqList);
+      }
+    }
+
+#else 
+    //Stream by tree level. performance to be optimized
+
     while (!tree.empty()) {
       for (int i = 0; i < depth; i++) {
         tasking::parallel_for(tree.size(), [&](size_t treeID)
@@ -386,13 +401,7 @@ struct BrickTreeForest
     //   }
     // }
 
-    // while (!tree.empty()) {
-    //   for (size_t i = 0; i < tree.size(); i++) {
-    //     std::vector<vec2i> vbReqList =getReqVBs(tree[i]);
-    //     if (!vbReqList.empty())
-    //       tree[i].loadTreeByBrick(brickFileBase, i, vbReqList);
-    //   }
-    // }
+#endif
   }
 
   void Initialize()

@@ -267,14 +267,14 @@ void key_onhold_callback(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
       camera.CameraMovePX(0.5f * camera.CameraFocalLength());
     } else {
-      camera.CameraMovePX(0.0001f * camera.CameraFocalLength());
+      camera.CameraMovePX(0.00001f * camera.CameraFocalLength());
     }
   } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
     /* D: right */
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
       camera.CameraMovePX(-0.5f * camera.CameraFocalLength());
     } else {
-      camera.CameraMovePX(-0.0001f * camera.CameraFocalLength());
+      camera.CameraMovePX(-0.00001f * camera.CameraFocalLength());
     }
   } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
     /* S: down */

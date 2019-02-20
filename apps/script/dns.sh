@@ -19,6 +19,11 @@ then
 fi
 
 
+# fig 7 
+#-vp -3447.5 -1741.46 1651.07 -vi 7335.63 1203.53 -3.60962 -vu 0.166831 0.0520461 1.17983 
+
+
+
 if [ $COMMAND == 'ospBrickBench' ]
 then
   $OSPRAY_BIN $BRICKTREEFILE -valueRange -0.232 1.35 \
