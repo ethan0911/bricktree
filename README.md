@@ -82,6 +82,8 @@ children. Otherwise, brick[cellChildID] is the child brick.
 
 Compilation
 ====================
+Please clone [OSPRay](https://github.com/ethan0911/ospray-bricktree-fork.git).
+
 This bricktree module requires MPI and c17 support. There are examples 
 about how to setup environmental variables on different machines
 
